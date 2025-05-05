@@ -1,48 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="login.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <link rel="stylesheet" href="login.css" />
 </head>
 <body>
-    
-    <header>
-      <div class="arriba">
-
-        <div class="seccion-izquierda">
-            <img src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/5.22.7/mercadolibre/logo__large_plus.png" alt="Logo" class="logo">
+  <header>
+    <div class="arriba">
+      <div class="seccion-izquierda">
+        <img
+          src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/5.22.7/mercadolibre/logo__large_plus.png"
+          alt="Logo"
+          class="logo"
+        />
       </div>
     </div>
-    </header> 
+  </header>
 
-    <main>
-
-<div class="login">
-    <h1>Ingresá tu e-mail o teléfono para iniciar sesión</h1>
-</div>
-<form class="formulario">
-    <div class="input-group">
-        <input type="text" placeholder="Email o teléfono">
+  <main class="contenedor">
+    <div class="izquierda">
+      <h1>Ingresá tu e-mail o teléfono<br>para iniciar sesión</h1>
     </div>
-</div>
 
-<div class="buton">
-    <button type="submit">Continuar</button>
-</div>
+    <div class="derecha">
+      <form class="formulario">
+        <label for="usuario">E-mail o teléfono</label>
+        <input id="usuario" type="text" />
 
-<h2>o</h2>
+        <button class="continuar" type="submit">Continuar</button>
 
-<div class="buton2">
-    <button type="submit">Crear cuenta</button>
-</div>
+        <a href="#" class="crear-cuenta">Crear cuenta</a>
 
+        <div class="separador">
+          <hr /><span>o</span><hr />
+        </div>
 
+        <button class="google-btn" type="button">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G" />
+          Iniciar sesión con Google
+        </button>
+      </form>
+    </div>
+  </main>
 
-</form>
-
-     </main>
-
+  <footer>
+    <div class="footer-content">
+      <a href="#">Cómo cuidamos tu privacidad</a> -
+      <span>Copyright © 1999-2025 MercadoLibre S.R.L.</span> -
+      <span>Protegido por reCAPTCHA</span> -
+      <a href="#">Privacidad</a> -
+      <a href="#">Condiciones</a>
+    </div>
+  </footer>
 </body>
 </html>
