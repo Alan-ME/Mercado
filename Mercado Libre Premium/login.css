@@ -1,78 +1,142 @@
-*{
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-body{
-    margin: 0;
-    font-family: Arial, sans-serif;
-    
-}
-
-header {
+  }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fff;
+    color: #333;
+  }
+  
+  header {
     background-color: #ffe600;
-    padding: 10px 10vh 10px;
+    padding: 14px 30px;
   }
-
-.arriba {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-}
-
-.seccion-izquierda {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+  
+  .logo {
+    height: 34px;
   }
-
-.login{
+  
+  .contenedor {
     display: flex;
-    flex-direction: column;
     justify-content: center;
-    align-items: center;
-    padding: 10px;
-    
-}
-
-.formulario{
+    align-items: start;
+    gap: 80px;
+    padding: 60px 30px;
+    max-width: 1100px;
+    margin: auto;
+  }
+  
+  .izquierda h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #000;
+    max-width: 400px;
+  }
+  
+  .derecha {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 40px;
+    width: 380px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .formulario {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    background: white;
-    padding: 30px;
-    
-}
-
-.formulario input{
-
-    width: 108vh;
-    height: 5vh;
-    border: 2px solid #ccc;
-    border-radius: 5px;
-    
-}
-
-.buton button {
-    background-color: #1c69b0;
+    gap: 18px;
+  }
+  
+  .formulario label {
+    font-size: 0.9rem;
+    color: #333;
+  }
+  
+  .formulario input {
+    padding: 14px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s ease;
+    font-size: 1rem;
+  }
+  
+  .formulario input:focus {
+    border: 2px solid #3483fa;
+  }
+  
+  .continuar {
+    background-color: #3483fa;
     color: white;
-    font-size: 1rem;
-    padding: 10px;
     border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    width: 108vh;
-    transition: 0.3s;
-    margin: 10px;
-}
-
-.buton2 button{
-
+    padding: 14px;
     font-size: 1rem;
-
-}
-
-
-
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+  }
+  
+  .continuar:hover {
+    background-color: #2968c8;
+  }
+  
+  .crear-cuenta {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #3483fa;
+    text-decoration: none;
+  }
+  
+  .separador {
+    display: flex;
+    align-items: center;
+    color: #999;
+    font-size: 0.85rem;
+    gap: 10px;
+  }
+  
+  .separador hr {
+    flex: 1;
+    border: none;
+    border-top: 1px solid #ccc;
+  }
+  
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border: 1px solid #ccc;
+    background-color: white;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  
+  .google-btn img {
+    width: 18px;
+    height: 18px;
+  }
+  
+  footer {
+    margin-top: 80px;
+    padding: 20px;
+    font-size: 0.75rem;
+    color: #666;
+    text-align: center;
+    border-top: 1px solid #eee;
+  }
+  
+  footer a {
+    color: #3483fa;
+    text-decoration: none;
+    margin: 0 6px;
+  }
+  
