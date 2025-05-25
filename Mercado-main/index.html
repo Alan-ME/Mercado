@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>La Taza Noble</title>
+  <link rel="stylesheet" href="index.css" />
+  <link rel="stylesheet" href="carrusel.css">
+  <link rel="stylesheet" href="modal.css">
+  <script src="taza.js" defer></script>
+  <script src="Mercado.js" defer></script>
+</head>
+
+<body>
+  <header class="encabezado">
+    <div class="header-contenido">
+      <h1 class="titulo">
+        <img src="tazanoble.png" alt="Logo" class="logo">
+        <span class="blanco">La Taza</span> <span class="oro">Noble</span>
+      </h1>
+      <div class="menu-icono" onclick="abrirMenu()">☰</div>
+      <nav class="menu-escritorio">
+      <a href="login.html">Cuenta</a>
+      <a href="pedidos.html">Pedidos</a>
+      <a href="#">Configuración</a>
+      <a href="#">Términos y condiciones</a>
+    </nav>
+    </div>
+
+    <nav class="sidebar" id="sidebar">
+      <button class="cerrar-btn" onclick="cerrarMenu()">×</button>
+      <a href="login.html">Cuenta</a>
+      <a href="#">Pedidos</a>
+      <a href="#">Configuración</a>
+      <a href="#">Términos y condiciones</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="carrusel">
+      <div class="carrusel-imagenes">
+        <img src="cafecito.png" alt="Imagen 1">
+        <img src="SBX20190617_CaffeAmericano.jpg" alt="Imagen 2">
+        <img src="SBX20190617_CaffeAmericano.jpg" alt="Imagen 3">
+      </div>
+      <button class="antes">&#10094;</button>
+      <button class="despues">&#10095;</button>
+      <div class="carrusel-puntos"></div>
+    </section>
+
+    <section class="bebidas">
+      <h2 class="seccion-titulo">Explora Nuestras Bebidas</h2>
+      <div class="grid-bebidas">
+        <div class="card">
+          <img src="SBX20190617_CaffeAmericano.jpg" alt="Cafés calientes">
+          <p>Cafés calientes</p>
+          <button class="boton1">Pedir</button>
+        </div>
+        <div class="card">
+          <img src="SBX20190617_CaffeAmericano.jpg" alt="Cafés helados">
+          <p>Cafés helados</p>
+          <button>Pedir</button>
+        </div>
+        <div class="card">
+          <img src="SBX20190617_CaffeAmericano.jpg" alt="Frappuccino">
+          <p>Frappuccino</p>
+          <button>Pedir</button>
+        </div>
+        <div class="card">
+          <img src="SBX20190617_CaffeAmericano.jpg" alt="Té caliente">
+          <p>Té caliente</p>
+          <button>Pedir</button>
+        </div>
+        <div class="card">
+          <img src="SBX20190617_CaffeAmericano.jpg" alt="Té helado">
+          <p>Té helado</p>
+          <button>Pedir</button>
+        </div>
+        <div class="card">
+          <img src="SBX20190617_CaffeAmericano.jpg" alt="Heladas">
+          <p>Heladas</p>
+          <button>Pedir</button>
+        </div>
+      </div>
+
+      <div id="loginModal" class="modal">
+        <div class="modal-content">
+          <div class="cafe">
+            <img src="SBX20190617_CaffeAmericano.jpg" alt="">
+          </div>
+          <form action="" class="informacion">
+            <h2>Informacion</h2>
+            <div class="divider"><span>-</span></div>
+            <div class="ingredientes">
+
+            <label>Leche de almendras (+$100)
+           <input type="checkbox" value="100" class="opcion">
+           </label>
+
+           <label>Stevia (+$50)
+           <input type="checkbox" value="50" class="opcion">
+           </label>
+
+           <label>Canela (+$30)
+           <input type="checkbox" value="30" class="opcion">
+           </label>
+
+           <label>Crema batida (+$70)
+           <input type="checkbox" value="70" class="opcion">
+           </label>
+
+           <div id="totalExtra">Total adicional: $0</div>
+           </div>
+            <button>Pagar</button>
+            </div>
+            
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p>© 2025 La Taza Noble. Todos los derechos reservados.</p>
+    <p>Síguenos en redes sociales</p>
+    <div class="redes">
+      <a href="#" aria-label="Instagram"><img src="img/instagram.svg" alt="Instagram"></a>
+      <a href="#" aria-label="Facebook"><img src="img/facebook.svg" alt="Facebook"></a>
+      <a href="#" aria-label="X"><img src="img/twitter.svg" alt="Twitter"></a>
+    </div>
+  </footer>
+
+  <script src="script.js" defer></script>
+  <script src="script2.js" defer></script>
+  
+</body>
+</html>
