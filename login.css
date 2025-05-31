@@ -1,0 +1,171 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  header {
+    background: linear-gradient(to right, #2d1a16, #563928);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .titulo {
+    font-size: 48px;
+    align-items: center;
+    justify-content: center;
+    justify-self: center;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .blanco {
+    color: white;
+  }
+  
+  .oro {
+    color: gold;
+  }
+  
+  .contenedor {
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    gap: 80px;
+    padding: 60px 30px;
+    max-width: 1100px;
+    margin: auto;
+  }
+  
+  .izquierda h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: white;
+    max-width: 400px;
+  }
+  
+  .derecha {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 40px;
+    width: 380px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background-color: honeydew;
+  }
+  
+  .formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  
+  .formulario label {
+    font-size: 0.9rem;
+    color: black;
+  }
+  
+  .formulario input {
+    padding: 14px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s ease;
+    font-size: 1rem;
+  }
+  
+  .formulario input:focus {
+    border: 2px solid #3483fa;
+  }
+  
+  .continuar {
+    background-color: #3483fa;
+    color: white;
+    border: none;
+    padding: 14px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+  }
+  
+  .continuar:hover {
+    background-color: #2968c8;
+  }
+  
+  .crear-cuenta {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #3483fa;
+    text-decoration: none;
+  }
+  
+  .separador {
+    display: flex;
+    align-items: center;
+    color: #999;
+    font-size: 0.85rem;
+    gap: 10px;
+  }
+  
+  .separador hr {
+    flex: 1;
+    border: none;
+    border-top: 1px solid #ccc;
+  }
+  
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border: 1px solid #ccc;
+    background-color: white;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  
+  .google-btn img {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .pie {
+    background: linear-gradient(to right, #2d1a16, #563928);
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+  }
+  
+  .pie .redes {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .pie .redes img {
+    width: 24px;
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease;
+  }
+  
+  .pie .redes img:hover {
+    transform: scale(1.2);
+  }

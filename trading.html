@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mercado de Cupones - La Taza Noble</title>
+  <link rel="stylesheet" href="trading.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="trading.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Mercado de Cupones</h1>
+    <a href="index.html" class="volver">← Volver al inicio</a>
+  </header>
+
+  <main>
+    <section class="cupones">
+      <div class="cupon-card" data-tipo="basico">
+        <h2>Cupón Básico</h2>
+        <p>Precio actual: $<span class="precio">-</span></p>
+        <canvas class="grafico"></canvas>
+        <button>Ofertar</button>
+      </div>
+      <div class="cupon-card" data-tipo="premium">
+        <h2>Cupón Premium</h2>
+        <p>Precio actual: $<span class="precio">-</span></p>
+        <canvas class="grafico"></canvas>
+        <button>Ofertar</button>
+      </div>
+      <div class="cupon-card" data-tipo="dorado">
+        <h2>Cupón Dorado</h2>
+        <p>Precio actual: $<span class="precio">-</span></p>
+        <canvas class="grafico"></canvas>
+        <button>Ofertar</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
