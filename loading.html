@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SCP Loading</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0a0a0a;
+      color: #ccc;
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      background-image: url('https://www.transparenttextures.com/patterns/dark-mosaic.png');
+      background-size: 256px;
+    }
+
+    #loading-text {
+      font-size: 1.8rem;
+      letter-spacing: 2px;
+      margin-bottom: 30px;
+    }
+
+    .loading-bar {
+      display: flex;
+      gap: 2px;
+      border: 2px solid #777;
+      padding: 4px;
+      background: #111;
+    }
+
+    .block {
+      width: 14px;
+      height: 30px;
+      background-color: #333;
+    }
+
+    .block.filled {
+      background-color: #ccc;
+    }
+
+    #percent {
+      margin-top: 15px;
+      font-size: 1rem;
+    }
+
+    #continue {
+      margin-top: 30px;
+      font-size: 1.1rem;
+      color: #888;
+      display: none;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-text">LOADING</div>
+  <div class="loading-bar" id="loading-bar"></div>
+  <div id="percent">0%</div>
+<div id="tip" style="margin-top: 20px; font-size: 0.9rem; color: #777;"></div>
+<div id="continue">Press any key to continue</div>
+<audio id="done-sound" src="loading-complete.mp3"></audio> <!-- hay que cambiar el sonido despues -->
+
+<script>
+  const bar = document.getElementById('loading-bar');
+  const percentText = document.getElementById('percent');
+  const continueText = document.getElementById('continue');
+  const tipText = document.getElementById('tip');
+  const sound = document.getElementById('done-sound');
+
+  const totalBlocks = 20;
+  let percent = 0;
+
+  const phrases = [
+    "Calibrating nutriment dispensers...",
+    "Synchronizing with Site-19 mess protocols...",
+    "Sterilizing food preparation sector...",
+    "Uploading caloric compliance tables...",
+    "Synchronizing with Foundation mainframe...",
+    "Memory wipe in progress...",
+    "Monitoring SCP-294 output queue...",
+    "Dr. █████ is not to be disturbed.",
+    "Class-D personnel scheduled for termination.",
+    "Purge cycle initiated in anomalous refrigeration unit..."
+  ];
+
+  // Set random phrase
+  tipText.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+
+  // Create empty blocks
+  for (let i = 0; i < totalBlocks; i++) {
+    const block = document.createElement('div');
+    block.classList.add('block');
+    bar.appendChild(block);
+  }
+
+  const blocks = document.querySelectorAll('.block');
+
+  function fakeLoading() {
+    const interval = setInterval(() => {
+      let increment = Math.floor(Math.random() * 10) + 5;
+      percent = Math.min(percent + increment, 100);
+      const filledCount = Math.floor((percent / 100) * totalBlocks);
+
+      blocks.forEach((block, index) => {
+        if (index < filledCount) block.classList.add('filled');
+      });
+
+      percentText.textContent = percent + "%";
+
+      if (percent >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          sound.play();
+          continueText.style.display = 'block';
+          document.addEventListener('keydown', () => {
+            window.location.href = 'index.html'; 
+          });
+        }, 500);
+      }
+    }, Math.random() * 300 + 300);
+  }
+
+  fakeLoading();
+</script>
+</body>
+</html>
