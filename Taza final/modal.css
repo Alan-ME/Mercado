@@ -32,19 +32,36 @@ html, body {
 
 .modal-content {
     display: flex;
+    border: 2px solid #333;
+  background-color: #111;
+  border-radius: 20px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.modal .cafe {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #111;
+  padding: 20px;
 }
 
 .modal .cafe img {
   width: 100%;
-  max-width: 100%;
   height: auto;
-  padding: 0;
+  max-height: 300px;
+  object-fit: contain;  
   border-radius: 20px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
 
 .modal .informacion {
+    flex: 1;  
+    padding: 20px;
+    box-sizing: border-box;
     width: 100%;
     max-width: 100%;
     padding: 10px 20px;
@@ -78,7 +95,8 @@ html, body {
     cursor: pointer;
     color: #ccc;
     outline: none;
-    left: 60%;
+    display: block;
+    margin: 30px auto 0;
 }
 
  .divider {
