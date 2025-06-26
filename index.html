@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demócrito: El Padre del Atomismo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div id="starfield"></div>
+    
+    
+    <div class="atom" style="top:20%; left:10%;">
+        <div class="atom-core"></div>
+    </div>
+    <div class="atom" style="top:70%; left:80%; width:70px; height:70px;">
+        <div class="atom-core"></div>
+    </div>
+    <div class="atom" style="top:40%; left:50%; width:120px; height:120px;">
+        <div class="atom-core"></div>
+    </div>
+    
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+    
+    
+    <div id="presentation-container">
+        <div class="slide active" id="slide1">
+            <h1 class="slide-title">Demócrito de Abdera</h1>
+            <p class="slide-content">El filósofo presocrático que concibió el universo como compuesto de átomos y vacío, sentando las bases de la ciencia moderna.</p>
+        </div>
+        
+        <div class="slide" id="slide2">
+            <h2 class="slide-title">Vida y Contexto</h2>
+            <div class="list">
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-calendar-alt"></i> Nacimiento</h3>
+                    <p class="list-content">Nació alrededor del <span class="highlight">460 a.C.</span> en Abdera, Tracia. Vivió aproximadamente 90 años.</p>
+                </div>
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-globe-americas"></i> Viajes</h3>
+                    <p class="list-content">Viajó por Egipto, Persia y Babilonia, absorbiendo conocimientos de diversas culturas.</p>
+                </div>
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-brain"></i> El Filósofo Risueño</h3>
+                    <p class="list-content">Conocido por su perspectiva alegre y su enfoque racional de la vida.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slide" id="slide3">
+            <h2 class="slide-title">La Teoría Atómica</h2>
+            <p class="slide-content">Propuso que toda la materia está compuesta de partículas indivisibles llamadas <span class="highlight">átomos</span> (del griego "atomos", indivisible).</p>
+            <div class="list">
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-shapes"></i> Propiedades</h3>
+                    <p class="list-content">• Indestructibles e inmutables<br>• Diferentes en forma y tamaño<br>• En constante movimiento</p>
+                </div>
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-expand-arrows-alt"></i> El Vacío</h3>
+                    <p class="list-content">El espacio vacío es real y necesario para permitir el movimiento de los átomos.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slide" id="slide4">
+            <h2 class="slide-title">Filosofía y Ética</h2>
+            <div class="list">
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-eye"></i> Conocimiento</h3>
+                    <p class="list-content">Distinguía entre el conocimiento genuino (razón) y el oscuro (sentidos).</p>
+                </div>
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-heart"></i> Eudaimonía</h3>
+                    <p class="list-content">Buscaba la felicidad a través de la moderación, la tranquilidad y el cultivo del alma.</p>
+                </div>
+                 <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-seedling"></i> Alma</h3>
+                    <p class="list-content">Creía que el alma estaba compuesta de átomos esféricos, lisos y móviles.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slide" id="slide5">
+            <h2 class="slide-title">Legado e Influencia</h2>
+            <p class="slide-content">Aunque rechazada por Platón y Aristóteles, su teoría resurgió en la ciencia moderna.</p>
+            <div class="list">
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-flask"></i> John Dalton</h3>
+                    <p class="list-content">La teoría atómica de Dalton (1803) retomó las ideas de Demócrito con base experimental.</p>
+                </div>
+                <div class="list-item">
+                    <h3 class="list-title"><i class="fas fa-microscope"></i> Ciencia Actual</h3>
+                    <p class="list-content">La física de partículas es el desarrollo moderno de su visión fundamental del universo.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide" id="slide6">
+            <h2 class="slide-title">Conclusión</h2>
+            <p class="slide-content">"Nada existe excepto átomos y espacio vacío; todo lo demás es opinión."</p>
+            <p class="slide-content">Un visionario cuya concepción racionalista y materialista del universo anticipó la ciencia moderna en más de dos milenios.</p>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="nav-btn" id="prev-btn" aria-label="Previous Slide">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="slide-indicator">
+            <span id="current-slide">1</span> / <span id="total-slides">6</span>
+        </div>
+        <button class="nav-btn" id="next-btn" aria-label="Next Slide">
+            <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
