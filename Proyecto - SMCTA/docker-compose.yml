@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # ==============================================================================
+  # 1. Base de Datos Relacional Multi-Tenant (PostgreSQL 15)
+  # ==============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: smcta-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-smcta_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smcta_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-smcta_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smcta_admin} -d ${POSTGRES_DB:-smcta_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - smcta-network
+
+  # ==============================================================================
+  # 2. Motor de Concurrencia y Cache Distribuida (Redis 7)
+  # ==============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: smcta-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - smcta-network
+
+# ==============================================================================
+# Red Compartida para Intercomunicación de Microservicios SMCTA
+# ==============================================================================
+networks:
+  smcta-network:
+    name: smcta-network
+    driver: bridge
+
+# ==============================================================================
+# Volúmenes Persistentes
+# ==============================================================================
+volumes:
+  postgres_data:
+    name: smcta_postgres_data
+  redis_data:
+    name: smcta_redis_data

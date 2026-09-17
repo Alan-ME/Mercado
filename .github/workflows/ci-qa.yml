@@ -1,0 +1,122 @@
+name: SMCTA - CI Pipeline & QA Checklist Verification
+
+on:
+  push:
+    branches: [ main, develop, feature/** ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ============================================================================
+  # 1. Typecheck y Verificación Estática
+  # ============================================================================
+  typecheck:
+    name: Typecheck & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            Proyecto - SMCTA/gateway/package.json
+            Proyecto - SMCTA/psp-mock/package.json
+            Proyecto - SMCTA/admin-portal/package.json
+            Proyecto - SMCTA/tpv-app/package.json
+            Proyecto - SMCTA/qa-e2e/package.json
+
+      - name: Typecheck Gateway
+        run: |
+          cd "Proyecto - SMCTA/gateway"
+          npm ci
+          npx tsc --noEmit
+
+      - name: Typecheck PSP Mock
+        run: |
+          cd "Proyecto - SMCTA/psp-mock"
+          npm ci
+          npx tsc --noEmit
+
+      - name: Typecheck Admin Portal
+        run: |
+          cd "Proyecto - SMCTA/admin-portal"
+          npm ci
+          npx tsc --noEmit
+
+      - name: Typecheck Terminal TPV
+        run: |
+          cd "Proyecto - SMCTA/tpv-app"
+          npm ci
+          npx tsc --noEmit
+
+      - name: Typecheck QA E2E Suite
+        run: |
+          cd "Proyecto - SMCTA/qa-e2e"
+          npm ci
+          npx tsc --noEmit
+
+  # ============================================================================
+  # 2. Pruebas Unitarias de Componentes
+  # ============================================================================
+  unit-tests:
+    name: Component Unit Tests
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Test Gateway (Multi-Tenant Resolver)
+        run: |
+          cd "Proyecto - SMCTA/gateway"
+          npm ci
+          npm test
+
+      - name: Test PSP Mock (Escrow & Webhooks)
+        run: |
+          cd "Proyecto - SMCTA/psp-mock"
+          npm ci
+          npm test
+
+      - name: Test Admin Portal (B2B Theming & Limits)
+        run: |
+          cd "Proyecto - SMCTA/admin-portal"
+          npm ci
+          npm test
+
+      - name: Test Terminal TPV (QR Scanner & Audio)
+        run: |
+          cd "Proyecto - SMCTA/tpv-app"
+          npm ci
+          npm test
+
+  # ============================================================================
+  # 3. Auditoría Obligatoria del QA Checklist (QA-01 a QA-04)
+  # ============================================================================
+  qa-checklist-e2e:
+    name: QA Checklist E2E Verification (QA-01 -> QA-04)
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Official QA E2E Suite
+        run: |
+          cd "Proyecto - SMCTA/qa-e2e"
+          npm ci
+          npm test
