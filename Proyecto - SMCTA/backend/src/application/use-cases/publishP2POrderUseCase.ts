@@ -5,7 +5,7 @@ import { PriceCollarCalculator } from '../../domain/calculators/priceCollarCalcu
 import { CouponStateMachine } from '../../domain/state-machine/couponStateMachine.js';
 import { Database } from '../../infrastructure/database/db.js';
 import { CouponState, OrderSide, OrderStatus, P2POrder, TenantConfig } from '../../domain/entities/index.js';
-import { DailyResaleLimitReachedError, NotFoundError } from '../../shared/errors.js';
+import { BadRequestError, DailyResaleLimitReachedError, NotFoundError } from '../../shared/errors.js';
 
 export interface PublishP2POrderInput {
   tenant: TenantConfig;
@@ -37,6 +37,15 @@ export class PublishP2POrderUseCase {
 
       CouponStateMachine.assertInWallet(coupon.state);
 
+      if (tenant.closureHoursBeforeEvent && coupon.expirationDate) {
+        const cutoffMs = new Date(coupon.expirationDate).getTime() - (tenant.closureHoursBeforeEvent * 3600 * 1000);
+        if (Date.now() >= cutoffMs) {
+          throw new BadRequestError(
+            `La ventana de comercialización para este evento ha cerrado (${tenant.closureHoursBeforeEvent}h antes del evento/vencimiento).`
+          );
+        }
+      }
+
       PriceCollarCalculator.validate(
         askingPrice,
         coupon.nominalPrice,
@@ -45,6 +54,11 @@ export class PublishP2POrderUseCase {
       );
 
       return Database.withTransaction(async (client) => {
+        const lockedCoupon = await CouponRepository.findById(tenant.tenantId, couponId, client, true);
+        if (!lockedCoupon || lockedCoupon.state !== CouponState.EN_WALLET) {
+          throw new BadRequestError('El cupón ya no se encuentra disponible para publicación.');
+        }
+
         await CouponRepository.updateState(
           tenant.tenantId,
           couponId,
@@ -69,3 +83,4 @@ export class PublishP2POrderUseCase {
     });
   }
 }
+
