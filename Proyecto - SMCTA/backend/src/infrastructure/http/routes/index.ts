@@ -33,8 +33,17 @@ router.get('/api/v1/tenant/config', (req, res) => {
 router.post('/api/v1/checkout/primary', CheckoutController.checkoutPrimary);
 router.get('/api/v1/coupons/my-wallet', WalletController.getMyWallet);
 router.get('/api/v1/coupons/:id/qr-token', WalletController.getQRToken);
+
+// P2P Marketplace
 router.post('/api/v1/p2p/orders', OrderController.publishOrder);
 router.get('/api/v1/p2p/orders', OrderController.listOpenOrders);
+router.get('/api/v1/p2p/orders/my-orders', OrderController.listMyOrders);
 router.post('/api/v1/p2p/orders/:id/buy', OrderController.buyOrder);
+router.delete('/api/v1/p2p/orders/:id', OrderController.cancelOrder);
+router.post('/api/v1/p2p/simulate-quote', OrderController.simulateQuote);
+router.get('/api/v1/p2p/price-range/:couponId', OrderController.getPriceRange);
+
+// TPV & Escrow Audit
 router.post('/api/v1/tpv/validate-qr', TPVController.validateQR);
 router.get('/api/v1/escrow/audit', EscrowAuditController.getTenantAudit);
+
