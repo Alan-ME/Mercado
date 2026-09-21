@@ -33,14 +33,23 @@ export class MatchP2POrderUseCase {
 
     return DistributedLockService.withCouponLock(order.couponId, async () => {
       return Database.withTransaction(async (client) => {
-        const currentOrder = await OrderRepository.findById(tenant.tenantId, orderId, client);
+        const currentOrder = await OrderRepository.findById(tenant.tenantId, orderId, client, true);
         if (!currentOrder || currentOrder.status !== OrderStatus.OPEN) {
           throw new P2POrderLockedError(`La orden ya no está disponible para compra.`);
         }
 
-        const coupon = await CouponRepository.findById(tenant.tenantId, order.couponId, client);
+        const coupon = await CouponRepository.findById(tenant.tenantId, order.couponId, client, true);
         if (!coupon || coupon.state !== CouponState.PUBLICADO_P2P) {
           throw new P2POrderLockedError(`El cupón ya no está disponible para venta P2P.`);
+        }
+
+        if (tenant.closureHoursBeforeEvent && coupon.expirationDate) {
+          const cutoffMs = new Date(coupon.expirationDate).getTime() - (tenant.closureHoursBeforeEvent * 3600 * 1000);
+          if (Date.now() >= cutoffMs) {
+            throw new BadRequestError(
+              `La ventana de comercialización para este evento ha cerrado (${tenant.closureHoursBeforeEvent}h antes del evento/vencimiento).`
+            );
+          }
         }
 
         const breakdown = FeeCalculator.calculateBreakdown({

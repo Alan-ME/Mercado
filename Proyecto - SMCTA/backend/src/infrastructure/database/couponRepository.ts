@@ -29,14 +29,33 @@ export class CouponRepository {
     },
     client?: pg.PoolClient
   ): Promise<Coupon> {
+    const columns: string[] = [
+      'tenant_id',
+      'current_owner_id',
+      'nominal_price',
+      'state',
+      'qr_encrypted_token',
+      'expiration_date'
+    ];
+    const params: any[] = [
+      data.tenantId,
+      data.currentOwnerId,
+      data.nominalPrice,
+      data.state,
+      data.qrEncryptedToken,
+      data.expirationDate
+    ];
+
+    if (data.couponId) {
+      columns.unshift('coupon_id');
+      params.unshift(data.couponId);
+    }
+
+    const placeholders = params.map((_, i) => `$${i + 1}`).join(', ');
+
     const sql = `
-      INSERT INTO coupons (
-        ${data.couponId ? 'coupon_id,' : ''}
-        tenant_id, current_owner_id, nominal_price, state, qr_encrypted_token, expiration_date
-      ) VALUES (
-        ${data.couponId ? '$7,' : ''}
-        $1, $2, $3, $4, $5, $6
-      )
+      INSERT INTO coupons (${columns.join(', ')})
+      VALUES (${placeholders})
       RETURNING 
         coupon_id AS "couponId",
         tenant_id AS "tenantId",
@@ -48,16 +67,6 @@ export class CouponRepository {
         created_at AS "createdAt";
     `;
 
-    const params = [
-      data.tenantId,
-      data.currentOwnerId,
-      data.nominalPrice,
-      data.state,
-      data.qrEncryptedToken,
-      data.expirationDate
-    ];
-    if (data.couponId) params.push(data.couponId);
-
     const res = client 
       ? await client.query(sql, params)
       : await Database.query(sql, params);
@@ -68,7 +77,8 @@ export class CouponRepository {
   public static async findById(
     tenantId: string,
     couponId: string,
-    client?: pg.PoolClient
+    client?: pg.PoolClient,
+    forUpdate = false
   ): Promise<Coupon | null> {
     const sql = `
       SELECT 
@@ -82,6 +92,7 @@ export class CouponRepository {
         created_at AS "createdAt"
       FROM coupons
       WHERE tenant_id = $1 AND coupon_id = $2
+      ${forUpdate ? 'FOR UPDATE' : ''}
       LIMIT 1;
     `;
 
@@ -90,6 +101,24 @@ export class CouponRepository {
       : await Database.query(sql, [tenantId, couponId]);
 
     return res.rows[0] ? this.mapRow(res.rows[0]) : null;
+  }
+
+  public static async updateQrToken(
+    tenantId: string,
+    couponId: string,
+    qrToken: string,
+    client?: pg.PoolClient
+  ): Promise<void> {
+    const sql = `
+      UPDATE coupons
+      SET qr_encrypted_token = $3
+      WHERE tenant_id = $1 AND coupon_id = $2;
+    `;
+    if (client) {
+      await client.query(sql, [tenantId, couponId, qrToken]);
+    } else {
+      await Database.query(sql, [tenantId, couponId, qrToken]);
+    }
   }
 
   public static async findByOwner(tenantId: string, ownerId: string): Promise<Coupon[]> {

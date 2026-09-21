@@ -118,6 +118,10 @@ describe('Suite de Integración API REST SMCTA Backend Core', () => {
       return inMemoryOrders.filter((o) => o.status === OrderStatus.OPEN);
     });
 
+    vi.spyOn(OrderRepository, 'findBySeller').mockImplementation(async (_tId: string, sId: string) => {
+      return inMemoryOrders.filter((o) => o.sellerId === sId);
+    });
+
     vi.spyOn(OrderRepository, 'updateStatus').mockImplementation(async (_tId: string, oId: string, status: any) => {
       const o = inMemoryOrders.find((x) => x.orderId === oId);
       if (o) o.status = status;
@@ -351,4 +355,115 @@ describe('Suite de Integración API REST SMCTA Backend Core', () => {
     expect(res.body.summary).toBeDefined();
     expect(Array.isArray(res.body.ledgerEntries)).toBe(true);
   });
+
+  it('DELETE /api/v1/p2p/orders/:id debe cancelar la orden y retornar el cupón a EN_WALLET', async () => {
+    // 1. Crear cupón y publicar orden
+    const checkRes = await request(app)
+      .post('/api/v1/checkout/primary')
+      .set('x-tenant-id', mockTenant.tenantId)
+      .send({ userId: sellerId, nominalPrice: 100.00 });
+    const couponId = checkRes.body.data.coupon.couponId;
+
+    const pubRes = await request(app)
+      .post('/api/v1/p2p/orders')
+      .set('x-tenant-id', mockTenant.tenantId)
+      .send({ sellerId, couponId, askingPrice: 110.00 });
+    const orderId = pubRes.body.data.orderId;
+
+    // 2. Cancelar orden
+    const cancelRes = await request(app)
+      .delete(`/api/v1/p2p/orders/${orderId}`)
+      .set('x-tenant-id', mockTenant.tenantId)
+      .set('x-user-id', sellerId);
+
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.data.status).toBe(OrderStatus.CANCELLED);
+    expect(cancelRes.body.data.couponState).toBe(CouponState.EN_WALLET);
+
+    // 3. Verificar estado en memoria
+    const orderInMem = inMemoryOrders.find((o) => o.orderId === orderId);
+    expect(orderInMem.status).toBe(OrderStatus.CANCELLED);
+
+    const couponInMem = inMemoryCoupons.find((c) => c.couponId === couponId);
+    expect(couponInMem.state).toBe(CouponState.EN_WALLET);
+  });
+
+  it('GET /api/v1/p2p/orders/my-orders debe listar las órdenes del vendedor autenticado', async () => {
+    const res = await request(app)
+      .get(`/api/v1/p2p/orders/my-orders?userId=${sellerId}`)
+      .set('x-tenant-id', mockTenant.tenantId);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it('POST /api/v1/p2p/simulate-quote debe calcular split de comisiones sin persistir datos', async () => {
+    const initialOrdersCount = inMemoryOrders.length;
+    const initialLedgersCount = inMemoryLedgers.length;
+
+    const res = await request(app)
+      .post('/api/v1/p2p/simulate-quote')
+      .set('x-tenant-id', mockTenant.tenantId)
+      .send({ askingPrice: 150.00, nominalPrice: 100.00 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.simulation).toBeDefined();
+    expect(res.body.data.priceCollar.isWithinCollar).toBe(true);
+    expect(res.body.data.simulation.askingPrice).toBe(150.00);
+
+    // Verificar que no hubo mutaciones en base de datos/memoria
+    expect(inMemoryOrders.length).toBe(initialOrdersCount);
+    expect(inMemoryLedgers.length).toBe(initialLedgersCount);
+  });
+
+  it('GET /api/v1/p2p/price-range/:couponId debe devolver el rango permitido para el slider UI', async () => {
+    const checkRes = await request(app)
+      .post('/api/v1/checkout/primary')
+      .set('x-tenant-id', mockTenant.tenantId)
+      .send({ userId: sellerId, nominalPrice: 100.00 });
+    const couponId = checkRes.body.data.coupon.couponId;
+
+    const res = await request(app)
+      .get(`/api/v1/p2p/price-range/${couponId}`)
+      .set('x-tenant-id', mockTenant.tenantId);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.nominalPrice).toBe(100.00);
+    expect(res.body.data.minPrice).toBe(50.00); // 50% de 100
+    expect(res.body.data.maxPrice).toBe(200.00); // 200% de 100
+  });
+
+  it('POST /api/v1/p2p/orders debe rechazar publicación si la ventana de evento ha cerrado (closureHoursBeforeEvent)', async () => {
+    // Crear cupón que expira en 1 hora (el tenant exige 2 horas de anticipación)
+    const expirationDate = new Date(Date.now() + 1 * 3600 * 1000).toISOString();
+
+    const checkRes = await request(app)
+      .post('/api/v1/checkout/primary')
+      .set('x-tenant-id', mockTenant.tenantId)
+      .send({ userId: sellerId, nominalPrice: 100.00, expirationDate });
+    const couponId = checkRes.body.data.coupon.couponId;
+
+    const pubRes = await request(app)
+      .post('/api/v1/p2p/orders')
+      .set('x-tenant-id', mockTenant.tenantId)
+      .send({ sellerId, couponId, askingPrice: 100.00 });
+
+    expect(pubRes.status).toBe(400);
+    expect(pubRes.body.message).toContain('cerrado');
+  });
+
+  it('POST /api/v1/checkout/primary debe persistir un token criptográfico firmado real, no pending_initial_token', async () => {
+    const checkRes = await request(app)
+      .post('/api/v1/checkout/primary')
+      .set('x-tenant-id', mockTenant.tenantId)
+      .send({ userId: buyerId, nominalPrice: 100.00 });
+
+    expect(checkRes.status).toBe(201);
+    const couponId = checkRes.body.data.coupon.couponId;
+    const couponInMem = inMemoryCoupons.find((c) => c.couponId === couponId);
+
+    expect(couponInMem.qrEncryptedToken).not.toBe('pending_initial_token');
+    expect(couponInMem.qrEncryptedToken.length).toBeGreaterThan(30);
+  });
 });
+

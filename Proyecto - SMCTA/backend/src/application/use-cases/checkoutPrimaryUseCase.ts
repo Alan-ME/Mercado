@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { CouponRepository } from '../../infrastructure/database/couponRepository.js';
 import { LedgerRepository } from '../../infrastructure/database/ledgerRepository.js';
 import { QRTokenService } from '../../infrastructure/security/qrTokenService.js';
@@ -14,29 +15,31 @@ export interface CheckoutPrimaryInput {
 export class CheckoutPrimaryUseCase {
   public static async execute(input: CheckoutPrimaryInput): Promise<{ coupon: Coupon; qrToken: string }> {
     return Database.withTransaction(async (client) => {
-      const tempToken = 'pending_initial_token';
+      const couponId = crypto.randomUUID();
+
+      const { tokenString } = QRTokenService.generateToken({
+        couponId,
+        tenantId: input.tenantId,
+        ownerId: input.userId
+      });
+
       const coupon = await CouponRepository.create(
         {
+          couponId,
           tenantId: input.tenantId,
           currentOwnerId: input.userId,
           nominalPrice: input.nominalPrice,
           state: CouponState.EN_WALLET,
-          qrEncryptedToken: tempToken,
+          qrEncryptedToken: tokenString,
           expirationDate: input.expirationDate
         },
         client
       );
 
-      const { tokenString } = QRTokenService.generateToken({
-        couponId: coupon.couponId,
-        tenantId: input.tenantId,
-        ownerId: input.userId
-      });
-
       await LedgerRepository.recordEntry(
         {
           tenantId: input.tenantId,
-          couponId: coupon.couponId,
+          couponId,
           transactionType: LedgerTransactionType.CHECKOUT,
           amountInEscrow: input.nominalPrice,
           tenantFeeAccumulated: 0.00
@@ -44,8 +47,8 @@ export class CheckoutPrimaryUseCase {
         client
       );
 
-      coupon.qrEncryptedToken = tokenString;
       return { coupon, qrToken: tokenString };
     }, 'SERIALIZABLE');
   }
 }
+
