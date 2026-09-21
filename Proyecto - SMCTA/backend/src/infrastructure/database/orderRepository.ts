@@ -29,14 +29,26 @@ export class OrderRepository {
     },
     client?: pg.PoolClient
   ): Promise<P2POrder> {
+    const columns: string[] = ['tenant_id', 'coupon_id', 'seller_id', 'asking_price', 'side', 'status'];
+    const params: any[] = [
+      data.tenantId,
+      data.couponId,
+      data.sellerId,
+      data.askingPrice,
+      data.side || OrderSide.SELL,
+      data.status || OrderStatus.OPEN
+    ];
+
+    if (data.orderId) {
+      columns.unshift('order_id');
+      params.unshift(data.orderId);
+    }
+
+    const placeholders = params.map((_, i) => `$${i + 1}`).join(', ');
+
     const sql = `
-      INSERT INTO p2p_orders (
-        ${data.orderId ? 'order_id,' : ''}
-        tenant_id, coupon_id, seller_id, asking_price, side, status
-      ) VALUES (
-        ${data.orderId ? '$6,' : ''}
-        $1, $2, $3, $4, $5, $6
-      )
+      INSERT INTO p2p_orders (${columns.join(', ')})
+      VALUES (${placeholders})
       RETURNING 
         order_id AS "orderId",
         tenant_id AS "tenantId",
@@ -48,16 +60,6 @@ export class OrderRepository {
         created_at AS "createdAt";
     `;
 
-    const params = [
-      data.tenantId,
-      data.couponId,
-      data.sellerId,
-      data.askingPrice,
-      data.side || OrderSide.SELL,
-      data.status || OrderStatus.OPEN
-    ];
-    if (data.orderId) params.push(data.orderId);
-
     const res = client
       ? await client.query(sql, params)
       : await Database.query(sql, params);
@@ -68,7 +70,8 @@ export class OrderRepository {
   public static async findById(
     tenantId: string,
     orderId: string,
-    client?: pg.PoolClient
+    client?: pg.PoolClient,
+    forUpdate = false
   ): Promise<P2POrder | null> {
     const sql = `
       SELECT 
@@ -82,6 +85,7 @@ export class OrderRepository {
         created_at AS "createdAt"
       FROM p2p_orders
       WHERE tenant_id = $1 AND order_id = $2
+      ${forUpdate ? 'FOR UPDATE' : ''}
       LIMIT 1;
     `;
 
@@ -109,6 +113,26 @@ export class OrderRepository {
     `;
 
     const res = await Database.query(sql, [tenantId]);
+    return res.rows.map((r) => this.mapRow(r));
+  }
+
+  public static async findBySeller(tenantId: string, sellerId: string): Promise<P2POrder[]> {
+    const sql = `
+      SELECT 
+        order_id AS "orderId",
+        tenant_id AS "tenantId",
+        coupon_id AS "couponId",
+        seller_id AS "sellerId",
+        asking_price AS "askingPrice",
+        side,
+        status,
+        created_at AS "createdAt"
+      FROM p2p_orders
+      WHERE tenant_id = $1 AND seller_id = $2
+      ORDER BY created_at DESC;
+    `;
+
+    const res = await Database.query(sql, [tenantId, sellerId]);
     return res.rows.map((r) => this.mapRow(r));
   }
 
