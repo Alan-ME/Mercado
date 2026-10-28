@@ -97,14 +97,17 @@ async function loadExistingSeed(db: Database): Promise<SeedResult | null> {
     tenant_id: string;
     subdomain: string;
     company_name: string;
-  }>('SELECT tenant_id, subdomain, company_name FROM tenants ORDER BY company_name ASC');
+  }>(
+    `SELECT tenant_id, subdomain, company_name FROM tenants
+     ORDER BY CASE subdomain WHEN 'festival' THEN 1 WHEN 'hotel' THEN 2 WHEN 'sneakers' THEN 3 ELSE 4 END, created_at ASC`,
+  );
 
   if (existing.length === 0) return null;
 
   const tenants: SeedTenantSummary[] = [];
   for (const t of existing) {
     const { rows: us } = await db.query<{ user_id: string; display_name: string }>(
-      'SELECT user_id, display_name FROM users WHERE tenant_id = $1 ORDER BY created_at ASC',
+      'SELECT user_id, display_name FROM users WHERE tenant_id = $1 ORDER BY display_name ASC',
       [t.tenant_id],
     );
     tenants.push({

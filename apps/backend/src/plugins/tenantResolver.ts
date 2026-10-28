@@ -2,44 +2,60 @@ import type { FastifyRequest } from 'fastify';
 import { AppError, ErrorCode } from '@smcta/shared';
 import type { ServiceContext } from '../services/context.js';
 import { findTenantBySubdomain, findTenantById } from '../repositories/tenantRepo.js';
+import type { TenantRow } from '../repositories/mappers.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const IPV4_RE = /^\d{1,3}(?:\.\d{1,3}){3}$/;
 
-/**
- * TASK-007: resuelve el contexto B2B (tenant) por subdominio o cabecera x-tenant-id.
- *
- * Orden de resolución:
- *  1. Header `x-tenant-id`: acepta el UUID del tenant O su subdominio
- *     (conveniencia para apps móviles y desarrollo local, como indica el doc).
- *  2. Subdominio del Host (ej. `festival.smcta.local` => `festival`).
- *
- * Si no resuelve => TENANT_NOT_FOUND (HTTP 404). Inyecta req.tenant.
- */
+// Ignoramos IPs crudas (ej. 127.0.0.1) y localhost pelado para no tirar un SELECT inútil buscando el tenant "127".
+function extractHostSubdomain(rawHost: string): string {
+  const hostname = rawHost.split(':')[0]!.trim().toLowerCase();
+  if (!hostname || hostname === 'localhost' || IPV4_RE.test(hostname)) return '';
+  const parts = hostname.split('.');
+  return parts.length >= 2 ? parts[0]! : '';
+}
+
+function readTrimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function readQueryTenant(query: unknown): string {
+  if (!query || typeof query !== 'object') return '';
+  return readTrimmedString((query as Record<string, unknown>).tenant);
+}
+
+async function lookupTenantByHint(ctx: ServiceContext, hint: string): Promise<TenantRow | null> {
+  if (!hint) return null;
+  if (UUID_RE.test(hint)) return findTenantById(ctx.db, hint);
+  return findTenantBySubdomain(ctx.db, hint);
+}
+
+async function findFirstMatchingTenant(
+  ctx: ServiceContext,
+  hints: string[],
+): Promise<TenantRow | null> {
+  for (const hint of hints) {
+    const found = await lookupTenantByHint(ctx, hint);
+    if (found) return found;
+  }
+  return null;
+}
+
+// Orden de prioridad: x-tenant-id -> subdominio del Host -> query ?tenant= (necesario para EventSource SSE en navegador, que no deja mandar headers custom).
 export async function resolveTenant(
   ctx: ServiceContext,
   request: FastifyRequest,
 ): Promise<void> {
-  const header = (request.headers['x-tenant-id'] as string | undefined)?.trim();
-  const host = (request.headers.host ?? '').split(':')[0] ?? '';
-  const subdomainFromHost = host.split('.')[0] ?? '';
+  const headerHint = readTrimmedString(request.headers['x-tenant-id']);
+  const hostHint = extractHostSubdomain(readTrimmedString(request.headers.host));
+  const queryHint = readQueryTenant(request.query);
 
-  let tenant = null;
-
-  if (header) {
-    tenant = UUID_RE.test(header)
-      ? await findTenantById(ctx.db, header)
-      : await findTenantBySubdomain(ctx.db, header);
-  }
-
-  if (!tenant && subdomainFromHost && subdomainFromHost !== 'localhost') {
-    tenant = await findTenantBySubdomain(ctx.db, subdomainFromHost);
-  }
-
+  const tenant = await findFirstMatchingTenant(ctx, [headerHint, hostHint, queryHint]);
   if (!tenant) {
     throw new AppError(
       ErrorCode.TENANT_NOT_FOUND,
       'Tenant B2B no encontrado o inactivo. Enviá el subdominio o la cabecera x-tenant-id.',
-      { hostSubdomain: subdomainFromHost, header: header ?? null },
+      { hostSubdomain: hostHint, header: headerHint },
     );
   }
 

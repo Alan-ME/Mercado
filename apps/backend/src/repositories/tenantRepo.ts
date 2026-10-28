@@ -1,5 +1,5 @@
 import type { Queryable } from '../db/database.js';
-import { type TenantRow } from './mappers.js';
+import { hydrateTenantRow, type RawTenantRow, type TenantRow } from './mappers.js';
 
 const COLS = `tenant_id, company_name, subdomain, seller_take_rate, buyer_take_rate,
   price_floor_pct, price_ceiling_pct, max_daily_resales_per_user, closure_hours_before_event,
@@ -10,22 +10,22 @@ export async function findTenantBySubdomain(
   db: Queryable,
   subdomain: string,
 ): Promise<TenantRow | null> {
-  const { rows } = await db.query<TenantRow>(
+  const { rows } = await db.query<RawTenantRow>(
     `SELECT ${COLS} FROM tenants WHERE subdomain = $1`,
     [subdomain],
   );
-  return rows[0] ?? null;
+  return rows[0] ? hydrateTenantRow(rows[0]) : null;
 }
 
 export async function findTenantById(
   db: Queryable,
   tenantId: string,
 ): Promise<TenantRow | null> {
-  const { rows } = await db.query<TenantRow>(
+  const { rows } = await db.query<RawTenantRow>(
     `SELECT ${COLS} FROM tenants WHERE tenant_id = $1`,
     [tenantId],
   );
-  return rows[0] ?? null;
+  return rows[0] ? hydrateTenantRow(rows[0]) : null;
 }
 
 export interface TenantConfigPatch {

@@ -3,12 +3,16 @@ import {
   ErrorCode,
   CouponState,
   LedgerTransactionType,
+  canTransition,
+  isTerminal,
   d,
   money,
 } from '@smcta/shared';
+import type { Queryable } from '../db/database.js';
 import type { ServiceContext } from './context.js';
-import { type TenantRow, toNum } from '../repositories/mappers.js';
+import { type CouponRow, type TenantRow, toNum } from '../repositories/mappers.js';
 import { findCouponById, updateCouponState } from '../repositories/couponRepo.js';
+import { cancelOpenOrdersByCoupon } from '../repositories/orderRepo.js';
 import {
   getEscrowTotals,
   getLiveCouponsNominal,
@@ -24,16 +28,21 @@ export interface EscrowAudit {
   isBalanced: boolean;
   tenantFeesAccumulated: number;
   platformFeesAccumulated: number;
-  // Analítica de canjes (Propuesta §6.2 - Monitor de Salud Financiera y Escrow).
   redeemed: number;
   expired: number;
   redemptionRatePct: number;
 }
 
-/**
- * TASK-006 / QA-03: audita que el saldo en custodia coincida EXACTAMENTE con el
- * valor nominal de los cupones vivos (EN_WALLET + PUBLICADO_P2P). Diferencia = 0.
- */
+function countFromStateMap(byState: Map<string, number>, key: string): number {
+  const val = byState.get(key);
+  return val === undefined ? 0 : val;
+}
+
+function computeRedemptionRate(redeemed: number, expired: number): number {
+  const closed = redeemed + expired;
+  return closed === 0 ? 0 : money(d(redeemed).div(closed).mul(100));
+}
+
 export async function auditEscrow(
   ctx: ServiceContext,
   tenant: TenantRow,
@@ -47,10 +56,8 @@ export async function auditEscrow(
     [tenant.tenant_id],
   );
   const byState = new Map(rows.map((r) => [r.state, Number(r.n)]));
-  const redeemed = byState.get('CANJEADO') ?? 0;
-  const expired = byState.get('VENCIDO') ?? 0;
-  const closed = redeemed + expired;
-  const redemptionRatePct = closed === 0 ? 0 : money(d(redeemed).div(closed).mul(100));
+  const redeemed = countFromStateMap(byState, 'CANJEADO');
+  const expired = countFromStateMap(byState, 'VENCIDO');
 
   return {
     tenantId: tenant.tenant_id,
@@ -62,81 +69,97 @@ export async function auditEscrow(
     platformFeesAccumulated: totals.platformFeesAccumulated,
     redeemed,
     expired,
-    redemptionRatePct,
+    redemptionRatePct: computeRedemptionRate(redeemed, expired),
   };
 }
 
-/**
- * RN-04: expira cupones cuya ventana venció. Los pasa a VENCIDO, cancela órdenes
- * abiertas y libera el escrow al comercio (breakage). Idempotente por estado.
- */
+async function hasTerminalLedgerEntry(tx: Queryable, couponId: string): Promise<boolean> {
+  const { rows } = await tx.query<{ n: string | number }>(
+    `SELECT COUNT(*)::int AS n FROM escrow_ledgers
+     WHERE coupon_id = $1 AND transaction_type IN ('REDEEM_RELEASE','REFUND')`,
+    [couponId],
+  );
+  const first = rows[0];
+  return first ? Number(first.n) > 0 : false;
+}
+
+async function expireSingleCoupon(
+  ctx: ServiceContext,
+  tenantId: string,
+  couponId: string,
+): Promise<boolean> {
+  return withLock(ctx.lockManager, couponLockKey(couponId), ctx.config.lockTtlMs, () =>
+    ctx.db.transactionSerializable(async (tx) => {
+      const fresh = await findCouponById(tx, tenantId, couponId);
+      if (!fresh || !canTransition(fresh.state, CouponState.VENCIDO)) {
+        return false;
+      }
+      await cancelOpenOrdersByCoupon(tx, couponId);
+      await updateCouponState(tx, couponId, CouponState.VENCIDO);
+      await insertLedgerEntry(tx, {
+        tenantId,
+        couponId,
+        transactionType: LedgerTransactionType.REDEEM_RELEASE,
+        amountInEscrow: -toNum(fresh.nominal_price),
+      });
+      return true;
+    }),
+  );
+}
+
 export async function expireDueCoupons(
   ctx: ServiceContext,
   tenant: TenantRow,
 ): Promise<{ expired: number }> {
-  const { rows } = await ctx.db.query<{ coupon_id: string; nominal_price: string | number }>(
-    `SELECT coupon_id, nominal_price FROM coupons
+  const nowIso = new Date(ctx.clock.now()).toISOString();
+  const { rows } = await ctx.db.query<{ coupon_id: string }>(
+    `SELECT coupon_id FROM coupons
      WHERE tenant_id = $1 AND state IN ('EN_WALLET','PUBLICADO_P2P')
-       AND expiration_date <= CURRENT_TIMESTAMP`,
-    [tenant.tenant_id],
+       AND expiration_date <= $2`,
+    [tenant.tenant_id, nowIso],
   );
 
+  let expired = 0;
   for (const c of rows) {
-    await withLock(ctx.lockManager, couponLockKey(c.coupon_id), ctx.config.lockTtlMs, () =>
-      ctx.db.transactionSerializable(async (tx) => {
-        await tx.query(
-          `UPDATE p2p_orders SET status = 'CANCELLED'
-           WHERE coupon_id = $1 AND status = 'OPEN'`,
-          [c.coupon_id],
-        );
-        await updateCouponState(tx, c.coupon_id, CouponState.VENCIDO);
-        await insertLedgerEntry(tx, {
-          tenantId: tenant.tenant_id,
-          couponId: c.coupon_id,
-          transactionType: LedgerTransactionType.REDEEM_RELEASE,
-          amountInEscrow: -toNum(c.nominal_price),
-        });
-      }),
-    );
+    const didExpire = await expireSingleCoupon(ctx, tenant.tenant_id, c.coupon_id);
+    if (didExpire) expired++;
   }
-  return { expired: rows.length };
+  return { expired };
 }
 
-/**
- * POST /escrow/webhook-release (Protocolo §3). Libera manualmente el escrow de un
- * cupón terminal (p. ej. reembolso/breakage disparado por el PSP). Idempotente:
- * no libera dos veces el mismo cupón.
- */
+async function closeCouponIfLive(tx: Queryable, coupon: CouponRow): Promise<void> {
+  if (isTerminal(coupon.state)) return;
+  await cancelOpenOrdersByCoupon(tx, coupon.coupon_id);
+  await updateCouponState(tx, coupon.coupon_id, CouponState.VENCIDO);
+}
+
+// Antes leían COUNT(*) afuera de la transacción y sin lock: dos reintentos simultáneos del
+// webhook del PSP pasaban los dos, restaban el nominal dos veces y dejaban la orden P2P colgada.
 export async function webhookRelease(
   ctx: ServiceContext,
   tenant: TenantRow,
   couponId: string,
   transactionType: LedgerTransactionType.REFUND | LedgerTransactionType.REDEEM_RELEASE,
 ): Promise<{ released: number }> {
-  const coupon = await findCouponById(ctx.db, tenant.tenant_id, couponId);
-  if (!coupon) {
-    throw new AppError(ErrorCode.COUPON_NOT_FOUND, 'Cupón no encontrado.', { couponId });
-  }
-  const { rows } = await ctx.db.query<{ n: string | number }>(
-    `SELECT COUNT(*)::int AS n FROM escrow_ledgers
-     WHERE coupon_id = $1 AND transaction_type IN ('REDEEM_RELEASE','REFUND')`,
-    [couponId],
-  );
-  if (Number(rows[0]?.n ?? 0) > 0) {
-    return { released: 0 }; // ya fue liberado
-  }
+  return withLock(ctx.lockManager, couponLockKey(couponId), ctx.config.lockTtlMs, () =>
+    ctx.db.transactionSerializable(async (tx) => {
+      const coupon = await findCouponById(tx, tenant.tenant_id, couponId);
+      if (!coupon) {
+        throw new AppError(ErrorCode.COUPON_NOT_FOUND, 'Cupón no encontrado.', { couponId });
+      }
+      if (await hasTerminalLedgerEntry(tx, couponId)) {
+        return { released: 0 };
+      }
 
-  const nominal = toNum(coupon.nominal_price);
-  await ctx.db.transactionSerializable(async (tx) => {
-    if (coupon.state !== CouponState.CANJEADO && coupon.state !== CouponState.VENCIDO) {
-      await updateCouponState(tx, couponId, CouponState.VENCIDO);
-    }
-    await insertLedgerEntry(tx, {
-      tenantId: tenant.tenant_id,
-      couponId,
-      transactionType,
-      amountInEscrow: -nominal,
-    });
-  });
-  return { released: nominal };
+      const nominal = toNum(coupon.nominal_price);
+      await closeCouponIfLive(tx, coupon);
+      await insertLedgerEntry(tx, {
+        tenantId: tenant.tenant_id,
+        couponId,
+        transactionType,
+        amountInEscrow: -nominal,
+      });
+      return { released: nominal };
+    }),
+  );
 }

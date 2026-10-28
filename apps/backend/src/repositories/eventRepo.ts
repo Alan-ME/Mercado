@@ -1,6 +1,7 @@
 import type { Queryable } from '../db/database.js';
 import { moneyStr } from '@smcta/shared';
 import { toNum, toIso } from './mappers.js';
+import type { EventHub } from '../infra/eventHub.js';
 
 export type UserEventType =
   | 'PRIMARY_PURCHASE'
@@ -31,11 +32,16 @@ export interface UserEventDTO {
   createdAt: string;
 }
 
-/**
- * Persiste un evento de actividad (canal in-app) y dispara la entrega externa.
- * La entrega push/email real se conecta en `deliverExternal` (hoy: log de consola);
- * un adaptador FCM/SMTP se enchufa aquí sin tocar el resto del sistema.
- */
+function defaultAmount(amount: number | undefined): number {
+  return amount === undefined ? 0 : amount;
+}
+
+function nullableId(id: string | null | undefined): string | null {
+  return id ? id : null;
+}
+
+// Acá solo insertamos en la tabla dentro de la transacción. El push SSE va afuera
+// del bloque SERIALIZABLE con notifyCommittedEvents para no emitir basura si hay retry.
 export async function emitEvent(q: Queryable, e: UserEventInput): Promise<void> {
   await q.query(
     `INSERT INTO user_events (tenant_id, user_id, type, title, amount, related_coupon_id, related_order_id)
@@ -45,18 +51,17 @@ export async function emitEvent(q: Queryable, e: UserEventInput): Promise<void> 
       e.userId,
       e.type,
       e.title,
-      moneyStr(e.amount ?? 0),
-      e.relatedCouponId ?? null,
-      e.relatedOrderId ?? null,
+      moneyStr(defaultAmount(e.amount)),
+      nullableId(e.relatedCouponId),
+      nullableId(e.relatedOrderId),
     ],
   );
-  deliverExternal(e);
 }
 
-/** Stub de entrega push/email (Visión in-scope). Reemplazable por FCM/SMTP. */
-function deliverExternal(e: UserEventInput): void {
-  // eslint-disable-next-line no-console
-  console.log(`[NOTIFY push/email] user=${e.userId} ${e.type}: ${e.title}`);
+export function notifyCommittedEvents(hub: EventHub, events: UserEventInput[]): void {
+  for (const e of events) {
+    hub.publish(e);
+  }
 }
 
 interface EventRow {
@@ -89,13 +94,14 @@ export async function listEvents(
   userId: string,
   opts: { type?: UserEventType; limit?: number } = {},
 ): Promise<UserEventDTO[]> {
+  const limit = opts.limit === undefined ? 50 : opts.limit;
   const params: unknown[] = [tenantId, userId];
   let where = 'tenant_id = $1 AND user_id = $2';
   if (opts.type) {
     params.push(opts.type);
     where += ` AND type = $${params.length}`;
   }
-  params.push(opts.limit ?? 50);
+  params.push(limit);
   const { rows } = await db.query<EventRow>(
     `SELECT event_id, type, title, amount, is_read, related_coupon_id, related_order_id, created_at
      FROM user_events WHERE ${where}
@@ -115,7 +121,8 @@ export async function countUnread(
      WHERE tenant_id = $1 AND user_id = $2 AND is_read = FALSE`,
     [tenantId, userId],
   );
-  return Number(rows[0]?.n ?? 0);
+  const first = rows[0];
+  return first ? Number(first.n) : 0;
 }
 
 export async function markAllRead(

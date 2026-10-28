@@ -6,15 +6,19 @@ import {
   RedisLockManager,
   type LockManager,
 } from './infra/lockManager.js';
-import type { ServiceContext } from './services/context.js';
+import { EventHub } from './infra/eventHub.js';
+import { systemClock, type Clock, type ServiceContext } from './services/context.js';
 
 export interface Bootstrapped {
   ctx: ServiceContext;
   seed: SeedResult;
 }
 
-/** Crea la BD (PGlite/pg), aplica el DDL, siembra datos y arma el contexto de servicios. */
-export async function bootstrap(config: AppConfig, withSeed = true): Promise<Bootstrapped> {
+export async function bootstrap(
+  config: AppConfig,
+  withSeed = true,
+  clock: Clock = systemClock,
+): Promise<Bootstrapped> {
   const db = await createDatabase(config);
   await migrate(db);
 
@@ -22,7 +26,8 @@ export async function bootstrap(config: AppConfig, withSeed = true): Promise<Boo
     ? await RedisLockManager.create(config.redisUrl)
     : new InProcessLockManager();
 
-  const ctx: ServiceContext = { db, lockManager, config };
+  const eventHub = new EventHub();
+  const ctx: ServiceContext = { db, lockManager, eventHub, clock, config };
   const seed = withSeed ? await seedDatabase(db) : { tenants: [] };
   return { ctx, seed };
 }

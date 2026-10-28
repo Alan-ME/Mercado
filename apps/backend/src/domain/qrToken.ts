@@ -1,21 +1,21 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { AppError, ErrorCode, type QRTokenPayload } from '@smcta/shared';
+import { type QrSecret, unwrapQrSecret } from './qrSecret.js';
 
-/**
- * Token QR dinámico anti-captura (TASK-003 / US-02).
- * - nonce aleatorio + timestamp por generación.
- * - firma HMAC-SHA256 con la clave secreta del tenant.
- * - expira a los `ttlMs` (30s exactos) => QR_TOKEN_EXPIRED (401).
- * - firma inválida => INVALID_QR_SIGNATURE (401).
- *
- * Formato de token: base64url(JSON.stringify(payloadConFirma)).
- */
+const MAX_FUTURE_SKEW_MS = 5_000;
 
-function canonical(p: Omit<QRTokenPayload, 'signature'>): string {
+type UnsignedPayload = Omit<QRTokenPayload, 'signature'>;
+
+// Si el token trae tokenVersion lo metemos en la cadena canónica; si no viene (clientes
+// viejos del protocolo base), mantenemos el formato de 5 partes para no romper compatibilidad.
+function canonical(p: UnsignedPayload): string {
+  if (p.tokenVersion !== undefined) {
+    return [p.couponId, p.tenantId, p.ownerId, String(p.tokenVersion), p.nonce, String(p.timestamp)].join('|');
+  }
   return [p.couponId, p.tenantId, p.ownerId, p.nonce, String(p.timestamp)].join('|');
 }
 
-function sign(secret: string, p: Omit<QRTokenPayload, 'signature'>): string {
+function sign(secret: string, p: UnsignedPayload): string {
   return createHmac('sha256', secret).update(canonical(p)).digest('hex');
 }
 
@@ -23,42 +23,16 @@ function b64urlEncode(s: string): string {
   return Buffer.from(s, 'utf-8').toString('base64url');
 }
 
-function b64urlDecode(s: string): string {
-  return Buffer.from(s, 'base64url').toString('utf-8');
-}
-
-export function generateQrToken(params: {
-  couponId: string;
-  tenantId: string;
-  ownerId: string;
-  secret: string;
-}): { token: string; payload: QRTokenPayload; expiresAt: number; ttlMs: number } {
-  const ttlMs = 30_000;
-  const base: Omit<QRTokenPayload, 'signature'> = {
-    couponId: params.couponId,
-    tenantId: params.tenantId,
-    ownerId: params.ownerId,
-    nonce: randomBytes(16).toString('hex'),
-    timestamp: Date.now(),
-  };
-  const signature = sign(params.secret, base);
-  const payload: QRTokenPayload = { ...base, signature };
-  const token = b64urlEncode(JSON.stringify(payload));
-  return { token, payload, expiresAt: base.timestamp + ttlMs, ttlMs };
-}
-
-export function verifyQrToken(
-  token: string,
-  secret: string,
-  ttlMs = 30_000,
-): QRTokenPayload {
-  let payload: QRTokenPayload;
+function parseTokenPayload(token: string): QRTokenPayload {
   try {
-    payload = JSON.parse(b64urlDecode(token)) as QRTokenPayload;
+    const raw = Buffer.from(token, 'base64url').toString('utf-8');
+    return JSON.parse(raw) as QRTokenPayload;
   } catch {
     throw new AppError(ErrorCode.INVALID_QR_SIGNATURE, 'Token QR malformado.');
   }
+}
 
+function assertValidSignature(secret: string, payload: QRTokenPayload): void {
   const { signature, ...base } = payload;
   const expected = sign(secret, base);
   const sigBuf = Buffer.from(signature ?? '', 'utf-8');
@@ -66,12 +40,53 @@ export function verifyQrToken(
   if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
     throw new AppError(ErrorCode.INVALID_QR_SIGNATURE, 'Firma del token QR inválida.');
   }
+}
 
-  if (Date.now() - payload.timestamp > ttlMs) {
+function assertValidWindow(timestamp: number, ttlMs: number, nowMs: number): void {
+  const ageMs = nowMs - timestamp;
+  if (ageMs < -MAX_FUTURE_SKEW_MS) {
+    throw new AppError(ErrorCode.INVALID_QR_SIGNATURE, 'Timestamp del token QR inválido.');
+  }
+  if (ageMs > ttlMs) {
     throw new AppError(ErrorCode.QR_TOKEN_EXPIRED, 'El token QR expiró (más de 30 segundos).', {
-      ageMs: Date.now() - payload.timestamp,
+      ageMs,
     });
   }
+}
 
+export function generateQrToken(params: {
+  couponId: string;
+  tenantId: string;
+  ownerId: string;
+  secret: QrSecret | string;
+  tokenVersion?: number;
+  ttlMs?: number;
+  nowMs?: number;
+}): { token: string; payload: QRTokenPayload; expiresAt: number; ttlMs: number } {
+  const ttlMs = params.ttlMs ?? 30_000;
+  const timestamp = params.nowMs ?? Date.now();
+  const base: UnsignedPayload = {
+    couponId: params.couponId,
+    tenantId: params.tenantId,
+    ownerId: params.ownerId,
+    nonce: randomBytes(16).toString('hex'),
+    timestamp,
+    ...(params.tokenVersion !== undefined ? { tokenVersion: params.tokenVersion } : {}),
+  };
+  const signature = sign(unwrapQrSecret(params.secret), base);
+  const payload: QRTokenPayload = { ...base, signature };
+  const token = b64urlEncode(JSON.stringify(payload));
+  return { token, payload, expiresAt: timestamp + ttlMs, ttlMs };
+}
+
+export function verifyQrToken(
+  token: string,
+  secret: QrSecret | string,
+  ttlMs = 30_000,
+  nowMs = Date.now(),
+): QRTokenPayload {
+  const payload = parseTokenPayload(token);
+  assertValidSignature(unwrapQrSecret(secret), payload);
+  assertValidWindow(payload.timestamp, ttlMs, nowMs);
   return payload;
 }

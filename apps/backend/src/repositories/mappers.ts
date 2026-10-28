@@ -7,21 +7,19 @@ import {
   OrderStatus,
   computeCommission,
 } from '@smcta/shared';
+import { QrSecret } from '../domain/qrSecret.js';
 
-/** Convierte a número tanto strings (driver pg) como números (PGlite). */
 export function toNum(v: unknown): number {
   if (typeof v === 'number') return v;
-  if (typeof v === 'string') return Number(v);
   return Number(v);
 }
 
-/** Convierte a ISO-8601 tanto Date como string. */
 export function toIso(v: unknown): string {
   if (v instanceof Date) return v.toISOString();
   return new Date(String(v)).toISOString();
 }
 
-export interface TenantRow {
+export interface RawTenantRow {
   tenant_id: string;
   company_name: string;
   subdomain: string;
@@ -38,6 +36,17 @@ export interface TenantRow {
   theme_surface_color: string;
   theme_font_family: string;
   theme_logo_url: string;
+}
+
+export interface TenantRow extends Omit<RawTenantRow, 'qr_secret'> {
+  qr_secret: QrSecret;
+}
+
+export function hydrateTenantRow(raw: RawTenantRow): TenantRow {
+  return {
+    ...raw,
+    qr_secret: QrSecret.fromRaw(raw.qr_secret),
+  };
 }
 
 export function tenantToConfigDTO(r: TenantRow): TenantConfigDTO {
@@ -98,6 +107,10 @@ export interface OrderRow {
   status: OrderStatus;
   buyer_id: string | null;
   created_at: string | Date;
+}
+
+export interface OrderWithNominalRow extends OrderRow {
+  nominal_price: string | number;
 }
 
 export function orderToDTO(

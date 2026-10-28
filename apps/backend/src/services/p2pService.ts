@@ -3,31 +3,47 @@ import {
   ErrorCode,
   CouponState,
   LedgerTransactionType,
+  allowsResale,
+  canTransition,
   computeCommission,
   computePriceCollar,
   isWithinCollar,
-  totalFees,
   platformShare,
+  tenantNetFees,
   type P2POrderDTO,
   type PublishOrderRequest,
 } from '@smcta/shared';
+import type { Queryable } from '../db/database.js';
 import type { ServiceContext } from './context.js';
-import { type TenantRow, toNum, orderToDTO } from '../repositories/mappers.js';
+import { type CouponRow, type OrderRow, type TenantRow, toNum, orderToDTO } from '../repositories/mappers.js';
 import { findCouponById, transferAndReissue, updateCouponState } from '../repositories/couponRepo.js';
 import {
   insertSellOrder,
   findOpenOrdersByTenant,
   findOrderById,
-  countOpenOrdersBySeller,
+  countDailyResalesBySeller,
   matchOrderIfOpen,
-  cancelOrder,
+  cancelOrderIfOpen,
 } from '../repositories/orderRepo.js';
 import { insertLedgerEntry } from '../repositories/ledgerRepo.js';
 import { couponLockKey, withLock } from '../infra/lockManager.js';
 import { generateQrToken } from '../domain/qrToken.js';
-import { emitEvent } from '../repositories/eventRepo.js';
+import { emitEvent, notifyCommittedEvents, type UserEventInput } from '../repositories/eventRepo.js';
 
-function rates(tenant: TenantRow) {
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 3_600_000;
+
+interface TenantRates {
+  seller: number;
+  buyer: number;
+  floor: number;
+  ceiling: number;
+  maxResales: number;
+  closureHours: number;
+  platformShare: number;
+}
+
+function rates(tenant: TenantRow): TenantRates {
   return {
     seller: toNum(tenant.seller_take_rate),
     buyer: toNum(tenant.buyer_take_rate),
@@ -39,81 +55,102 @@ function rates(tenant: TenantRow) {
   };
 }
 
-function toOrderDTO(tenant: TenantRow, row: Parameters<typeof orderToDTO>[0], nominal: number): P2POrderDTO {
+function toOrderDTO(tenant: TenantRow, row: OrderRow, nominal: number): P2POrderDTO {
   const r = rates(tenant);
   return orderToDTO(row, nominal, r.seller, r.buyer);
 }
 
-/**
- * US-03 / TASK-004: publica un cupón en el mercado P2P.
- * Valida propiedad, estado EN_WALLET, ventana (RN-06), límite diario (RN-05)
- * y banda de precios (RN-02 => PRICE_COLLAR_VIOLATION / HTTP 422).
- */
-export async function publishOrder(
-  ctx: ServiceContext,
-  tenant: TenantRow,
-  req: PublishOrderRequest,
-): Promise<P2POrderDTO> {
-  const r = rates(tenant);
-  const coupon = await findCouponById(ctx.db, tenant.tenant_id, req.couponId);
+function assertSellerCanPublish(coupon: CouponRow | null, couponId: string, sellerId: string): CouponRow {
   if (!coupon) {
-    throw new AppError(ErrorCode.COUPON_NOT_FOUND, 'Cupón no encontrado.', { couponId: req.couponId });
+    throw new AppError(ErrorCode.COUPON_NOT_FOUND, 'Cupón no encontrado.', { couponId });
   }
-  if (coupon.current_owner_id !== req.sellerId) {
+  if (coupon.current_owner_id !== sellerId) {
     throw new AppError(ErrorCode.FORBIDDEN, 'El cupón no pertenece al vendedor indicado.');
   }
-  if (coupon.state !== CouponState.EN_WALLET) {
+  if (!allowsResale(coupon.state) || !canTransition(coupon.state, CouponState.PUBLICADO_P2P)) {
     throw new AppError(
       ErrorCode.COUPON_NOT_IN_WALLET,
       `Sólo se puede publicar un cupón EN_WALLET (estado actual: ${coupon.state}).`,
       { state: coupon.state },
     );
   }
+  return coupon;
+}
 
-  // RN-06: ventana de reventa cerrada N horas antes del evento/caducidad.
+function assertTradingWindowOpen(coupon: CouponRow, closureHours: number, nowMs: number): void {
   const expiration = new Date(coupon.expiration_date).getTime();
-  const cutoff = expiration - r.closureHours * 3_600_000;
-  if (Date.now() >= cutoff) {
+  const cutoff = expiration - closureHours * HOUR_MS;
+  if (nowMs >= cutoff) {
     throw new AppError(
       ErrorCode.P2P_WINDOW_CLOSED,
-      `La ventana P2P cierra ${r.closureHours}h antes del evento.`,
+      `La ventana P2P cierra ${closureHours}h antes del evento.`,
       { closesAt: new Date(cutoff).toISOString() },
     );
   }
+}
 
-  // RN-05: límite de publicaciones activas por usuario.
-  const openCount = await countOpenOrdersBySeller(ctx.db, tenant.tenant_id, req.sellerId);
-  if (openCount >= r.maxResales) {
+function assertWithinPriceCollar(askingPrice: number, nominal: number, r: TenantRates): void {
+  const collar = computePriceCollar(nominal, r.floor, r.ceiling);
+  if (isWithinCollar(askingPrice, collar)) return;
+  const msg =
+    askingPrice > collar.max
+      ? `El precio excede el límite máximo permitido de $${collar.max.toFixed(2)}.`
+      : `El precio está por debajo del límite mínimo permitido de $${collar.min.toFixed(2)}.`;
+  throw new AppError(ErrorCode.PRICE_COLLAR_VIOLATION, msg, {
+    askingPrice,
+    min: collar.min,
+    max: collar.max,
+  });
+}
+
+async function assertDailyResaleQuota(
+  tx: Queryable,
+  tenantId: string,
+  sellerId: string,
+  maxResales: number,
+  nowMs: number,
+): Promise<void> {
+  const sinceIso = new Date(nowMs - DAY_MS).toISOString();
+  const dailyCount = await countDailyResalesBySeller(tx, tenantId, sellerId, sinceIso);
+  if (dailyCount >= maxResales) {
     throw new AppError(
       ErrorCode.DAILY_RESALE_LIMIT_REACHED,
-      `Superó el máximo de ${r.maxResales} publicaciones P2P activas.`,
-      { openCount, max: r.maxResales },
+      `Superó el máximo de ${maxResales} reventas diarias permitidas.`,
+      { dailyCount, max: maxResales },
     );
   }
+}
 
-  // RN-02: banda de precios.
+export async function publishOrder(
+  ctx: ServiceContext,
+  tenant: TenantRow,
+  req: PublishOrderRequest,
+): Promise<P2POrderDTO> {
+  const r = rates(tenant);
+  const nowMs = ctx.clock.now();
+  const found = await findCouponById(ctx.db, tenant.tenant_id, req.couponId);
+  const coupon = assertSellerCanPublish(found, req.couponId, req.sellerId);
+  assertTradingWindowOpen(coupon, r.closureHours, nowMs);
+
   const nominal = toNum(coupon.nominal_price);
-  const collar = computePriceCollar(nominal, r.floor, r.ceiling);
-  if (!isWithinCollar(req.askingPrice, collar)) {
-    throw new AppError(
-      ErrorCode.PRICE_COLLAR_VIOLATION,
-      req.askingPrice > collar.max
-        ? `El precio excede el límite máximo permitido de $${collar.max.toFixed(2)}.`
-        : `El precio está por debajo del límite mínimo permitido de $${collar.min.toFixed(2)}.`,
-      { askingPrice: req.askingPrice, min: collar.min, max: collar.max },
-    );
-  }
+  assertWithinPriceCollar(req.askingPrice, nominal, r);
 
+  const events: UserEventInput[] = [];
   const orderRow = await withLock(
     ctx.lockManager,
     couponLockKey(req.couponId),
     ctx.config.lockTtlMs,
     () =>
       ctx.db.transactionSerializable(async (tx) => {
-        const fresh = await findCouponById(tx, tenant.tenant_id, req.couponId);
-        if (!fresh || fresh.state !== CouponState.EN_WALLET) {
-          throw new AppError(ErrorCode.COUPON_NOT_IN_WALLET, 'El cupón ya no está disponible para publicar.');
-        }
+        events.length = 0;
+        const fresh = assertSellerCanPublish(
+          await findCouponById(tx, tenant.tenant_id, req.couponId),
+          req.couponId,
+          req.sellerId,
+        );
+        // El chequeo de cuota diaria tiene que vivir adentro del lock/tx: si lo dejás afuera,
+        // 10 POST en paralelo leen dailyCount=4 y te meten 14 órdenes igual.
+        await assertDailyResaleQuota(tx, tenant.tenant_id, req.sellerId, r.maxResales, ctx.clock.now());
         await updateCouponState(tx, req.couponId, CouponState.PUBLICADO_P2P);
         const created = await insertSellOrder(tx, {
           tenantId: tenant.tenant_id,
@@ -121,7 +158,7 @@ export async function publishOrder(
           sellerId: req.sellerId,
           askingPrice: req.askingPrice,
         });
-        await emitEvent(tx, {
+        const ev: UserEventInput = {
           tenantId: tenant.tenant_id,
           userId: req.sellerId,
           type: 'P2P_LISTED',
@@ -129,36 +166,52 @@ export async function publishOrder(
           amount: req.askingPrice,
           relatedCouponId: req.couponId,
           relatedOrderId: created.order_id,
-        });
+        };
+        await emitEvent(tx, ev);
+        events.push(ev);
         return created;
       }),
   );
 
+  notifyCommittedEvents(ctx.eventHub, events);
   return toOrderDTO(tenant, orderRow, nominal);
 }
 
-/** US-04: listado público del libro de órdenes (sólo OPEN), filtrado por tenant. */
 export async function listOpenOrders(
   ctx: ServiceContext,
   tenant: TenantRow,
 ): Promise<P2POrderDTO[]> {
   const orders = await findOpenOrdersByTenant(ctx.db, tenant.tenant_id);
-  const result: P2POrderDTO[] = [];
-  for (const o of orders) {
-    const coupon = await findCouponById(ctx.db, tenant.tenant_id, o.coupon_id);
-    const nominal = coupon ? toNum(coupon.nominal_price) : 0;
-    result.push(toOrderDTO(tenant, o, nominal));
-  }
-  return result;
+  return orders.map((o) => toOrderDTO(tenant, o, toNum(o.nominal_price)));
 }
 
-/**
- * US-04 / TASK-006: ejecuta el match atómico de compra P2P.
- * - Lock sobre lock:coupon:{id} (perdedor => P2P_ORDER_LOCKED / 423).
- * - Transacción SERIALIZABLE: UPDATE condicional (status='OPEN') garantiza 1 solo ganador.
- * - Split de comisiones (RN-03), transferencia de propiedad y re-emisión del token.
- * - Asiento P2P_SPLIT (delta escrow 0; acumula fees de comercio y de SMCTA Core).
- */
+function assertPreBuyOrder(order: OrderRow | null, orderId: string, buyerId: string): OrderRow {
+  if (!order) {
+    throw new AppError(ErrorCode.ORDER_NOT_FOUND, 'Orden no encontrada.', { orderId });
+  }
+  if (order.status !== 'OPEN') {
+    throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden ya no está abierta.', { status: order.status });
+  }
+  if (order.seller_id === buyerId) {
+    throw new AppError(ErrorCode.FORBIDDEN, 'No podés comprar tu propia orden.');
+  }
+  return order;
+}
+
+function assertOpenOrderInTx(order: OrderRow | null): OrderRow {
+  if (!order || order.status !== 'OPEN') {
+    throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden ya fue tomada por otro usuario.');
+  }
+  return order;
+}
+
+function assertPublishedCouponInTx(coupon: CouponRow | null): CouponRow {
+  if (!coupon || !canTransition(coupon.state, CouponState.EN_WALLET)) {
+    throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'El cupón de la orden ya no está publicado.');
+  }
+  return coupon;
+}
+
 export async function buyOrder(
   ctx: ServiceContext,
   tenant: TenantRow,
@@ -168,18 +221,9 @@ export async function buyOrder(
   if (!buyerId) {
     throw new AppError(ErrorCode.VALIDATION_ERROR, 'buyerId es obligatorio.');
   }
-  const pre = await findOrderById(ctx.db, tenant.tenant_id, orderId);
-  if (!pre) {
-    throw new AppError(ErrorCode.ORDER_NOT_FOUND, 'Orden no encontrada.', { orderId });
-  }
-  if (pre.status !== 'OPEN') {
-    throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden ya no está abierta.', { status: pre.status });
-  }
-  if (pre.seller_id === buyerId) {
-    throw new AppError(ErrorCode.FORBIDDEN, 'No podés comprar tu propia orden.');
-  }
-
+  const pre = assertPreBuyOrder(await findOrderById(ctx.db, tenant.tenant_id, orderId), orderId, buyerId);
   const r = rates(tenant);
+  const events: UserEventInput[] = [];
 
   const matched = await withLock(
     ctx.lockManager,
@@ -187,52 +231,50 @@ export async function buyOrder(
     ctx.config.lockTtlMs,
     () =>
       ctx.db.transactionSerializable(async (tx) => {
-        const order = await findOrderById(tx, tenant.tenant_id, orderId);
-        if (!order || order.status !== 'OPEN') {
-          throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden ya fue tomada por otro usuario.');
-        }
-        const coupon = await findCouponById(tx, tenant.tenant_id, order.coupon_id);
-        if (!coupon || coupon.state !== CouponState.PUBLICADO_P2P) {
-          throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'El cupón de la orden ya no está publicado.');
-        }
+        events.length = 0;
+        const order = assertOpenOrderInTx(await findOrderById(tx, tenant.tenant_id, orderId));
+        const coupon = assertPublishedCouponInTx(await findCouponById(tx, tenant.tenant_id, order.coupon_id));
+        const nowMs = ctx.clock.now();
+        assertTradingWindowOpen(coupon, r.closureHours, nowMs);
 
         const nominal = toNum(coupon.nominal_price);
-        const asking = toNum(order.asking_price);
         const breakdown = computeCommission({
           nominalPrice: nominal,
-          askingPrice: asking,
+          askingPrice: toNum(order.asking_price),
           sellerTakeRatePct: r.seller,
           buyerTakeRatePct: r.buyer,
         });
 
-        // UPDATE condicional: si 0 filas, otro comprador ganó la carrera.
         const affected = await matchOrderIfOpen(tx, orderId, buyerId, breakdown);
         if (affected === 0) {
           throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden ya fue tomada por otro usuario.');
         }
 
-        // Re-emisión de token y transferencia de propiedad al comprador.
+        const nextVersion = toNum(coupon.token_version) + 1;
         const { token } = generateQrToken({
           couponId: coupon.coupon_id,
           tenantId: tenant.tenant_id,
           ownerId: buyerId,
           secret: tenant.qr_secret,
+          tokenVersion: nextVersion,
+          ttlMs: ctx.config.qrTtlMs,
+          nowMs,
         });
         await transferAndReissue(tx, coupon.coupon_id, buyerId, token);
 
-        // Asiento contable del split. El depósito primario permanece en escrow (delta 0).
+        // Guardamos el neto real del comercio (totalFees - platformShare). Antes guardaban el
+        // bruto acá y también platformFee al lado, inventando plata de la nada en el panel de auditoría.
         await insertLedgerEntry(tx, {
           tenantId: tenant.tenant_id,
           couponId: coupon.coupon_id,
           transactionType: LedgerTransactionType.P2P_SPLIT,
           amountInEscrow: 0,
-          tenantFeeAccumulated: totalFees(breakdown),
+          tenantFeeAccumulated: tenantNetFees(breakdown, r.platformShare),
           platformFee: platformShare(breakdown, r.platformShare),
           relatedOrderId: orderId,
         });
 
-        // Eventos de actividad para comprador y vendedor.
-        await emitEvent(tx, {
+        const buyEv: UserEventInput = {
           tenantId: tenant.tenant_id,
           userId: buyerId,
           type: 'P2P_BUY',
@@ -240,8 +282,8 @@ export async function buyOrder(
           amount: breakdown.totalBuyerPrice,
           relatedCouponId: coupon.coupon_id,
           relatedOrderId: orderId,
-        });
-        await emitEvent(tx, {
+        };
+        const saleEv: UserEventInput = {
           tenantId: tenant.tenant_id,
           userId: order.seller_id,
           type: 'P2P_SALE',
@@ -249,24 +291,21 @@ export async function buyOrder(
           amount: breakdown.netSellerProceeds,
           relatedCouponId: coupon.coupon_id,
           relatedOrderId: orderId,
-        });
+        };
+        await emitEvent(tx, buyEv);
+        await emitEvent(tx, saleEv);
+        events.push(buyEv, saleEv);
 
         const fresh = await findOrderById(tx, tenant.tenant_id, orderId);
         return { row: fresh!, nominal };
       }),
   );
 
+  notifyCommittedEvents(ctx.eventHub, events);
   return toOrderDTO(tenant, matched.row, matched.nominal);
 }
 
-/** RN-01: cancelar la publicación devuelve el cupón a EN_WALLET (habilita canje). */
-export async function cancelPublication(
-  ctx: ServiceContext,
-  tenant: TenantRow,
-  orderId: string,
-  sellerId: string,
-): Promise<{ ok: true }> {
-  const order = await findOrderById(ctx.db, tenant.tenant_id, orderId);
+function assertSellerCanCancel(order: OrderRow | null, orderId: string, sellerId: string): OrderRow {
   if (!order) {
     throw new AppError(ErrorCode.ORDER_NOT_FOUND, 'Orden no encontrada.', { orderId });
   }
@@ -276,20 +315,43 @@ export async function cancelPublication(
   if (order.status !== 'OPEN') {
     throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden no está abierta.', { status: order.status });
   }
+  return order;
+}
+
+export async function cancelPublication(
+  ctx: ServiceContext,
+  tenant: TenantRow,
+  orderId: string,
+  sellerId: string,
+): Promise<{ ok: true }> {
+  const order = assertSellerCanCancel(
+    await findOrderById(ctx.db, tenant.tenant_id, orderId),
+    orderId,
+    sellerId,
+  );
+  const events: UserEventInput[] = [];
 
   await withLock(ctx.lockManager, couponLockKey(order.coupon_id), ctx.config.lockTtlMs, () =>
     ctx.db.transactionSerializable(async (tx) => {
-      await cancelOrder(tx, orderId);
+      events.length = 0;
+      const affected = await cancelOrderIfOpen(tx, orderId);
+      if (affected === 0) {
+        throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden ya fue ejecutada o cancelada.');
+      }
       await updateCouponState(tx, order.coupon_id, CouponState.EN_WALLET);
-      await emitEvent(tx, {
+      const ev: UserEventInput = {
         tenantId: tenant.tenant_id,
         userId: sellerId,
         type: 'P2P_CANCELLED',
         title: 'Cancelaste una publicación P2P',
         relatedCouponId: order.coupon_id,
         relatedOrderId: orderId,
-      });
+      };
+      await emitEvent(tx, ev);
+      events.push(ev);
     }),
   );
+
+  notifyCommittedEvents(ctx.eventHub, events);
   return { ok: true };
 }

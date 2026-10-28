@@ -105,6 +105,7 @@ export interface QRTokenPayload {
   nonce: string; // Generado aleatoriamente cada 30 segundos
   timestamp: number; // Epoch millis
   signature: string; // HMAC-SHA256 firmado con clave secreta del tenant
+  tokenVersion?: number; // Invalida QRs viejos incluso si el cupón vuelve al dueño original (A->B->A)
 }
 
 // ==========================================

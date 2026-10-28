@@ -1,7 +1,7 @@
 import type { Queryable } from '../db/database.js';
 import { moneyStr } from '@smcta/shared';
 import type { CommissionBreakdown } from '@smcta/shared';
-import { type OrderRow } from './mappers.js';
+import type { OrderRow, OrderWithNominalRow } from './mappers.js';
 
 const COLS = `order_id, tenant_id, coupon_id, seller_id, asking_price, side, status, buyer_id, created_at`;
 
@@ -18,14 +18,18 @@ export async function insertSellOrder(
   return rows[0]!;
 }
 
+// Traemos el nominal en un único JOIN para no hacer N+1 queries cuando el libro crece.
 export async function findOpenOrdersByTenant(
   db: Queryable,
   tenantId: string,
-): Promise<OrderRow[]> {
-  const { rows } = await db.query<OrderRow>(
-    `SELECT ${COLS} FROM p2p_orders
-     WHERE tenant_id = $1 AND status = 'OPEN'
-     ORDER BY created_at ASC`, // prioridad precio-tiempo FIFO
+): Promise<OrderWithNominalRow[]> {
+  const { rows } = await db.query<OrderWithNominalRow>(
+    `SELECT o.order_id, o.tenant_id, o.coupon_id, o.seller_id, o.asking_price,
+            o.side, o.status, o.buyer_id, o.created_at, c.nominal_price
+     FROM p2p_orders o
+     JOIN coupons c ON c.coupon_id = o.coupon_id
+     WHERE o.tenant_id = $1 AND o.status = 'OPEN'
+     ORDER BY o.created_at ASC`,
     [tenantId],
   );
   return rows;
@@ -40,23 +44,29 @@ export async function findOrderById(
     `SELECT ${COLS} FROM p2p_orders WHERE tenant_id = $1 AND order_id = $2`,
     [tenantId, orderId],
   );
-  return rows[0] ?? null;
+  return rows[0] ? rows[0] : null;
 }
 
-export async function countOpenOrdersBySeller(
+// RN-05 pide tope DIARIO de reventas, no "cuántas órdenes tenés abiertas ahora mismo".
+// Contamos OPEN + MATCHED en las últimas 24h; si canceló una por error de tipeo no lo castigamos.
+export async function countDailyResalesBySeller(
   db: Queryable,
   tenantId: string,
   sellerId: string,
+  sinceIso: string,
 ): Promise<number> {
   const { rows } = await db.query<{ n: string | number }>(
     `SELECT COUNT(*)::int AS n FROM p2p_orders
-     WHERE tenant_id = $1 AND seller_id = $2 AND status = 'OPEN'`,
-    [tenantId, sellerId],
+     WHERE tenant_id = $1
+       AND seller_id = $2
+       AND status IN ('OPEN', 'MATCHED')
+       AND created_at >= $3`,
+    [tenantId, sellerId, sinceIso],
   );
-  return Number(rows[0]?.n ?? 0);
+  const first = rows[0];
+  return first ? Number(first.n) : 0;
 }
 
-/** Marca la orden como MATCHED sólo si sigue OPEN. Devuelve filas afectadas (0 o 1). */
 export async function matchOrderIfOpen(
   tx: Queryable,
   orderId: string,
@@ -83,6 +93,19 @@ export async function matchOrderIfOpen(
   return rows.length;
 }
 
-export async function cancelOrder(db: Queryable, orderId: string): Promise<void> {
-  await db.query(`UPDATE p2p_orders SET status = 'CANCELLED' WHERE order_id = $1`, [orderId]);
+export async function cancelOrderIfOpen(tx: Queryable, orderId: string): Promise<number> {
+  const { rows } = await tx.query<{ order_id: string }>(
+    `UPDATE p2p_orders SET status = 'CANCELLED'
+     WHERE order_id = $1 AND status = 'OPEN'
+     RETURNING order_id`,
+    [orderId],
+  );
+  return rows.length;
+}
+
+export async function cancelOpenOrdersByCoupon(tx: Queryable, couponId: string): Promise<void> {
+  await tx.query(
+    `UPDATE p2p_orders SET status = 'CANCELLED' WHERE coupon_id = $1 AND status = 'OPEN'`,
+    [couponId],
+  );
 }
