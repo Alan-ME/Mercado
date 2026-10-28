@@ -370,4 +370,114 @@ describe('Defensa de secretos y reglas críticas de negocio (RN-02..RN-06)', () 
     expect(queryFallback.statusCode).toBe(200);
     expect((queryFallback.json() as { subdomain: string }).subdomain).toBe('festival');
   });
+
+  it('cubre US-05 (admin config), cancelación P2P, RN-04 (expiración breakage) y feed de actividad', async () => {
+    const usersRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/dev/users',
+      headers: H('hotel'),
+    });
+    const [diego] = (usersRes.json() as { userId: string }[]).map((u) => u.userId);
+    const cfgRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/tenant/config',
+      headers: H('hotel'),
+    });
+    const { tenantId } = cfgRes.json() as { tenantId: string };
+
+    // US-05: validación de rango inválida -> 400; actualización válida -> 200
+    const badCfg = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/admin/tenant/config',
+      headers: H('hotel'),
+      payload: { sellerTakeRatePct: 99 },
+    });
+    expect(badCfg.statusCode).toBe(400);
+
+    const goodCfg = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/admin/tenant/config',
+      headers: H('hotel'),
+      payload: { closureHoursBeforeEvent: 2, themePrimaryColor: '#0F766E' },
+    });
+    expect(goodCfg.statusCode).toBe(200);
+
+    // Publicar y cancelar orden P2P
+    currentTimeMs = Date.now();
+    const soonExp = new Date(currentTimeMs + 4 * 3_600_000).toISOString();
+    const co = await app.inject({
+      method: 'POST',
+      url: '/api/v1/checkout/primary',
+      headers: H('hotel'),
+      payload: { nominalPrice: 150, buyerId: diego, productName: 'Noche Spa', expirationDate: soonExp },
+    });
+    const { couponId } = co.json() as { couponId: string };
+
+    const pub = await app.inject({
+      method: 'POST',
+      url: '/api/v1/p2p/orders',
+      headers: H('hotel'),
+      payload: { couponId, sellerId: diego, askingPrice: 150 },
+    });
+    const { orderId } = pub.json() as { orderId: string };
+
+    const cancel1 = await app.inject({
+      method: 'POST',
+      url: `/api/v1/p2p/orders/${orderId}/cancel`,
+      headers: H('hotel'),
+      payload: { sellerId: diego },
+    });
+    expect(cancel1.statusCode).toBe(200);
+
+    const cancel2 = await app.inject({
+      method: 'POST',
+      url: `/api/v1/p2p/orders/${orderId}/cancel`,
+      headers: H('hotel'),
+      payload: { sellerId: diego },
+    });
+    expect(cancel2.statusCode).toBe(409);
+
+    // RN-04: adelantamos el reloj más allá del vencimiento y corremos expire
+    currentTimeMs += 5 * 3_600_000;
+    const expRes = await app.inject({
+      method: 'POST',
+      url: '/api/v1/escrow/expire',
+      headers: H('hotel'),
+      payload: {},
+    });
+    expect(expRes.statusCode).toBe(200);
+    expect((expRes.json() as { expired: number }).expired).toBeGreaterThanOrEqual(1);
+
+    const audit = await app.inject({
+      method: 'GET',
+      url: `/api/v1/escrow/audit/${tenantId}`,
+      headers: H('hotel'),
+    });
+    expect((audit.json() as { isBalanced: boolean }).isBalanced).toBe(true);
+
+    // Feed de notificaciones e historial
+    const notif = await app.inject({
+      method: 'GET',
+      url: `/api/v1/notifications?userId=${diego}`,
+      headers: H('hotel'),
+    });
+    expect(notif.statusCode).toBe(200);
+    expect((notif.json() as { unreadCount: number }).unreadCount).toBeGreaterThan(0);
+
+    const markRead = await app.inject({
+      method: 'POST',
+      url: '/api/v1/notifications/read',
+      headers: H('hotel'),
+      payload: { userId: diego },
+    });
+    expect(markRead.statusCode).toBe(200);
+
+    const txHistory = await app.inject({
+      method: 'GET',
+      url: `/api/v1/transactions?userId=${diego}&type=PRIMARY_PURCHASE`,
+      headers: H('hotel'),
+    });
+    expect(txHistory.statusCode).toBe(200);
+    expect((txHistory.json() as unknown[]).length).toBeGreaterThanOrEqual(1);
+  });
 });

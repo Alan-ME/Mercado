@@ -106,14 +106,19 @@ export function TpvPage() {
     }
   };
 
+  const findOwnerId = (couponId: string): string | undefined => {
+    const match = coupons.find((c) => c.couponId === couponId);
+    return match ? match.ownerId : undefined;
+  };
+
   const scanSelected = async () => {
     if (!tenant || !selected) return;
-    const match = coupons.find((c) => c.couponId === selected);
     try {
-      const t = await api.getQrToken(tenant, selected, match?.ownerId);
+      const t = await api.getQrToken(tenant, selected, findOwnerId(selected));
       await redeem(t.token);
     } catch (e) {
-      setResult({ kind: 'err', message: e instanceof ApiError ? e.message : 'No se pudo leer el QR.' });
+      const msg = e instanceof ApiError ? e.message : 'No se pudo leer el QR.';
+      setResult({ kind: 'err', message: msg });
     }
   };
 

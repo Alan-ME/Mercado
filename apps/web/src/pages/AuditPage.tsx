@@ -16,6 +16,51 @@ interface Audit {
   redemptionRatePct: number;
 }
 
+function buildAuditTiles(audit: Audit): { label: string; value: string }[] {
+  return [
+    { label: 'Total en Escrow', value: `$${audit.totalInEscrow.toFixed(2)}` },
+    { label: 'Nominal de cupones vivos', value: `$${audit.expectedLiveNominal.toFixed(2)}` },
+    { label: 'Comisiones comercio', value: `$${audit.tenantFeesAccumulated.toFixed(2)}` },
+    { label: 'Fee SMCTA Core', value: `$${audit.platformFeesAccumulated.toFixed(2)}` },
+    { label: 'Cupones canjeados', value: String(audit.redeemed) },
+    { label: 'Cupones vencidos', value: String(audit.expired) },
+    { label: 'Tasa de conversión', value: `${audit.redemptionRatePct.toFixed(1)}%` },
+  ];
+}
+
+function AuditSummary({ audit }: { audit: Audit }) {
+  const tiles = buildAuditTiles(audit);
+  const bannerTone = audit.isBalanced
+    ? 'bg-emerald-50 text-emerald-800'
+    : 'bg-red-50 text-red-800';
+  const title = audit.isBalanced
+    ? 'Balance correcto (diferencia = 0)'
+    : 'Descuadre detectado';
+
+  return (
+    <>
+      <div className={`mb-4 flex items-center gap-3 rounded-brand p-5 ${bannerTone}`}>
+        {audit.isBalanced ? <CheckCircle2 size={28} /> : <AlertTriangle size={28} />}
+        <div>
+          <div className="font-bold">{title}</div>
+          <div className="text-sm">
+            Diferencia: ${audit.difference.toFixed(2)} · TASK-006 exige exactamente 0.
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div key={t.label} className="rounded-brand bg-white p-4 shadow-sm">
+            <div className="text-xs text-slate-400">{t.label}</div>
+            <div className="mt-1 text-xl font-bold text-slate-900">{t.value}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export function AuditPage() {
   const { tenant, config } = useSession();
   const toast = useToast();
@@ -49,18 +94,6 @@ export function AuditPage() {
     }
   };
 
-  const tiles: { label: string; value: string }[] = audit
-    ? [
-        { label: 'Total en Escrow', value: `$${audit.totalInEscrow.toFixed(2)}` },
-        { label: 'Nominal de cupones vivos', value: `$${audit.expectedLiveNominal.toFixed(2)}` },
-        { label: 'Comisiones comercio', value: `$${audit.tenantFeesAccumulated.toFixed(2)}` },
-        { label: 'Fee SMCTA Core', value: `$${audit.platformFeesAccumulated.toFixed(2)}` },
-        { label: 'Cupones canjeados', value: String(audit.redeemed) },
-        { label: 'Cupones vencidos', value: String(audit.expired) },
-        { label: 'Tasa de conversión', value: `${audit.redemptionRatePct.toFixed(1)}%` },
-      ]
-    : [];
-
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-4 flex items-center justify-between">
@@ -77,34 +110,7 @@ export function AuditPage() {
         </div>
       </div>
 
-      {audit && (
-        <>
-          <div
-            className={`mb-4 flex items-center gap-3 rounded-brand p-5 ${
-              audit.isBalanced ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'
-            }`}
-          >
-            {audit.isBalanced ? <CheckCircle2 size={28} /> : <AlertTriangle size={28} />}
-            <div>
-              <div className="font-bold">
-                {audit.isBalanced ? 'Balance correcto (diferencia = 0)' : 'Descuadre detectado'}
-              </div>
-              <div className="text-sm">
-                Diferencia: ${audit.difference.toFixed(2)} · TASK-006 exige exactamente 0.
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {tiles.map((t) => (
-              <div key={t.label} className="rounded-brand bg-white p-4 shadow-sm">
-                <div className="text-xs text-slate-400">{t.label}</div>
-                <div className="mt-1 text-xl font-bold text-slate-900">{t.value}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      {audit && <AuditSummary audit={audit} />}
     </div>
   );
 }

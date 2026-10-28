@@ -60,3 +60,4 @@ describe('Integridad DDL PostgreSQL / PGlite', () => {
     ).rejects.toMatchObject({ code: '23505' });
   });
 });
+

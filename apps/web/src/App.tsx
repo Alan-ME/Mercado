@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { Store, Wallet, LineChart, Settings, ScanLine, ClipboardCheck, History } from 'lucide-react';
 import { useSession } from './state/session';
 import { TenantThemeProvider } from './theme/TenantThemeProvider';
@@ -23,14 +23,26 @@ const NAV: { key: Route; label: string; icon: typeof Store; role: string }[] = [
   { key: 'audit', label: 'Auditoría', icon: ClipboardCheck, role: 'Comercio' },
 ];
 
+const ROUTE_VIEWS: Record<Route, () => ReactElement | null> = {
+  store: Storefront,
+  wallet: WalletPage,
+  market: Marketplace,
+  history: HistoryPage,
+  admin: AdminPortal,
+  tpv: TpvPage,
+  audit: AuditPage,
+};
+
+function parseRouteFromHash(): Route {
+  const h = window.location.hash.replace('#/', '');
+  const found = NAV.find((n) => n.key === h);
+  return found ? found.key : 'store';
+}
+
 function useHashRoute(): [Route, (r: Route) => void] {
-  const parse = (): Route => {
-    const h = window.location.hash.replace('#/', '');
-    return (NAV.find((n) => n.key === h)?.key ?? 'store') as Route;
-  };
-  const [route, setRoute] = useState<Route>(parse);
+  const [route, setRoute] = useState<Route>(parseRouteFromHash);
   useEffect(() => {
-    const onHash = () => setRoute(parse());
+    const onHash = () => setRoute(parseRouteFromHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -39,6 +51,68 @@ function useHashRoute(): [Route, (r: Route) => void] {
     setRoute(r);
   };
   return [route, nav];
+}
+
+function NavTabs({ route, onNavigate }: { route: Route; onNavigate: (r: Route) => void }) {
+  return (
+    <nav className="mx-auto max-w-6xl px-2">
+      <div className="flex flex-wrap gap-1 pb-2">
+        {NAV.map((n) => {
+          const Icon = n.icon;
+          const activeClass =
+            route === n.key
+              ? 'bg-white text-[var(--smcta-brand-primary)]'
+              : 'text-white/80 hover:bg-white/10';
+          return (
+            <button
+              key={n.key}
+              onClick={() => onNavigate(n.key)}
+              className={`flex items-center gap-1.5 rounded-brand px-3 py-1.5 text-sm transition ${activeClass}`}
+            >
+              <Icon size={16} />
+              {n.label}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function SessionSelectors() {
+  const session = useSession();
+  const currentTenant = session.tenant ? session.tenant : '';
+  const currentUser = session.user ? session.user.userId : '';
+
+  return (
+    <div className="ml-auto flex items-center gap-2">
+      <NotificationBell />
+      <select
+        aria-label="Tenant"
+        value={currentTenant}
+        onChange={(e) => session.setTenant(e.target.value)}
+        className="rounded-brand bg-white/10 px-2 py-1.5 text-sm outline-none"
+      >
+        {session.tenants.map((t) => (
+          <option key={t.subdomain} value={t.subdomain} className="text-slate-900">
+            {t.companyName}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="Usuario"
+        value={currentUser}
+        onChange={(e) => session.setUser(e.target.value)}
+        className="rounded-brand bg-white/10 px-2 py-1.5 text-sm outline-none"
+      >
+        {session.users.map((u) => (
+          <option key={u.userId} value={u.userId} className="text-slate-900">
+            {u.displayName}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }
 
 export function App() {
@@ -52,6 +126,8 @@ export function App() {
       </div>
     );
   }
+
+  const ActiveView = ROUTE_VIEWS[route];
 
   return (
     <TenantThemeProvider config={session.config}>
@@ -70,66 +146,13 @@ export function App() {
                 <div className="text-[11px] opacity-70">SMCTA · Mercado P2P White-Label</div>
               </div>
             </div>
-
-            <div className="ml-auto flex items-center gap-2">
-              <NotificationBell />
-              <select
-                aria-label="Tenant"
-                value={session.tenant ?? ''}
-                onChange={(e) => session.setTenant(e.target.value)}
-                className="rounded-brand bg-white/10 px-2 py-1.5 text-sm outline-none"
-              >
-                {session.tenants.map((t) => (
-                  <option key={t.subdomain} value={t.subdomain} className="text-slate-900">
-                    {t.companyName}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Usuario"
-                value={session.user?.userId ?? ''}
-                onChange={(e) => session.setUser(e.target.value)}
-                className="rounded-brand bg-white/10 px-2 py-1.5 text-sm outline-none"
-              >
-                {session.users.map((u) => (
-                  <option key={u.userId} value={u.userId} className="text-slate-900">
-                    {u.displayName}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SessionSelectors />
           </div>
-
-          <nav className="mx-auto max-w-6xl px-2">
-            <div className="flex flex-wrap gap-1 pb-2">
-              {NAV.map((n) => {
-                const Icon = n.icon;
-                const active = route === n.key;
-                return (
-                  <button
-                    key={n.key}
-                    onClick={() => nav(n.key)}
-                    className={`flex items-center gap-1.5 rounded-brand px-3 py-1.5 text-sm transition ${
-                      active ? 'bg-white text-[var(--smcta-brand-primary)]' : 'text-white/80 hover:bg-white/10'
-                    }`}
-                  >
-                    <Icon size={16} />
-                    {n.label}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
+          <NavTabs route={route} onNavigate={nav} />
         </header>
 
         <main className="mx-auto max-w-6xl px-4 py-6">
-          {route === 'store' && <Storefront />}
-          {route === 'wallet' && <WalletPage />}
-          {route === 'market' && <Marketplace />}
-          {route === 'history' && <HistoryPage />}
-          {route === 'admin' && <AdminPortal />}
-          {route === 'tpv' && <TpvPage />}
-          {route === 'audit' && <AuditPage />}
+          <ActiveView />
         </main>
       </div>
     </TenantThemeProvider>

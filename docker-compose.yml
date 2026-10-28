@@ -39,5 +39,6 @@ services:
       PORT: 8080
       DATABASE_URL: postgresql://smcta:smcta@postgres:5432/smcta
       REDIS_URL: redis://redis:6379
+      ENABLE_DEV_ROUTES: 'true'
     ports:
       - '8080:8080'

@@ -73,15 +73,22 @@ function toApiError(status: number, data: unknown): ApiError {
   return new ApiError(code, msg, status, err.details ?? {});
 }
 
+function serializeBody(body: unknown): string | undefined {
+  return body !== undefined ? JSON.stringify(body) : undefined;
+}
+
+function parseJsonOrNull(text: string): unknown {
+  return text ? JSON.parse(text) : null;
+}
+
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const res = await fetch(path, {
     method: opts.method ?? 'GET',
     headers: buildHeaders(opts),
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    body: serializeBody(opts.body),
   });
 
-  const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : null;
+  const data = parseJsonOrNull(await res.text());
   if (!res.ok) throw toApiError(res.status, data);
   return data as T;
 }

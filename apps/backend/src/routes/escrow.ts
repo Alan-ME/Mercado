@@ -16,15 +16,19 @@ const releaseSchema = z.object({
     .default(LedgerTransactionType.REFUND),
 });
 
+function safeHexEquals(received: string, expected: string): boolean {
+  const sigBuf = Buffer.from(received, 'utf-8');
+  const expBuf = Buffer.from(expected, 'utf-8');
+  return sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf);
+}
+
 function verifyWebhookHmacIfConfigured(request: FastifyRequest, secret: string | undefined): void {
   if (!secret) return;
-  const sigHeader = (request.headers['x-psp-signature'] as string | undefined) ?? '';
-  const expected = createHmac('sha256', secret)
-    .update(JSON.stringify(request.body ?? {}))
-    .digest('hex');
-  const sigBuf = Buffer.from(sigHeader, 'utf-8');
-  const expBuf = Buffer.from(expected, 'utf-8');
-  if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+  const rawSig = request.headers['x-psp-signature'];
+  const sigHeader = typeof rawSig === 'string' ? rawSig : '';
+  const serializedBody = JSON.stringify(request.body ?? {});
+  const expected = createHmac('sha256', secret).update(serializedBody).digest('hex');
+  if (!safeHexEquals(sigHeader, expected)) {
     throw new AppError(ErrorCode.FORBIDDEN, 'Firma HMAC de webhook PSP inválida.');
   }
 }

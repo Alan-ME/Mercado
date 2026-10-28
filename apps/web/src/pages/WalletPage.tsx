@@ -83,6 +83,57 @@ function CouponGrid({
   );
 }
 
+function ActiveQrModal({
+  canje,
+  tenant,
+  user,
+  onClose,
+}: {
+  canje: WalletCoupon | null;
+  tenant: string | null;
+  user: { userId: string; displayName: string } | null;
+  onClose: () => void;
+}) {
+  if (!canje || !tenant || !user) return null;
+  return (
+    <QrCanje
+      tenant={tenant}
+      couponId={canje.couponId}
+      userId={user.userId}
+      productName={canje.productName}
+      userName={user.displayName}
+      onClose={onClose}
+    />
+  );
+}
+
+function WalletHeader({
+  ownerName,
+  loading,
+  onRefresh,
+}: {
+  ownerName: string | undefined;
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const label = ownerName ?? '—';
+  const spin = loading ? 'animate-spin' : '';
+  return (
+    <div className="mb-4 flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Billetera digital</h1>
+        <p className="text-sm text-slate-500">Cupones de {label}</p>
+      </div>
+      <button
+        onClick={onRefresh}
+        className="flex items-center gap-1.5 rounded-brand bg-white px-3 py-1.5 text-sm shadow-sm"
+      >
+        <RefreshCw size={15} className={spin} /> Actualizar
+      </button>
+    </div>
+  );
+}
+
 export function WalletPage() {
   const { tenant, user } = useSession();
   const toast = useToast();
@@ -127,39 +178,19 @@ export function WalletPage() {
     await performCancel(tenant, order.orderId, user.userId);
   };
 
-  const ownerLabel = user ? user.displayName : '—';
-  const showQrModal = Boolean(canje && user && tenant);
-
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Billetera digital</h1>
-          <p className="text-sm text-slate-500">Cupones de {ownerLabel}</p>
-        </div>
-        <button
-          onClick={() => void load()}
-          className="flex items-center gap-1.5 rounded-brand bg-white px-3 py-1.5 text-sm shadow-sm"
-        >
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Actualizar
-        </button>
-      </div>
-
+      <WalletHeader ownerName={user?.displayName} loading={loading} onRefresh={() => void load()} />
       <CouponGrid coupons={coupons} onRedeem={setCanje} onCancel={(id) => void cancel(id)} />
-
-      {showQrModal && (
-        <QrCanje
-          tenant={tenant!}
-          couponId={canje!.couponId}
-          userId={user!.userId}
-          productName={canje!.productName}
-          userName={user!.displayName}
-          onClose={() => {
-            setCanje(null);
-            void load();
-          }}
-        />
-      )}
+      <ActiveQrModal
+        canje={canje}
+        tenant={tenant}
+        user={user}
+        onClose={() => {
+          setCanje(null);
+          void load();
+        }}
+      />
     </div>
   );
 }

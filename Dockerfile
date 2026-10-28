@@ -1,21 +1,19 @@
-# Imagen del Backend Core + Frontend White-Label (ruta "documentada": Postgres + Redis).
+# Imagen del Backend Core + Frontend White-Label (ruta Postgres + Redis).
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Manifiestos primero (mejor cacheo de capas)
+# Manifiestos primero para aprovechar el cacheo de capas de Docker
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/backend/package.json apps/backend/
 COPY apps/web/package.json apps/web/
 COPY e2e/package.json e2e/
 
-# Instala dependencias del monorepo + drivers reales (pg, ioredis) para el modo Docker.
-RUN npm install && npm install --workspace @smcta/backend pg ioredis
+RUN npm ci
 
-# Código fuente y build
 COPY . .
-RUN npm run build:shared && npm run build --workspace @smcta/backend && npm run build:web
+RUN npm run build
 
 ENV PORT=8080
 EXPOSE 8080

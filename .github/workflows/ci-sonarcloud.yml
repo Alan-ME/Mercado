@@ -1,0 +1,54 @@
+name: CI & SonarCloud Quality Gate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  verify-and-scan:
+    name: Build, Complexity, Tests, E2E & SonarCloud
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all workspaces (shared, backend, web)
+        run: npm run build
+
+      - name: Enforce Cyclomatic Complexity Gate (CC <= 5)
+        run: npm run lint:complexity
+
+      - name: Run Unit & Integration Tests with Coverage (>= 80% + LCOV)
+        run: npm run test:coverage
+
+      - name: Run Playwright E2E QA Checklist (QA-01..QA-04)
+        run: npm run test:e2e
+
+      - name: SonarCloud Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarCloud Quality Gate Check
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

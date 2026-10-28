@@ -97,3 +97,4 @@ describe('InProcessLockManager · Evicción de memoria', () => {
     expect(t1Again).toBeTruthy();
   });
 });
+

@@ -38,3 +38,4 @@ export class QrSecret {
 export function unwrapQrSecret(secret: QrSecret | string): string {
   return secret instanceof QrSecret ? secret.unsafeUnwrap() : secret;
 }
+

@@ -20,7 +20,9 @@
     "build": "npm run build:shared && npm run build:backend && npm run build:web",
     "dev": "npm run build:shared && concurrently -n backend,web -c cyan,magenta \"npm run dev --workspace @smcta/backend\" \"npm run dev --workspace @smcta/web\"",
     "start": "npm run build && npm run start --workspace @smcta/backend",
+    "lint:complexity": "eslint \"packages/*/src/**/*.{ts,tsx}\" \"apps/*/src/**/*.{ts,tsx}\"",
     "test": "npm run build:shared && npm run test --workspace @smcta/backend",
+    "test:coverage": "npm run build:shared && npm run test:coverage --workspace @smcta/backend",
     "test:e2e": "npm run test --workspace @smcta/e2e",
     "seed": "npm run seed --workspace @smcta/backend"
   },

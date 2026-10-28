@@ -130,3 +130,4 @@ describe('CORS quirúrgico, bloqueo de rutas dev en producción y stream SSE en 
     }
   });
 });
+
