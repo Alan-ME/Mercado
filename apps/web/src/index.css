@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --smcta-brand-primary: #1a365d;
+  --smcta-brand-accent: #3182ce;
+  --smcta-brand-surface: #ffffff;
+  --smcta-font-family: 'Inter', system-ui, sans-serif;
+  --smcta-border-radius: 12px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--smcta-font-family);
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Prevención visual de captura de pantalla en la vista de canje (US-02 / Tarea 2.7). */
+.screenshot-guard {
+  position: relative;
+  overflow: hidden;
+}
+.screenshot-guard::after {
+  content: attr(data-watermark);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.08);
+  transform: rotate(-20deg);
+  pointer-events: none;
+  white-space: pre-wrap;
+  line-height: 3.5;
+  font-weight: 700;
+}
+
+@keyframes smcta-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

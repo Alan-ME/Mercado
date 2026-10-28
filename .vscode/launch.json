@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "SMCTA · App completa (F5)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--import", "tsx"],
+      "program": "${workspaceFolder}/apps/backend/src/server.ts",
+      "cwd": "${workspaceFolder}/apps/backend",
+      "preLaunchTask": "smcta: build ui",
+      "console": "integratedTerminal",
+      "env": {
+        "PORT": "8080",
+        "LOG_LEVEL": "info"
+      },
+      "skipFiles": ["<node_internals>/**"],
+      "serverReadyAction": {
+        "pattern": "App / API:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "SMCTA · Solo backend (sin UI)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--import", "tsx"],
+      "program": "${workspaceFolder}/apps/backend/src/server.ts",
+      "cwd": "${workspaceFolder}/apps/backend",
+      "preLaunchTask": "smcta: build shared",
+      "console": "integratedTerminal",
+      "env": { "PORT": "8080" },
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

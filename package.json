@@ -1,0 +1,30 @@
+{
+  "name": "smcta",
+  "version": "2.0.0",
+  "private": true,
+  "description": "SMCTA - Sistema de Mercado Comportamental y Trading de Activos (rediseño P2P v2, White-Label)",
+  "workspaces": [
+    "packages/shared",
+    "apps/backend",
+    "apps/web",
+    "e2e"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:shared": "npm run build --workspace @smcta/shared",
+    "build:web": "npm run build --workspace @smcta/web",
+    "build:ui": "npm run build:shared && npm run build:web",
+    "build:backend": "npm run build --workspace @smcta/backend",
+    "build": "npm run build:shared && npm run build:backend && npm run build:web",
+    "dev": "npm run build:shared && concurrently -n backend,web -c cyan,magenta \"npm run dev --workspace @smcta/backend\" \"npm run dev --workspace @smcta/web\"",
+    "start": "npm run build && npm run start --workspace @smcta/backend",
+    "test": "npm run build:shared && npm run test --workspace @smcta/backend",
+    "test:e2e": "npm run test --workspace @smcta/e2e",
+    "seed": "npm run seed --workspace @smcta/backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

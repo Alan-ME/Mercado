@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "smcta: build shared",
+      "type": "shell",
+      "command": "npm run build:shared",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "silent", "clear": true }
+    },
+    {
+      "label": "smcta: build ui",
+      "type": "shell",
+      "command": "npm run build:ui",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "silent", "clear": true }
+    },
+    {
+      "label": "smcta: dev (hot-reload)",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "smcta: test backend",
+      "type": "shell",
+      "command": "npm run test --workspace @smcta/backend",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

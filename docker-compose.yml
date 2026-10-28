@@ -1,0 +1,43 @@
+# Orquestación local "documentada" (Hoja de Ruta Rol 3, Tarea 3.1):
+# PostgreSQL 15 + Redis 7 + la app, todo con un solo comando: `docker compose up`.
+# NOTA: es la ruta OPCIONAL. Para la corrección con F5 no hace falta Docker:
+# el proyecto usa PostgreSQL embebido (PGlite) y locks en proceso por defecto.
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: smcta
+      POSTGRES_PASSWORD: smcta
+      POSTGRES_DB: smcta
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U smcta']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgresql://smcta:smcta@postgres:5432/smcta
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '8080:8080'

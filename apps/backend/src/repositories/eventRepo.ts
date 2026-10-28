@@ -1,0 +1,131 @@
+import type { Queryable } from '../db/database.js';
+import { moneyStr } from '@smcta/shared';
+import { toNum, toIso } from './mappers.js';
+
+export type UserEventType =
+  | 'PRIMARY_PURCHASE'
+  | 'P2P_LISTED'
+  | 'P2P_SALE'
+  | 'P2P_BUY'
+  | 'REDEEM'
+  | 'P2P_CANCELLED';
+
+export interface UserEventInput {
+  tenantId: string;
+  userId: string;
+  type: UserEventType;
+  title: string;
+  amount?: number;
+  relatedCouponId?: string | null;
+  relatedOrderId?: string | null;
+}
+
+export interface UserEventDTO {
+  eventId: string;
+  type: UserEventType;
+  title: string;
+  amount: number;
+  isRead: boolean;
+  relatedCouponId: string | null;
+  relatedOrderId: string | null;
+  createdAt: string;
+}
+
+/**
+ * Persiste un evento de actividad (canal in-app) y dispara la entrega externa.
+ * La entrega push/email real se conecta en `deliverExternal` (hoy: log de consola);
+ * un adaptador FCM/SMTP se enchufa aquí sin tocar el resto del sistema.
+ */
+export async function emitEvent(q: Queryable, e: UserEventInput): Promise<void> {
+  await q.query(
+    `INSERT INTO user_events (tenant_id, user_id, type, title, amount, related_coupon_id, related_order_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [
+      e.tenantId,
+      e.userId,
+      e.type,
+      e.title,
+      moneyStr(e.amount ?? 0),
+      e.relatedCouponId ?? null,
+      e.relatedOrderId ?? null,
+    ],
+  );
+  deliverExternal(e);
+}
+
+/** Stub de entrega push/email (Visión in-scope). Reemplazable por FCM/SMTP. */
+function deliverExternal(e: UserEventInput): void {
+  // eslint-disable-next-line no-console
+  console.log(`[NOTIFY push/email] user=${e.userId} ${e.type}: ${e.title}`);
+}
+
+interface EventRow {
+  event_id: string;
+  type: UserEventType;
+  title: string;
+  amount: string | number;
+  is_read: boolean;
+  related_coupon_id: string | null;
+  related_order_id: string | null;
+  created_at: string | Date;
+}
+
+function toDTO(r: EventRow): UserEventDTO {
+  return {
+    eventId: r.event_id,
+    type: r.type,
+    title: r.title,
+    amount: toNum(r.amount),
+    isRead: r.is_read,
+    relatedCouponId: r.related_coupon_id,
+    relatedOrderId: r.related_order_id,
+    createdAt: toIso(r.created_at),
+  };
+}
+
+export async function listEvents(
+  db: Queryable,
+  tenantId: string,
+  userId: string,
+  opts: { type?: UserEventType; limit?: number } = {},
+): Promise<UserEventDTO[]> {
+  const params: unknown[] = [tenantId, userId];
+  let where = 'tenant_id = $1 AND user_id = $2';
+  if (opts.type) {
+    params.push(opts.type);
+    where += ` AND type = $${params.length}`;
+  }
+  params.push(opts.limit ?? 50);
+  const { rows } = await db.query<EventRow>(
+    `SELECT event_id, type, title, amount, is_read, related_coupon_id, related_order_id, created_at
+     FROM user_events WHERE ${where}
+     ORDER BY created_at DESC LIMIT $${params.length}`,
+    params,
+  );
+  return rows.map(toDTO);
+}
+
+export async function countUnread(
+  db: Queryable,
+  tenantId: string,
+  userId: string,
+): Promise<number> {
+  const { rows } = await db.query<{ n: string | number }>(
+    `SELECT COUNT(*)::int AS n FROM user_events
+     WHERE tenant_id = $1 AND user_id = $2 AND is_read = FALSE`,
+    [tenantId, userId],
+  );
+  return Number(rows[0]?.n ?? 0);
+}
+
+export async function markAllRead(
+  db: Queryable,
+  tenantId: string,
+  userId: string,
+): Promise<void> {
+  await db.query(
+    `UPDATE user_events SET is_read = TRUE
+     WHERE tenant_id = $1 AND user_id = $2 AND is_read = FALSE`,
+    [tenantId, userId],
+  );
+}
