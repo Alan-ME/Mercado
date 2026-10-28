@@ -1,152 +1,86 @@
 # SMCTA P2P v2 — Sistema de Mercado Comportamental y Trading de Activos
 
-Implementación **ejecutable y completa** del proyecto SMCTA (rediseño P2P v2, White-Label) especificado en las 5 fases de la carpeta `Proyecto - SMCTA`. Cubre las Historias de Usuario US-01…US-06, las reglas de negocio RN-01…RN-06, las tareas TASK-001…TASK-008 y los 4 criterios del `QA Checklist.xlsx`.
+Este repositorio unifica en la raíz el monorepo ejecutable de **SMCTA v2 (White-Label)** junto con toda la documentación formal de ingeniería de las cinco fases académicas dentro de `Proyecto - SMCTA/`. Cubre de punta a punta las historias `US-01`..`US-06`, las reglas de negocio `RN-01`..`RN-06`, el backlog técnico `TASK-001`..`TASK-008` y los cuatro escenarios obligatorios del `QA Checklist.xlsx`.
 
 ---
 
-## ▶️ Cómo ejecutar (Visual Studio Code · F5)
+## Cómo levantar el proyecto rápido (VS Code con F5 o consola)
 
-1. Abrí en VS Code **esta carpeta** (`implementation/`).
-2. Instalá dependencias una sola vez (terminal integrada):
+No hace falta tener Docker, PostgreSQL ni Redis corriendo en tu máquina para probar o corregir la entrega.. por defecto el sistema levanta sobre **PGlite** (motor PostgreSQL real compilado a WASM corriendo el DDL íntegro con aislamiento `SERIALIZABLE`) y un gestor de locks en memoria con validación de propietario y limpieza por TTL.
+
+1. Abrí la raíz de este repositorio en Visual Studio Code y corré una sola vez en la terminal:
    ```bash
    npm install
    ```
-3. Andá al panel **Run and Debug** (Ctrl+Shift+D) → seleccioná **“SMCTA · App completa (F5)”** → presioná **F5**.
-   - Una tarea previa compila `shared` + el frontend, VS Code lanza el backend **bajo el depurador** (podés poner breakpoints) y la salida aparece en la **consola integrada** (Debug Console / Terminal).
-4. Se abre `http://localhost:8080` con la app completa.
+2. Tocá **F5** eligiendo **SMCTA · App completa (F5)** en el panel *Run and Debug*. Eso compila `@smcta/shared` y el frontend, levanta el backend bajo el debugger y te abre `http://localhost:8080` listo para usar.
 
-> No necesitás Docker, PostgreSQL ni Redis instalados: el proyecto arranca con **PostgreSQL embebido (PGlite)** y locks en proceso. Todo self-contained.
+Si preferís manejarlo por terminal tenés todos los comandos en la raíz:
 
-**Alternativas:**
 ```bash
-npm run dev     # backend + frontend con hot-reload (Vite en :5173, API proxy a :8080)
-npm start       # build de producción y servir todo desde :8080
-npm test        # pruebas unitarias + integración del backend (Vitest)
-npm run test:e2e# suite E2E Playwright (QA-01..04)
-docker compose up   # ruta "documentada": Postgres 15 + Redis 7 + app
+npm run dev             # Backend (:8080) + Vite con hot-reload (:5173)
+npm start               # Compila todo y sirve API + SPA desde :8080
+npm run lint:complexity # Verifica complejidad ciclomática estricta (CC <= 5 por función)
+npm test                # Suite unitaria y de integración con Vitest
+npm run test:coverage   # Cobertura v8 (>= 80%) + reporte LCOV para SonarCloud
+npm run test:e2e        # Suite E2E con Playwright validando QA-01..QA-04
+docker compose up --build # Despliegue completo con PostgreSQL 15 + Redis 7 + App
 ```
 
 ---
 
-## 🧱 Stack y decisión técnica
+## Estructura unificada del repositorio
 
-Los documentos recomiendan **Node.js + TypeScript** (Fastify, `decimal.js`, validación con Zod), **React + Tailwind**, **PostgreSQL 15+**, **Redis 7** y **Playwright**. Se implementó **ese stack**.
+Sacamos del medio los microservicios duplicados que habían quedado a mitad de camino y dejamos una única fuente de verdad compilable en la raíz, conservando intactos los entregables documentales de cátedra:
 
-Para que además arranque con **F5 sin instalar nada**, la persistencia y los locks usan **arquitectura hexagonal (puertos y adaptadores)**:
-
-| Puerto | Adaptador por defecto (F5) | Adaptador “documentado” |
-| --- | --- | --- |
-| Base de datos | **PGlite** — motor **PostgreSQL real (WASM)** en proceso, corre el **DDL exacto** de `ARQ-002` con transacciones `SERIALIZABLE` | PostgreSQL en red (`pg`) con `DATABASE_URL` |
-| Locks concurrencia | **En proceso** (atómico en el event-loop), esquema de clave `lock:coupon:{id}` | **Redis** (`ioredis`) con `REDIS_URL` |
-
-Cambiar a la ruta documentada es solo definir `DATABASE_URL` / `REDIS_URL` (ver `.env.example`) — la lógica de negocio es idéntica.
-
----
-
-## 🗺️ Arquitectura
-
-Monorepo con workspaces npm:
-
-```
-implementation/
-├─ packages/shared/     Contratos del Protocolo (DTOs, enums, códigos de error),
-│                       matemática monetaria decimal (RN-03), Price Collar (RN-02),
-│                       máquina de estados del cupón.
-├─ apps/backend/        Fastify + PGlite/pg + lock manager. Rol 1 (Backend Core & Motor P2P)
-│                       + Rol 3 (Gateway multi-tenant, Admin, TPV, PSP mock).
-├─ apps/web/            React + Vite + Tailwind. Rol 2 (Frontend White-Label, Wallet,
-│                       Marketplace) + UIs de Admin B2B y TPV (Rol 3).
-└─ e2e/                 Playwright — QA Checklist (QA-01..04).
+```text
+.
+├─ packages/shared/       Contratos compartidos (DTOs, errores tipados), aritmética decimal
+│                         exacta (RN-03), bandas de Price Collar (RN-02) y máquina de estados.
+├─ apps/backend/          Fastify + PostgreSQL (PGlite / pg) + locks (memoria / Redis Lua) +
+│                         canal SSE en tiempo real, validación QR HMAC con tokenVersion y TPV.
+├─ apps/web/              SPA React + Vite + Tailwind con tematización White-Label en vivo,
+│                         Tienda, Billetera con QR rotativo, Mercado P2P, Historial, Admin y TPV.
+├─ e2e/                   Pruebas de extremo a extremo en Playwright (QA-01..QA-04).
+└─ Proyecto - SMCTA/      Entregables académicos originales (Fases 01 a 05: Visión, SRS, C4,
+                          UX/UI, QA Checklist y Gestión).
 ```
 
-Las tres **hojas de ruta por rol** conviven en un solo sistema cohesivo y ejecutable: el backend expone **todos** los endpoints del `00_Protocolo_de_Alineacion_y_Contratos_Compartidos.md`; el frontend implementa las vistas de Consumidor, Trader, Admin B2B y TPV como rutas de una misma SPA.
+Para pasar del modo embebido a PostgreSQL 15 y Redis 7 en red no hay que tocar ni una línea de dominio: alcanza con definir `DATABASE_URL` y `REDIS_URL` (fijate `.env.example` o `docker-compose.yml`).
 
 ---
 
-## ✅ Trazabilidad de consignas → implementación
+## Decisiones de arquitectura, concurrencia y seguridad aplicadas
 
-### Historias de Usuario (Fase 02)
-| US | Descripción | Implementación |
-| --- | --- | --- |
-| US-01 | Checkout primario + Escrow | `services/checkoutService.ts`, `routes/checkout.ts`, UI `pages/Storefront.tsx` |
-| US-02 | QR dinámico de canje (30s) | `domain/qrToken.ts`, `services/walletService.ts`, UI `components/QrCanje.tsx` |
-| US-03 | Publicar en mercado P2P | `services/p2pService.ts › publishOrder`, UI `pages/Marketplace.tsx` + `PriceCollarSlider` |
-| US-04 | Comprar en mercado secundario | `services/p2pService.ts › buyOrder`, UI `Marketplace.tsx` (toast de concurrencia) |
-| US-05 | Config bandas y take-rates (B2B) | `services/adminService.ts`, `routes/admin.ts`, UI `pages/AdminPortal.tsx` |
-| US-06 | Validación TPV + liberación Escrow | `services/tpvService.ts`, `routes/tpv.ts`, UI `pages/TpvPage.tsx` |
+La lógica de custodia y reventa secundaria tiene varias trampas clásicas donde un prototipo común hace agua bajo carga, así que blindamos los puntos calientes directamente en base de datos e infraestructura:
 
-### Reglas de negocio (REQ-002)
-| RN | Regla | Implementación |
-| --- | --- | --- |
-| RN-01 | Exclusividad mutua (canje ⇎ reventa) | `shared/stateMachine.ts`, guardas en wallet/p2p services |
-| RN-02 | Banda de precios (Price Collar) | `shared/pricing.ts` → `PRICE_COLLAR_VIOLATION` (422) |
-| RN-03 | Split de comisiones | `shared/money.ts › computeCommission` (validado vs `.xlsx`) |
-| RN-04 | Caducidad / breakage | `services/escrowService.ts › expireDueCoupons` |
-| RN-05 | Límite de reventas/usuario/día | `p2pService` → `DAILY_RESALE_LIMIT_REACHED` (429) |
-| RN-06 | Cierre de ventana antes del evento | `p2pService.publishOrder` → `P2P_WINDOW_CLOSED` |
-
-### Máquina de estados
-`EMITIDO → EN_WALLET ⇄ PUBLICADO_P2P → CANJEADO / VENCIDO` — `shared/stateMachine.ts`, enum `coupon_state` en el DDL.
-
-### Tareas técnicas (Sprint Backlog)
-| TASK | Implementación |
-| --- | --- |
-| TASK-001/002 Checkout + Escrow/PSP | `checkoutService.ts`, `routes/checkout.ts` (`/psp/pay` mock) |
-| TASK-003 QR HMAC-SHA256 30s | `domain/qrToken.ts` |
-| TASK-004 Endpoint P2P + Price Collar | `p2pService.publishOrder`, `routes/p2p.ts` |
-| TASK-005 Lock anti race-condition | `infra/lockManager.ts` + transacción `SERIALIZABLE` |
-| TASK-006 Matching FIFO + split + auditoría | `p2pService.buyOrder`, `escrowService.auditEscrow` |
-| TASK-007 Middleware multi-tenant | `plugins/tenantResolver.ts` |
-| TASK-008 TPV + webhook liberación | `tpvService.ts` |
-
-### QA Checklist (`QA Checklist.xlsx`)
-| QA | Verificación | Prueba |
-| --- | --- | --- |
-| QA-01 | Price Collar → HTTP 422 | `e2e/…/qa01-price-collar.spec.ts` + `backend/…/integration.test.ts` |
-| QA-02 | Concurrencia: 1 ganador / N rechazos | `e2e/…/qa02-concurrency.spec.ts` (20 simultáneos) |
-| QA-03 | Auditoría de balance = 0 | `e2e/…/qa03-escrow-audit.spec.ts` |
-| QA-04 | Aislamiento multi-tenant | `e2e/…/qa04-tenant-isolation.spec.ts` |
-
-### Arquitectura y datos (Fase 03)
-- **C4 / microservicios (ARQ-001):** módulos desacoplados — Gateway/tenant resolver, Motor P2P (matching + Price Collar), Cupones/Wallet, Escrow/Pagos, Admin/TPV.
-- **Modelo de datos (ARQ-002):** DDL exacto en `apps/backend/src/db/schema.sql` (`tenants`, `users`, `coupons`, `p2p_orders`, `escrow_ledgers` + enums).
-- **Multitenancy (ARQ-003):** `plugins/tenantResolver.ts` (subdominio o `x-tenant-id`), filtrado por `tenant_id` en todos los repos.
-
-### UX/UI (Fase 04)
-- Flujos Consumidor vs Trader → páginas separadas; **Design Tokens White-Label** vía CSS variables (`TenantThemeProvider`); badges de estado, `PriceCollarSlider`, calculadora de comisiones en vivo (`FeeBreakdown`), QR rotativo con marca de agua anti-captura.
-
-### Endpoints y errores (Protocolo)
-Todos los endpoints del §3 y los códigos de error del §4 (`PRICE_COLLAR_VIOLATION` 422, `COUPON_NOT_IN_WALLET` 409, `P2P_ORDER_LOCKED` 423, `DAILY_RESALE_LIMIT_REACHED` 429, `QR_TOKEN_EXPIRED` 401, `TENANT_NOT_FOUND` 404) — `shared/errors.ts`, `plugins/errorHandler.ts`.
-
-### Ítems adicionales cubiertos
-| Consigna | Implementación |
-| --- | --- |
-| Notificaciones push/email por ejecución de órdenes (Visión, in-scope B2C) | `eventRepo.ts` (feed in-app + hook de entrega externa), campana en la UI (`NotificationBell.tsx`) |
-| Historial de transacciones con filtros (UX §1 / Tarea 2.8) | `routes/activity.ts`, `pages/HistoryPage.tsx` |
-| Analítica de canjes: tasa de conversión (Propuesta §6.2) | `escrowService.auditEscrow`, `pages/AuditPage.tsx` |
-| Documentación Swagger/OpenAPI (Tarea 1.10) | `/api/docs` (`@fastify/swagger`) |
-| Lector de QR por cámara en TPV (Rol 3, `html5-qrcode`) | `components/QrCameraReader.tsx` en `pages/TpvPage.tsx` |
-| Prueba de 50 compras concurrentes (Tarea 1.9) | `integration.test.ts` + `qa02-concurrency.spec.ts` |
+- **Libro mayor append-only real (`escrow_ledgers`):** además de eliminar cualquier `DROP TABLE` destructivo del arranque, la tabla tiene índices únicos parciales (`uq_ledger_checkout_once` y `uq_ledger_terminal_once`) y un trigger en PostgreSQL (`trg_escrow_ledgers_immutable`) que aborta con `SQLSTATE 28000` cualquier intento de `UPDATE` o `DELETE`.
+- **Concurrencia sin carreras ni deadlocks:** tanto en `pg` (con `SET LOCAL lock_timeout = '2s'`, `statement_timeout = '5s'` y backoff exponencial con jitter ante `40001`) como en `PGlite` (serializando transacciones en la conexión única WASM), el matching P2P, la cuota diaria de reventas (`RN-05`) y el webhook de liberación del PSP corren adentro de `withLock` + `SERIALIZABLE`. Los locks distribuidos en Redis liberan únicamente mediante script Lua comparando el `ownerToken` de quien adquirió el candado.
+- **Anti-replay de QR y defensa de secretos:** el secreto HMAC de cada tenant viaja encapsulado en el Value Object opaco `QrSecret` (que redacta automáticamente en `toString`, `toJSON` y `util.inspect` para no regalar llaves en logs), y cada reventa incrementa `token_version` dentro del payload firmado. Si A le vende un cupón a B y B se lo revende a A en menos de 30 segundos, el QR viejo de A rebota igual.
+- **Contabilidad neta al centavo:** en cada split P2P se registra el ingreso neto real del comercio (`tenantNetFees = totalFees - platformShare`) separado del fee de SMCTA Core, cerrando la conciliación de custodia con diferencia `0.00`.
+- **Tiempo real por SSE sin polling basura:** el centro de notificaciones (`NotificationBell.tsx`) dejó de pegarle a la base cada 20 segundos con `setInterval` y ahora escucha `GET /api/v1/notifications/stream` vía `EventSource`, empujando eventos recién después del `COMMIT` para no filtrar notificaciones fantasma si una transacción reintenta.
 
 ---
 
-## 👥 Datos de demostración
+## Trazabilidad rápida contra la consigna
 
-Al arrancar se siembran 3 tenants (elegibles en la UI o vía header `x-tenant-id`):
-
-| Tenant | Subdominio | Usuarios demo |
+| Código | Requisito | Dónde vive |
 | --- | --- | --- |
-| Ticketera Festival Live | `festival` | Ana, Beto, Caro |
-| Escapadas Premium Hotels | `hotel` | Diego, Emma |
-| Urban Fashion Drops | `sneakers` | Fabio, Gina |
-
-La consola de arranque imprime los `userId` reales para pruebas por API.
+| `US-01` | Checkout primario y custodia Escrow | `apps/backend/src/services/checkoutService.ts`, `apps/web/src/pages/Storefront.tsx` |
+| `US-02` | QR dinámico HMAC rotativo cada 30s | `apps/backend/src/domain/qrToken.ts`, `apps/backend/src/services/walletService.ts`, `apps/web/src/components/QrCanje.tsx` |
+| `US-03` | Publicación P2P con Price Collar | `apps/backend/src/services/p2pService.ts`, `apps/web/src/components/PriceCollarSlider.tsx` |
+| `US-04` | Compra secundaria atómica y split | `apps/backend/src/services/p2pService.ts`, `apps/web/src/pages/Marketplace.tsx` |
+| `US-05` | Configuración B2B y marca White-Label | `apps/backend/src/services/adminService.ts`, `apps/web/src/pages/AdminPortal.tsx` |
+| `US-06` | Lectura TPV y liberación al comercio | `apps/backend/src/services/tpvService.ts`, `apps/web/src/pages/TpvPage.tsx` |
+| `RN-01..06` | Exclusividad, bandas, take-rates, caducidad, tope diario y ventana horaria | `packages/shared/src/`, `apps/backend/src/services/` |
+| `QA-01..04` | Banda 422, 50 compras simultáneas, auditoría en 0 y aislamiento multi-tenant | `e2e/tests/`, `apps/backend/src/tests/` |
 
 ---
 
-## 🔌 Endpoints principales
+## Tenants precargados y endpoints principales
 
-```
+Al iniciar sobre una base vacía se siembran tres comercios aislados para probar en la interfaz o pasando la cabecera `x-tenant-id`: `festival` (Ana, Beto, Caro), `hotel` (Diego, Emma) y `sneakers` (Fabio, Gina). La documentación interactiva OpenAPI queda expuesta en `http://localhost:8080/api/docs`.
+
+```text
 GET  /api/v1/tenant/config
 POST /api/v1/checkout/primary
 GET  /api/v1/coupons/my-wallet?ownerId=...
@@ -158,11 +92,10 @@ POST /api/v1/p2p/orders/:id/cancel
 POST /api/v1/tpv/validate-qr
 GET  /api/v1/escrow/audit/:tenant_id
 POST /api/v1/escrow/webhook-release
+POST /api/v1/escrow/expire
 PUT  /api/v1/admin/tenant/config
-GET  /api/v1/notifications?userId=...      # centro de notificaciones
+GET  /api/v1/notifications?userId=...
+GET  /api/v1/notifications/stream?userId=...&tenant=...
 POST /api/v1/notifications/read
-GET  /api/v1/transactions?userId=...&type= # historial con filtros
+GET  /api/v1/transactions?userId=...&type=...
 ```
-Todas requieren contexto de tenant (subdominio o cabecera `x-tenant-id`).
-
-**Documentación interactiva (Swagger/OpenAPI):** `http://localhost:8080/api/docs`
