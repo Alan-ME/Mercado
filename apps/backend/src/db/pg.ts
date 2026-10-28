@@ -1,3 +1,4 @@
+import pg from 'pg';
 import {
   type Database,
   type Queryable,
@@ -6,27 +7,72 @@ import {
   SERIALIZATION_FAILURE,
 } from './database.js';
 
-/**
- * Adaptador PostgreSQL en red (paquete `pg`), activado con DATABASE_URL.
- * Es la ruta "documentada" (PostgreSQL 15+ gestionado). Import dinámico para
- * que el proyecto no requiera `pg` instalado en el arranque por defecto (PGlite).
- */
-export async function createPgDatabase(databaseUrl: string): Promise<Database> {
-  // Import dinámico con especificador no literal: 'pg' es dependencia OPCIONAL,
-  // no se resuelve en tiempo de compilación (el arranque por defecto usa PGlite).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let pgModule: any;
-  try {
-    pgModule = await import('pg' as string);
-  } catch {
-    throw new Error(
-      "DATABASE_URL está definido pero el paquete 'pg' no está instalado. Ejecutá: npm i pg",
-    );
-  }
-  const PgPool = pgModule.Pool ?? pgModule.default?.Pool;
-  const pool = new PgPool({ connectionString: databaseUrl, max: 20 });
+const { Pool } = pg;
 
-  const db: Database = {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function extractSqlState(err: unknown): string | undefined {
+  if (typeof err !== 'object' || err === null) return undefined;
+  return (err as { code?: string }).code;
+}
+
+function shouldRetrySerialization(err: unknown, attempt: number): boolean {
+  if (attempt > MAX_SERIALIZABLE_RETRIES) return false;
+  return extractSqlState(err) === SERIALIZATION_FAILURE;
+}
+
+function backoffMs(attempt: number): number {
+  const base = Math.min(20 * 2 ** attempt, 250);
+  return base + Math.floor(Math.random() * 15);
+}
+
+async function runSingleAttempt<T>(
+  pool: pg.Pool,
+  fn: (tx: Queryable) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+    // Sin timeouts locales, un lock colgado te frena todo el pool de 20 conexiones en cascada.
+    await client.query("SET LOCAL lock_timeout = '2s'");
+    await client.query("SET LOCAL statement_timeout = '5s'");
+    const tx: Queryable = {
+      async query<T2 = Record<string, unknown>>(sql: string, params: unknown[] = []) {
+        const res = await client.query(sql, params);
+        return { rows: res.rows as T2[] };
+      },
+    };
+    const result = await fn(tx);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function runWithRetry<T>(
+  pool: pg.Pool,
+  fn: (tx: Queryable) => Promise<T>,
+  attempt = 1,
+): Promise<T> {
+  try {
+    return await runSingleAttempt(pool, fn);
+  } catch (err) {
+    if (!shouldRetrySerialization(err, attempt)) throw err;
+    await sleep(backoffMs(attempt));
+    return runWithRetry(pool, fn, attempt + 1);
+  }
+}
+
+export async function createPgDatabase(databaseUrl: string): Promise<Database> {
+  const pool = new Pool({ connectionString: databaseUrl, max: 20 });
+
+  return {
     async query<T = Record<string, unknown>>(
       sql: string,
       params: unknown[] = [],
@@ -39,44 +85,12 @@ export async function createPgDatabase(databaseUrl: string): Promise<Database> {
       await pool.query(sql);
     },
 
-    async transactionSerializable<T>(fn: (tx: Queryable) => Promise<T>): Promise<T> {
-      let attempt = 0;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        attempt++;
-        const client = await pool.connect();
-        try {
-          await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
-          const tx: Queryable = {
-            async query<T2 = Record<string, unknown>>(sql: string, params: unknown[] = []) {
-              const res = await client.query(sql, params);
-              return { rows: res.rows as T2[] };
-            },
-          };
-          const result = await fn(tx);
-          await client.query('COMMIT');
-          return result;
-        } catch (err) {
-          await client.query('ROLLBACK').catch(() => undefined);
-          if (
-            typeof err === 'object' &&
-            err !== null &&
-            (err as { code?: string }).code === SERIALIZATION_FAILURE &&
-            attempt <= MAX_SERIALIZABLE_RETRIES
-          ) {
-            continue;
-          }
-          throw err;
-        } finally {
-          client.release();
-        }
-      }
+    transactionSerializable<T>(fn: (tx: Queryable) => Promise<T>): Promise<T> {
+      return runWithRetry(pool, fn);
     },
 
     async close(): Promise<void> {
       await pool.end();
     },
   };
-
-  return db;
 }

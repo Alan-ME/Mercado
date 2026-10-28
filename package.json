@@ -25,6 +25,9 @@
     "seed": "npm run seed --workspace @smcta/backend"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.13.0",
+    "typescript-eslint": "^8.72.1"
   }
 }

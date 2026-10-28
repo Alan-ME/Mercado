@@ -7,74 +7,78 @@ import {
   SERIALIZATION_FAILURE,
 } from './database.js';
 
-/**
- * Adaptador PostgreSQL embebido (WASM) — motor Postgres real en proceso.
- * Cero dependencias externas: permite ejecutar el proyecto con F5 sin Docker.
- * El mismo DDL/SQL corre idéntico contra un Postgres en red (ver pg.ts).
- *
- * PGlite mantiene UNA sola conexión, por lo que las transacciones se serializan
- * mediante una cola interna (no puede haber dos transacciones abiertas a la vez).
- */
+// PGlite corre sobre UNA única conexión en proceso. Si dejás que query() entre libre
+// mientras otra promesa está a mitad de un BEGIN..COMMIT, las consultas ajenas se cuelan
+// adentro de esa transacción y cualquier error te aborta el bloque del vecino.
+// Por eso encolamos todo acceso externo en mutexChain, y adentro de runTx pasamos un
+// handle directo (`rawQueryable`) para no auto-bloquearnos esperando nuestra propia cola.
 export class PGliteDatabase implements Database {
   private readonly pg: PGlite;
-  private txChain: Promise<unknown> = Promise.resolve();
+  private mutexChain: Promise<unknown> = Promise.resolve();
+  private readonly rawQueryable: Queryable;
 
   constructor() {
     this.pg = new PGlite();
+    this.rawQueryable = {
+      query: async <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => {
+        const res = await this.pg.query<T>(sql, params);
+        return { rows: res.rows };
+      },
+    };
   }
 
-  async query<T = Record<string, unknown>>(
+  query<T = Record<string, unknown>>(
     sql: string,
     params: unknown[] = [],
   ): Promise<QueryResult<T>> {
-    const res = await this.pg.query<T>(sql, params);
-    return { rows: res.rows };
+    return this.enqueue(() => this.rawQueryable.query<T>(sql, params));
   }
 
-  async exec(sql: string): Promise<void> {
-    await this.pg.exec(sql);
+  exec(sql: string): Promise<void> {
+    return this.enqueue(async () => {
+      await this.pg.exec(sql);
+    });
   }
 
-  async transactionSerializable<T>(fn: (tx: Queryable) => Promise<T>): Promise<T> {
-    // Encadena para garantizar exclusión mutua sobre la única conexión.
-    const run = this.txChain.then(() => this.runTx(fn));
-    // Evita que un rechazo rompa la cadena para las siguientes transacciones.
-    this.txChain = run.then(
+  transactionSerializable<T>(fn: (tx: Queryable) => Promise<T>): Promise<T> {
+    return this.enqueue(() => this.runTx(fn));
+  }
+
+  async close(): Promise<void> {
+    await this.enqueue(() => this.pg.close());
+  }
+
+  private enqueue<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.mutexChain.then(task);
+    this.mutexChain = run.then(
       () => undefined,
       () => undefined,
     );
     return run;
   }
 
-  private async runTx<T>(fn: (tx: Queryable) => Promise<T>): Promise<T> {
-    let attempt = 0;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      attempt++;
-      try {
-        await this.pg.exec('BEGIN ISOLATION LEVEL SERIALIZABLE;');
-        const result = await fn(this);
-        await this.pg.exec('COMMIT;');
-        return result;
-      } catch (err) {
-        await this.pg.exec('ROLLBACK;').catch(() => undefined);
-        if (isSerializationFailure(err) && attempt <= MAX_SERIALIZABLE_RETRIES) {
-          continue;
-        }
-        throw err;
+  private async runTx<T>(fn: (tx: Queryable) => Promise<T>, attempt = 1): Promise<T> {
+    try {
+      await this.pg.exec('BEGIN ISOLATION LEVEL SERIALIZABLE;');
+      const result = await fn(this.rawQueryable);
+      await this.pg.exec('COMMIT;');
+      return result;
+    } catch (err) {
+      await this.pg.exec('ROLLBACK;').catch(() => undefined);
+      if (shouldRetrySerialization(err, attempt)) {
+        return this.runTx(fn, attempt + 1);
       }
+      throw err;
     }
-  }
-
-  async close(): Promise<void> {
-    await this.pg.close();
   }
 }
 
-function isSerializationFailure(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    (err as { code?: string }).code === SERIALIZATION_FAILURE
-  );
+function extractSqlState(err: unknown): string | undefined {
+  if (typeof err !== 'object' || err === null) return undefined;
+  return (err as { code?: string }).code;
+}
+
+function shouldRetrySerialization(err: unknown, attempt: number): boolean {
+  if (attempt > MAX_SERIALIZABLE_RETRIES) return false;
+  return extractSqlState(err) === SERIALIZATION_FAILURE;
 }
