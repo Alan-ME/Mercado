@@ -31,7 +31,6 @@ export interface DevUser {
   email: string;
 }
 
-/** CouponDTO enriquecido con el nombre de producto para la UI. */
 export type WalletCoupon = CouponDTO & { productName: string };
 
 export type ActivityType =
@@ -53,31 +52,37 @@ export interface ActivityEvent {
   createdAt: string;
 }
 
-async function request<T>(
-  path: string,
-  opts: { method?: string; body?: unknown; tenant?: string } = {},
-): Promise<T> {
+interface RequestOptions {
+  method?: string;
+  body?: unknown;
+  tenant?: string;
+  userId?: string;
+}
+
+function buildHeaders(opts: RequestOptions): Record<string, string> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (opts.tenant) headers['x-tenant-id'] = opts.tenant;
+  if (opts.userId) headers['x-user-id'] = opts.userId;
+  return headers;
+}
 
+function toApiError(status: number, data: unknown): ApiError {
+  const err = (data ?? {}) as Partial<ApiErrorBody>;
+  const code = err.errorCode ? err.errorCode : 'UNKNOWN';
+  const msg = err.message ? err.message : `Error HTTP ${status}`;
+  return new ApiError(code, msg, status, err.details ?? {});
+}
+
+async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const res = await fetch(path, {
     method: opts.method ?? 'GET',
-    headers,
+    headers: buildHeaders(opts),
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-
-  if (!res.ok) {
-    const err = (data ?? {}) as Partial<ApiErrorBody>;
-    throw new ApiError(
-      err.errorCode ?? 'UNKNOWN',
-      err.message ?? `Error HTTP ${res.status}`,
-      res.status,
-      err.details ?? {},
-    );
-  }
+  const data: unknown = text ? JSON.parse(text) : null;
+  if (!res.ok) throw toApiError(res.status, data);
   return data as T;
 }
 
@@ -100,10 +105,10 @@ export const api = {
   getWallet: (tenant: string, ownerId: string) =>
     request<WalletCoupon[]>(`/api/v1/coupons/my-wallet?ownerId=${encodeURIComponent(ownerId)}`, { tenant }),
 
-  getQrToken: (tenant: string, couponId: string) =>
+  getQrToken: (tenant: string, couponId: string, userId?: string) =>
     request<{ token: string; expiresAt: number; ttlMs: number; couponId: string; ownerId: string }>(
       `/api/v1/coupons/${couponId}/qr-token`,
-      { tenant },
+      { tenant, userId },
     ),
 
   listOrders: (tenant: string) => request<P2POrderDTO[]>('/api/v1/p2p/orders', { tenant }),
@@ -160,12 +165,17 @@ export const api = {
       { tenant },
     ),
 
+  notificationsStreamUrl: (tenant: string, userId: string) =>
+    `/api/v1/notifications/stream?userId=${encodeURIComponent(userId)}&tenant=${encodeURIComponent(tenant)}`,
+
   markNotificationsRead: (tenant: string, userId: string) =>
     request<{ ok: true }>('/api/v1/notifications/read', { method: 'POST', body: { userId }, tenant }),
 
-  getTransactions: (tenant: string, userId: string, type?: string) =>
-    request<ActivityEvent[]>(
-      `/api/v1/transactions?userId=${encodeURIComponent(userId)}${type ? `&type=${type}` : ''}`,
+  getTransactions: (tenant: string, userId: string, type?: string) => {
+    const suffix = type ? `&type=${encodeURIComponent(type)}` : '';
+    return request<ActivityEvent[]>(
+      `/api/v1/transactions?userId=${encodeURIComponent(userId)}${suffix}`,
       { tenant },
-    ),
+    );
+  },
 };

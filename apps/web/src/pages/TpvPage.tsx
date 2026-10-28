@@ -15,6 +15,64 @@ type Result =
   | { kind: 'err'; message: string }
   | null;
 
+function ResultBanner({ result }: { result: Exclude<Result, null> }) {
+  if (result.kind === 'ok') {
+    return (
+      <div className="mt-4 flex items-center gap-3 rounded-brand bg-emerald-600 p-5 text-white">
+        <CheckCircle2 size={32} />
+        <div>
+          <div className="font-bold">Canje válido</div>
+          <div className="text-sm opacity-90">
+            Se liberaron ${result.amount.toFixed(2)} del Escrow al comercio.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-4 flex items-center gap-3 rounded-brand bg-red-600 p-5 text-white">
+      <XCircle size={32} />
+      <div>
+        <div className="font-bold">Canje rechazado</div>
+        <div className="text-sm opacity-90">{result.message}</div>
+      </div>
+    </div>
+  );
+}
+
+function CameraSection({
+  cameraOn,
+  onToggle,
+  onScan,
+}: {
+  cameraOn: boolean;
+  onToggle: () => void;
+  onScan: (token: string) => void;
+}) {
+  const bg = cameraOn ? '#DC2626' : 'var(--smcta-brand-primary)';
+  const label = cameraOn ? 'Apagar cámara' : 'Encender cámara';
+  return (
+    <div className="mb-4 rounded-brand bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-slate-700">Lector de cámara (QR real)</label>
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-1.5 rounded-brand px-3 py-1.5 text-sm font-semibold text-white"
+          style={{ background: bg }}
+        >
+          <Camera size={16} /> {label}
+        </button>
+      </div>
+      {cameraOn && (
+        <div className="mt-3">
+          <QrCameraReader onScan={onScan} />
+          <p className="mt-2 text-xs text-slate-400">Apuntá al QR del cliente. Requiere permiso de cámara.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TpvPage() {
   const { tenant } = useSession();
   const [coupons, setCoupons] = useState<RedeemableCoupon[]>([]);
@@ -48,11 +106,11 @@ export function TpvPage() {
     }
   };
 
-  // "Escaneo" demo: obtiene el token vigente del cupón elegido y lo valida.
   const scanSelected = async () => {
     if (!tenant || !selected) return;
+    const match = coupons.find((c) => c.couponId === selected);
     try {
-      const t = await api.getQrToken(tenant, selected);
+      const t = await api.getQrToken(tenant, selected, match?.ownerId);
       await redeem(t.token);
     } catch (e) {
       setResult({ kind: 'err', message: e instanceof ApiError ? e.message : 'No se pudo leer el QR.' });
@@ -68,24 +126,11 @@ export function TpvPage() {
         Escaneá el QR del cliente para validar el cupón y liberar los fondos del Escrow al comercio.
       </p>
 
-      <div className="mb-4 rounded-brand bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-700">Lector de cámara (QR real)</label>
-          <button
-            onClick={() => setCameraOn((v) => !v)}
-            className="flex items-center gap-1.5 rounded-brand px-3 py-1.5 text-sm font-semibold text-white"
-            style={{ background: cameraOn ? '#DC2626' : 'var(--smcta-brand-primary)' }}
-          >
-            <Camera size={16} /> {cameraOn ? 'Apagar cámara' : 'Encender cámara'}
-          </button>
-        </div>
-        {cameraOn && (
-          <div className="mt-3">
-            <QrCameraReader onScan={(token) => void redeem(token)} />
-            <p className="mt-2 text-xs text-slate-400">Apuntá al QR del cliente. Requiere permiso de cámara.</p>
-          </div>
-        )}
-      </div>
+      <CameraSection
+        cameraOn={cameraOn}
+        onToggle={() => setCameraOn((v) => !v)}
+        onScan={(token) => void redeem(token)}
+      />
 
       <div className="rounded-brand bg-white p-5 shadow-sm">
         <label className="text-sm font-medium text-slate-700">Simular escaneo de un cupón EN_WALLET</label>
@@ -134,30 +179,7 @@ export function TpvPage() {
         </div>
       </div>
 
-      {result && (
-        <div
-          className={`mt-4 flex items-center gap-3 rounded-brand p-5 text-white ${
-            result.kind === 'ok' ? 'bg-emerald-600' : 'bg-red-600'
-          }`}
-        >
-          {result.kind === 'ok' ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
-          <div>
-            {result.kind === 'ok' ? (
-              <>
-                <div className="font-bold">Canje válido</div>
-                <div className="text-sm opacity-90">
-                  Se liberaron ${result.amount.toFixed(2)} del Escrow al comercio.
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="font-bold">Canje rechazado</div>
-                <div className="text-sm opacity-90">{result.message}</div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {result && <ResultBanner result={result} />}
     </div>
   );
 }

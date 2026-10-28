@@ -3,7 +3,24 @@ import { Bell } from 'lucide-react';
 import { useSession } from '../state/session';
 import { api, type ActivityEvent } from '../api/client';
 
-/** Centro de notificaciones in-app (Visión, in-scope B2C). Se refresca en cada acción. */
+function NotificationPanel({ events }: { events: ActivityEvent[] }) {
+  if (events.length === 0) {
+    return <div className="px-4 py-6 text-center text-sm text-slate-400">Sin novedades</div>;
+  }
+  return (
+    <ul className="max-h-80 overflow-y-auto">
+      {events.map((e) => (
+        <li key={e.eventId} className="border-b border-slate-50 px-4 py-2.5 text-sm">
+          <div className="text-slate-800">{e.title}</div>
+          <div className="text-xs text-slate-400">{new Date(e.createdAt).toLocaleString()}</div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Antes tiraba un setInterval cada 20s pegándole a la DB aunque el usuario estuviera mirando el techo.
+// Ahora abre un EventSource SSE que empuja al instante tras cada commit y se cierra prolijo al desmontar.
 export function NotificationBell() {
   const { tenant, user } = useSession();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
@@ -18,34 +35,43 @@ export function NotificationBell() {
       setEvents(r.events);
       setUnread(r.unreadCount);
     } catch {
-      /* silencioso */
+      /* si la red pestañea, EventSource reconecta solo */
     }
   }, [tenant, user]);
 
   useEffect(() => {
+    if (!tenant || !user) return;
     void load();
-    const id = window.setInterval(() => void load(), 20_000);
-    return () => window.clearInterval(id);
-  }, [load]);
+    const stream = new EventSource(api.notificationsStreamUrl(tenant, user.userId));
+    const onPush = () => void load();
+    stream.addEventListener('notification', onPush);
+    return () => {
+      stream.removeEventListener('notification', onPush);
+      stream.close();
+    };
+  }, [tenant, user, load]);
 
-  // Cierra al hacer click afuera.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      const box = boxRef.current;
+      if (box && !box.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  const markReadIfNeeded = async () => {
+    if (!tenant || !user || unread === 0) return;
+    await api.markNotificationsRead(tenant, user.userId);
+    setUnread(0);
+  };
+
   const toggle = async () => {
     const next = !open;
     setOpen(next);
-    if (!next || !tenant || !user) return;
-    await load(); // siempre trae lo último al abrir
-    if (unread > 0) {
-      await api.markNotificationsRead(tenant, user.userId);
-      setUnread(0);
-    }
+    if (!next) return;
+    await load();
+    await markReadIfNeeded();
   };
 
   return (
@@ -66,18 +92,7 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-brand bg-white text-slate-800 shadow-2xl">
           <div className="border-b border-slate-100 px-4 py-2 text-sm font-semibold">Notificaciones</div>
-          {events.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-slate-400">Sin novedades</div>
-          ) : (
-            <ul className="max-h-80 overflow-y-auto">
-              {events.map((e) => (
-                <li key={e.eventId} className="border-b border-slate-50 px-4 py-2.5 text-sm">
-                  <div className="text-slate-800">{e.title}</div>
-                  <div className="text-xs text-slate-400">{new Date(e.createdAt).toLocaleString()}</div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <NotificationPanel events={events} />
         </div>
       )}
     </div>

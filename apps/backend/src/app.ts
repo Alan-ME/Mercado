@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import fastifySwagger from '@fastify/swagger';
@@ -18,21 +18,101 @@ import { registerAdminRoutes } from './routes/admin.js';
 import { registerActivityRoutes } from './routes/activity.js';
 import { registerDevUserRoutes, registerPublicTenantList } from './routes/dev.js';
 
+const LOCAL_SUBDOMAIN_ORIGIN_RE = /^https?:\/\/([a-z0-9-]+\.)?smcta\.local(?::\d+)?$/i;
+const LOOPBACK_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(?::\d+)?$/i;
+
+function isOriginPermitted(origin: string, allowlist: Set<string>): boolean {
+  if (allowlist.has(origin)) return true;
+  if (LOOPBACK_ORIGIN_RE.test(origin)) return true;
+  return LOCAL_SUBDOMAIN_ORIGIN_RE.test(origin);
+}
+
+// Nada de origin: true reflejando cualquier sitio malicioso ni wildcard '*'.
+// Sólo pasan orígenes explícitos en CORS_ORIGINS, loopback local o *.smcta.local.
+function buildCorsOriginValidator(allowed: string[]) {
+  const allowlist = new Set(allowed);
+  return (origin: string | undefined, cb: (err: Error | null, allow: boolean | string) => void) => {
+    if (!origin) {
+      cb(null, true);
+      return;
+    }
+    cb(null, isOriginPermitted(origin, allowlist) ? origin : false);
+  };
+}
+
+function isApiUrl(request: FastifyRequest): boolean {
+  const url = request.raw.url;
+  return typeof url === 'string' && url.startsWith('/api');
+}
+
+function sendApiNotFound(reply: FastifyReply): void {
+  reply.status(404).send({ errorCode: 'NOT_FOUND', message: 'Ruta no encontrada.', details: {} });
+}
+
+async function configureFrontendServing(app: FastifyInstance, webDistPath: string): Promise<void> {
+  if (existsSync(webDistPath)) {
+    await app.register(fastifyStatic, { root: webDistPath, prefix: '/' });
+    app.setNotFoundHandler((request, reply) => {
+      if (isApiUrl(request)) {
+        sendApiNotFound(reply);
+        return;
+      }
+      reply.sendFile('index.html');
+    });
+    return;
+  }
+
+  app.setNotFoundHandler((request, reply) => {
+    if (isApiUrl(request)) {
+      sendApiNotFound(reply);
+      return;
+    }
+    reply.type('text/html').send(infoPage());
+  });
+}
+
+async function registerScopedApiRoutes(
+  app: FastifyInstance,
+  ctx: ServiceContext,
+  enableDevRoutes: boolean,
+): Promise<void> {
+  await app.register(
+    async (scoped) => {
+      scoped.addHook('preHandler', async (request) => {
+        await resolveTenant(ctx, request);
+      });
+      registerTenantRoutes(scoped);
+      registerCheckoutRoutes(scoped);
+      registerCouponRoutes(scoped);
+      registerP2PRoutes(scoped);
+      registerTpvRoutes(scoped);
+      registerEscrowRoutes(scoped);
+      registerAdminRoutes(scoped);
+      registerActivityRoutes(scoped);
+      if (enableDevRoutes) {
+        registerDevUserRoutes(scoped);
+      }
+    },
+    { prefix: '/api/v1' },
+  );
+}
+
 export async function buildApp(
   ctx: ServiceContext,
   config: AppConfig,
 ): Promise<FastifyInstance> {
   const app = Fastify({
     logger: { level: config.logLevel },
-    // Confía en el proxy de Vite para preservar el Host original en desarrollo.
     trustProxy: true,
   });
 
   app.decorate('ctx', ctx);
   registerErrorHandler(app);
-  await app.register(cors, { origin: true, exposedHeaders: ['x-tenant-id'] });
+  await app.register(cors, {
+    origin: buildCorsOriginValidator(config.corsOrigins),
+    exposedHeaders: ['x-tenant-id'],
+  });
 
-  // Documentación OpenAPI / Swagger (Hoja de Ruta Rol 1, Tarea 1.10) en /api/docs.
   await app.register(fastifySwagger, {
     openapi: {
       info: {
@@ -50,53 +130,21 @@ export async function buildApp(
   });
   await app.register(fastifySwaggerUi, { routePrefix: '/api/docs' });
 
+  const engineName = config.databaseUrl ? 'postgres' : 'pglite-embedded';
+  const lockName = config.redisUrl ? 'redis' : 'in-process';
   app.get('/health', async () => ({
     status: 'ok',
-    engine: config.databaseUrl ? 'postgres' : 'pglite-embedded',
-    lock: config.redisUrl ? 'redis' : 'in-process',
+    engine: engineName,
+    lock: lockName,
     ts: new Date().toISOString(),
   }));
 
-  registerPublicTenantList(app, ctx);
-
-  // Rutas de negocio: todas resuelven el tenant (TASK-007) antes del handler.
-  await app.register(
-    async (scoped) => {
-      scoped.addHook('preHandler', async (request) => {
-        await resolveTenant(ctx, request);
-      });
-      registerTenantRoutes(scoped);
-      registerCheckoutRoutes(scoped);
-      registerCouponRoutes(scoped);
-      registerP2PRoutes(scoped);
-      registerTpvRoutes(scoped);
-      registerEscrowRoutes(scoped);
-      registerAdminRoutes(scoped);
-      registerActivityRoutes(scoped);
-      registerDevUserRoutes(scoped);
-    },
-    { prefix: '/api/v1' },
-  );
-
-  // Sirve el frontend compilado si existe; si no, una página informativa.
-  if (existsSync(config.webDistPath)) {
-    await app.register(fastifyStatic, { root: config.webDistPath, prefix: '/' });
-    app.setNotFoundHandler((request, reply) => {
-      if (request.raw.url?.startsWith('/api')) {
-        reply.status(404).send({ errorCode: 'NOT_FOUND', message: 'Ruta no encontrada.', details: {} });
-        return;
-      }
-      reply.sendFile('index.html'); // SPA fallback
-    });
-  } else {
-    app.setNotFoundHandler((request, reply) => {
-      if (request.raw.url?.startsWith('/api')) {
-        reply.status(404).send({ errorCode: 'NOT_FOUND', message: 'Ruta no encontrada.', details: {} });
-        return;
-      }
-      reply.type('text/html').send(infoPage());
-    });
+  if (config.enableDevRoutes) {
+    registerPublicTenantList(app, ctx);
   }
+
+  await registerScopedApiRoutes(app, ctx, config.enableDevRoutes);
+  await configureFrontendServing(app, config.webDistPath);
 
   return app;
 }

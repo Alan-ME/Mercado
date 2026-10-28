@@ -1,21 +1,35 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 
-/**
- * Modal de canje (US-02 / Tarea 2.3): QR dinámico que rota cada 30s con barra de
- * progreso circular. Incluye marca de agua anti-captura con el usuario y timestamp.
- */
+function QrErrorView({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className="space-y-3 rounded-brand bg-red-50 p-4 text-sm text-red-700">
+      <div>{error}</div>
+      <button
+        onClick={onRetry}
+        className="flex items-center gap-1.5 rounded-brand bg-red-600 px-3 py-1.5 text-xs font-semibold text-white"
+      >
+        <RefreshCw size={13} /> Reintentar emisión
+      </button>
+    </div>
+  );
+}
+
+// Antes el timer de 250ms seguía disparando fetchToken() cuando expiresAt quedaba vencido y el backend
+// devolvía error: metía 4 requests por segundo sin freno. Ahora trava con inFlightRef y corta ante error.
 export function QrCanje({
   tenant,
   couponId,
+  userId,
   productName,
   userName,
   onClose,
 }: {
   tenant: string;
   couponId: string;
+  userId: string;
   productName: string;
   userName: string;
   onClose: () => void;
@@ -25,35 +39,38 @@ export function QrCanje({
   const [expiresAt, setExpiresAt] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [error, setError] = useState<string | null>(null);
-  const timer = useRef<number | null>(null);
+  const inFlightRef = useRef(false);
 
   const fetchToken = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     try {
-      const r = await api.getQrToken(tenant, couponId);
+      const r = await api.getQrToken(tenant, couponId, userId);
       setToken(r.token);
       setTtlMs(r.ttlMs);
       setExpiresAt(r.expiresAt);
       setError(null);
     } catch (e) {
+      setExpiresAt(0);
       setError(e instanceof ApiError ? e.message : 'No se pudo generar el QR.');
+    } finally {
+      inFlightRef.current = false;
     }
-  }, [tenant, couponId]);
+  }, [tenant, couponId, userId]);
 
   useEffect(() => {
     void fetchToken();
   }, [fetchToken]);
 
-  // Cuenta regresiva + rotación automática al expirar.
   useEffect(() => {
-    timer.current = window.setInterval(() => {
+    if (expiresAt === 0 || error) return;
+    const id = window.setInterval(() => {
       const remaining = Math.max(0, expiresAt - Date.now());
       setSecondsLeft(Math.ceil(remaining / 1000));
-      if (remaining <= 0 && expiresAt !== 0) void fetchToken();
+      if (remaining <= 0) void fetchToken();
     }, 250);
-    return () => {
-      if (timer.current) window.clearInterval(timer.current);
-    };
-  }, [expiresAt, fetchToken]);
+    return () => window.clearInterval(id);
+  }, [expiresAt, error, fetchToken]);
 
   const pct = Math.max(0, Math.min(1, (secondsLeft * 1000) / ttlMs));
   const watermark = `${userName}\n${new Date().toLocaleString()}\nSMCTA`.repeat(6);
@@ -70,7 +87,7 @@ export function QrCanje({
         <p className="mb-4 text-sm text-slate-500">{productName}</p>
 
         {error ? (
-          <div className="rounded-brand bg-red-50 p-4 text-sm text-red-700">{error}</div>
+          <QrErrorView error={error} onRetry={() => void fetchToken()} />
         ) : (
           <div className="screenshot-guard mx-auto flex flex-col items-center" data-watermark={watermark}>
             <div className="rounded-brand border-4 border-[var(--smcta-brand-primary)] p-3">

@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { AppError, ErrorCode } from '@smcta/shared';
 import {
@@ -10,6 +10,8 @@ import {
 
 const userQuery = z.object({ userId: z.string().min(1) });
 const readBody = z.object({ userId: z.string().min(1) });
+const SSE_HEARTBEAT_MS = 15_000;
+
 const TYPES: UserEventType[] = [
   'PRIMARY_PURCHASE',
   'P2P_LISTED',
@@ -19,22 +21,82 @@ const TYPES: UserEventType[] = [
   'P2P_CANCELLED',
 ];
 
-/**
- * Feed de actividad por usuario:
- *  - GET  /notifications      centro de notificaciones (recientes + no leídas)
- *  - POST /notifications/read marca todas como leídas
- *  - GET  /transactions       historial completo con filtro por tipo (UX §1 / Tarea 2.8)
- */
+function parseRequiredUserId(query: unknown): string {
+  const parsed = userQuery.safeParse(query);
+  if (!parsed.success) {
+    throw new AppError(ErrorCode.VALIDATION_ERROR, 'Parámetro userId requerido.');
+  }
+  return parsed.data.userId;
+}
+
+function parseOptionalEventType(query: unknown): UserEventType | undefined {
+  if (!query || typeof query !== 'object') return undefined;
+  const raw = (query as { type?: string }).type;
+  return TYPES.includes(raw as UserEventType) ? (raw as UserEventType) : undefined;
+}
+
+// Reemplaza el polling ciego cada 20s del frontend por un canal SSE liviano con limpieza explícita:
+// si el cliente cierra la pestaña cortamos el timer y desuscribimos el listener en el acto.
+function streamUserNotifications(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  tenantId: string,
+  userId: string,
+): void {
+  const rawHeaders: Record<string, string | number | string[]> = {};
+  for (const [k, v] of Object.entries(reply.getHeaders())) {
+    if (v !== undefined) rawHeaders[k] = v;
+  }
+
+  reply.hijack();
+  reply.raw.writeHead(200, {
+    ...rawHeaders,
+    'content-type': 'text/event-stream; charset=utf-8',
+    'cache-control': 'no-cache, no-transform',
+    connection: 'keep-alive',
+    'x-accel-buffering': 'no',
+  });
+  reply.raw.write(': connected\n\n');
+
+  const unsubscribe = request.server.ctx.eventHub.subscribe(tenantId, userId, (ev) => {
+    if (!reply.raw.writableEnded) {
+      reply.raw.write(`event: notification\ndata: ${JSON.stringify(ev)}\n\n`);
+    }
+  });
+
+  const heartbeat = setInterval(() => {
+    if (!reply.raw.writableEnded) {
+      reply.raw.write(': ping\n\n');
+    }
+  }, SSE_HEARTBEAT_MS);
+  heartbeat.unref();
+
+  let closed = false;
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
+    clearInterval(heartbeat);
+    unsubscribe();
+  };
+
+  request.raw.on('close', cleanup);
+  reply.raw.on('close', cleanup);
+}
+
 export function registerActivityRoutes(app: FastifyInstance): void {
   app.get('/notifications', async (request) => {
-    const q = userQuery.safeParse(request.query);
-    if (!q.success) throw new AppError(ErrorCode.VALIDATION_ERROR, 'Parámetro ownerId/userId requerido.');
-    const t = request.tenant.tenant_id;
+    const userId = parseRequiredUserId(request.query);
+    const tenantId = request.tenant.tenant_id;
     const [events, unreadCount] = await Promise.all([
-      listEvents(request.server.ctx.db, t, q.data.userId, { limit: 15 }),
-      countUnread(request.server.ctx.db, t, q.data.userId),
+      listEvents(request.server.ctx.db, tenantId, userId, { limit: 15 }),
+      countUnread(request.server.ctx.db, tenantId, userId),
     ]);
     return { unreadCount, events };
+  });
+
+  app.get('/notifications/stream', async (request, reply) => {
+    const userId = parseRequiredUserId(request.query);
+    streamUserNotifications(request, reply, request.tenant.tenant_id, userId);
   });
 
   app.post('/notifications/read', async (request) => {
@@ -44,11 +106,9 @@ export function registerActivityRoutes(app: FastifyInstance): void {
   });
 
   app.get('/transactions', async (request) => {
-    const q = userQuery.safeParse(request.query);
-    if (!q.success) throw new AppError(ErrorCode.VALIDATION_ERROR, 'Parámetro userId requerido.');
-    const typeRaw = (request.query as { type?: string }).type;
-    const type = TYPES.includes(typeRaw as UserEventType) ? (typeRaw as UserEventType) : undefined;
-    return listEvents(request.server.ctx.db, request.tenant.tenant_id, q.data.userId, {
+    const userId = parseRequiredUserId(request.query);
+    const type = parseOptionalEventType(request.query);
+    return listEvents(request.server.ctx.db, request.tenant.tenant_id, userId, {
       type,
       limit: 100,
     });

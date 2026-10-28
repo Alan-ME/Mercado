@@ -7,6 +7,82 @@ import { api, ApiError, type WalletCoupon } from '../api/client';
 import { StatusPill } from '../components/StatusPill';
 import { QrCanje } from '../components/QrCanje';
 
+function CouponAction({
+  coupon,
+  onRedeem,
+  onCancel,
+}: {
+  coupon: WalletCoupon;
+  onRedeem: (c: WalletCoupon) => void;
+  onCancel: (couponId: string) => void;
+}) {
+  if (coupon.state === CouponState.EN_WALLET) {
+    return (
+      <button
+        onClick={() => onRedeem(coupon)}
+        className="flex w-full items-center justify-center gap-2 rounded-brand py-2 text-sm font-semibold text-white"
+        style={{ background: 'var(--smcta-brand-primary)' }}
+      >
+        <QrCode size={16} /> Generar QR de canje
+      </button>
+    );
+  }
+  if (coupon.state === CouponState.PUBLICADO_P2P) {
+    return (
+      <button
+        onClick={() => onCancel(coupon.couponId)}
+        className="flex w-full items-center justify-center gap-2 rounded-brand border border-amber-300 bg-amber-50 py-2 text-sm font-semibold text-amber-800"
+      >
+        <Ban size={16} /> En venta P2P — Cancelar oferta
+      </button>
+    );
+  }
+  return (
+    <div className="rounded-brand bg-slate-50 py-2 text-center text-sm text-slate-400">
+      Sin acciones disponibles
+    </div>
+  );
+}
+
+function CouponGrid({
+  coupons,
+  onRedeem,
+  onCancel,
+}: {
+  coupons: WalletCoupon[];
+  onRedeem: (c: WalletCoupon) => void;
+  onCancel: (couponId: string) => void;
+}) {
+  if (coupons.length === 0) {
+    return (
+      <div className="rounded-brand bg-white p-8 text-center text-slate-500 shadow-sm">
+        No tenés cupones. Comprá uno en la Tienda.
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {coupons.map((c) => (
+        <div key={c.couponId} className="rounded-brand bg-white p-5 shadow-sm">
+          <div className="mb-2 flex items-start justify-between">
+            <h3 className="font-semibold text-slate-900">{c.productName}</h3>
+            <StatusPill state={c.state} />
+          </div>
+          <div className="text-2xl font-bold text-[var(--smcta-brand-primary)]">
+            ${c.nominalPrice.toFixed(2)}
+          </div>
+          <div className="mt-1 text-xs text-slate-400">
+            Vence: {new Date(c.expirationDate).toLocaleDateString()}
+          </div>
+          <div className="mt-4">
+            <CouponAction coupon={c} onRedeem={onRedeem} onCancel={onCancel} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function WalletPage() {
   const { tenant, user } = useSession();
   const toast = useToast();
@@ -31,15 +107,9 @@ export function WalletPage() {
     void load();
   }, [load]);
 
-  const cancel = async (couponId: string) => {
-    if (!tenant || !user) return;
-    const order = orders.find((o) => o.couponId === couponId && o.sellerId === user.userId);
-    if (!order) {
-      toast.push('error', 'No se encontró la orden a cancelar.');
-      return;
-    }
+  const performCancel = async (tenantKey: string, orderId: string, sellerId: string) => {
     try {
-      await api.cancelOrder(tenant, order.orderId, user.userId);
+      await api.cancelOrder(tenantKey, orderId, sellerId);
       toast.push('success', 'Publicación cancelada. El cupón volvió a tu billetera.');
       await load();
     } catch (e) {
@@ -47,12 +117,25 @@ export function WalletPage() {
     }
   };
 
+  const cancel = async (couponId: string) => {
+    if (!tenant || !user) return;
+    const order = orders.find((o) => o.couponId === couponId && o.sellerId === user.userId);
+    if (!order) {
+      toast.push('error', 'No se encontró la orden a cancelar.');
+      return;
+    }
+    await performCancel(tenant, order.orderId, user.userId);
+  };
+
+  const ownerLabel = user ? user.displayName : '—';
+  const showQrModal = Boolean(canje && user && tenant);
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Billetera digital</h1>
-          <p className="text-sm text-slate-500">Cupones de {user?.displayName ?? '—'}</p>
+          <p className="text-sm text-slate-500">Cupones de {ownerLabel}</p>
         </div>
         <button
           onClick={() => void load()}
@@ -62,60 +145,15 @@ export function WalletPage() {
         </button>
       </div>
 
-      {coupons.length === 0 ? (
-        <div className="rounded-brand bg-white p-8 text-center text-slate-500 shadow-sm">
-          No tenés cupones. Comprá uno en la Tienda.
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {coupons.map((c) => (
-            <div key={c.couponId} className="rounded-brand bg-white p-5 shadow-sm">
-              <div className="mb-2 flex items-start justify-between">
-                <h3 className="font-semibold text-slate-900">{c.productName}</h3>
-                <StatusPill state={c.state} />
-              </div>
-              <div className="text-2xl font-bold text-[var(--smcta-brand-primary)]">
-                ${c.nominalPrice.toFixed(2)}
-              </div>
-              <div className="mt-1 text-xs text-slate-400">
-                Vence: {new Date(c.expirationDate).toLocaleDateString()}
-              </div>
+      <CouponGrid coupons={coupons} onRedeem={setCanje} onCancel={(id) => void cancel(id)} />
 
-              <div className="mt-4">
-                {c.state === CouponState.EN_WALLET && (
-                  <button
-                    onClick={() => setCanje(c)}
-                    className="flex w-full items-center justify-center gap-2 rounded-brand py-2 text-sm font-semibold text-white"
-                    style={{ background: 'var(--smcta-brand-primary)' }}
-                  >
-                    <QrCode size={16} /> Generar QR de canje
-                  </button>
-                )}
-                {c.state === CouponState.PUBLICADO_P2P && (
-                  <button
-                    onClick={() => void cancel(c.couponId)}
-                    className="flex w-full items-center justify-center gap-2 rounded-brand border border-amber-300 bg-amber-50 py-2 text-sm font-semibold text-amber-800"
-                  >
-                    <Ban size={16} /> En venta P2P — Cancelar oferta
-                  </button>
-                )}
-                {(c.state === CouponState.CANJEADO || c.state === CouponState.VENCIDO) && (
-                  <div className="rounded-brand bg-slate-50 py-2 text-center text-sm text-slate-400">
-                    Sin acciones disponibles
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {canje && user && tenant && (
+      {showQrModal && (
         <QrCanje
-          tenant={tenant}
-          couponId={canje.couponId}
-          productName={canje.productName}
-          userName={user.displayName}
+          tenant={tenant!}
+          couponId={canje!.couponId}
+          userId={user!.userId}
+          productName={canje!.productName}
+          userName={user!.displayName}
           onClose={() => {
             setCanje(null);
             void load();
