@@ -1,10 +1,7 @@
-/**
- * Códigos de error semánticos inflexibles.
- * Fuente: 00_Protocolo_de_Alineacion_y_Contratos_Compartidos.md §4
- *
- * Cualquier error de negocio retorna { errorCode, message, details } con el
- * código HTTP exacto aquí definido. Los tests de QA (QA-01) verifican estos códigos.
- */
+// Catálogo canónico de errores de negocio y mapeo a códigos de estado HTTP.
+// Nada de tirar 500 genéricos ni inventar strings al vuelo: si una orden está tomada se devuelve
+// 423 P2P_ORDER_LOCKED, si el precio viola la banda se devuelve 422 PRICE_COLLAR_VIOLATION.
+// Esto permite que el frontend distinga una condición de carrera de un fallo de validación sin parsear textos.
 
 export const ErrorCode = {
   PRICE_COLLAR_VIOLATION: 'PRICE_COLLAR_VIOLATION',

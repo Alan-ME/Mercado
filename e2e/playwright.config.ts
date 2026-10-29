@@ -3,11 +3,10 @@ import { defineConfig } from '@playwright/test';
 const PORT = process.env.E2E_PORT ?? '8099';
 const BASE = `http://localhost:${PORT}`;
 
-/**
- * Suite E2E (Rol 3, Sprint 9). Levanta el Backend Core real (PGlite embebido) y
- * valida por HTTP los 4 criterios obligatorios del QA Checklist.xlsx.
- * No requiere navegador ni Docker: usa el `request` fixture de Playwright.
- */
+// Suite E2E automatizada que valida los 4 escenarios obligatorios del QA Checklist.
+// Levanta el backend real en el puerto 8099 sobre PostgreSQL WASM (PGlite) sin necesitar
+// Docker ni levantar navegadores pesados: usa el fixture HTTP `request` de Playwright
+// para bombardear la API con concurrencia real y medir respuestas al milisegundo.
 export default defineConfig({
   testDir: './tests',
   timeout: 30_000,

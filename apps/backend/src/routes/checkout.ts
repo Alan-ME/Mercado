@@ -10,7 +10,7 @@ const bodySchema = z.object({
   paymentToken: z.string().optional(),
 });
 
-/** POST /api/v1/checkout/primary — US-01 / TASK-001. */
+// Emisión primaria (US-01 / TASK-001): cobra al comprador y deposita el nominal en Escrow.
 export function registerCheckoutRoutes(app: FastifyInstance): void {
   app.post('/checkout/primary', async (request, reply) => {
     const body = bodySchema.parse(request.body);
@@ -19,7 +19,8 @@ export function registerCheckoutRoutes(app: FastifyInstance): void {
     return coupon;
   });
 
-  // Simulador de pasarela de pagos (PSP mock, Rol 3): confirma el pago y emite el cupón.
+  // Simulador de pasarela de pagos (PSP mock): emula la confirmación asíncrona de cobro con tarjeta
+  // para no depender de credenciales reales de Stripe o Mercado Pago en la demo de cátedra.
   app.post('/psp/pay', async (request, reply) => {
     const body = bodySchema.parse(request.body);
     const coupon = await checkoutPrimary(request.server.ctx, request.tenant, body);

@@ -1,17 +1,8 @@
-/**
- * Contratos de datos compartidos (única fuente de verdad técnica).
- * Transcritos de: 05_Fase_Gestion_de_Proyecto_y_Roadmap/Hojas_de_Ruta_Distribuidas/
- *                 00_Protocolo_de_Alineacion_y_Contratos_Compartidos.md §2
- *
- * Los nombres de campos, tipos y enumerados son INMUTABLES: backend (Rol 1),
- * frontend (Rol 2) y gateway/QA (Rol 3) dependen de estas estructuras.
- */
+// Contratos de datos compartidos entre backend y frontend (monorepo unificado).
+// Los nombres de campos, tipos y enumerados son intocables: cualquier renombramiento
+// silencioso rompe la serialización JSON del protocolo P2P, los clientes móviles
+// y la firma criptográfica HMAC de los tokens QR.
 
-// ==========================================
-// ENUMERADOS DEL SISTEMA
-// ==========================================
-
-/** Máquina de estados del cupón (REQ-002 §1). */
 export enum CouponState {
   EMITIDO = 'EMITIDO',
   EN_WALLET = 'EN_WALLET',
@@ -38,15 +29,11 @@ export enum LedgerTransactionType {
   REFUND = 'REFUND',
 }
 
-// ==========================================
-// DTOs Y ENTIDADES MAESTRAS
-// ==========================================
-
 export interface TenantTheme {
-  primaryColor: string; // Ej: "#1A365D"
-  accentColor: string; // Ej: "#3182CE"
-  surfaceColor: string; // Ej: "#FFFFFF"
-  fontFamily: string; // Ej: "Inter, sans-serif"
+  primaryColor: string; // HEX #RRGGBB o #RGB para la marca del comercio
+  accentColor: string; // Color de acción / contraste para botones y pills
+  surfaceColor: string; // Fondo de tarjetas y paneles
+  fontFamily: string; // Fuente corporativa
   logoUrl: string;
 }
 
@@ -54,13 +41,13 @@ export interface TenantConfigDTO {
   tenantId: string;
   companyName: string;
   subdomain: string;
-  sellerTakeRatePct: number; // Ej: 3.50 (%)
-  buyerTakeRatePct: number; // Ej: 2.50 (%)
-  priceFloorPct: number; // Ej: 50.00 (% del nominal)
-  priceCeilingPct: number; // Ej: 200.00 (% del nominal)
-  maxDailyResalesPerUser: number; // Ej: 5
-  closureHoursBeforeEvent: number; // Ej: 2 (horas antes para cerrar P2P)
-  platformRevenueSharePct: number; // Ej: 30.00 (%)
+  sellerTakeRatePct: number; // Porcentaje cobrado al vendedor (ej. 3.50 = 3.5%)
+  buyerTakeRatePct: number; // Porcentaje cobrado al comprador (ej. 2.50 = 2.5%)
+  priceFloorPct: number; // Porcentaje mínimo del nominal permitido en reventa (ej. 50 = 50%)
+  priceCeilingPct: number; // Porcentaje máximo del nominal permitido en reventa (ej. 200 = 200%)
+  maxDailyResalesPerUser: number; // Límite de reventas por usuario en 24h (RN-05)
+  closureHoursBeforeEvent: number; // Horas previas al evento donde se bloquea el P2P (RN-06)
+  platformRevenueSharePct: number; // Tajada de SMCTA Core sobre las comisiones totales
   theme: TenantTheme;
 }
 
@@ -68,10 +55,10 @@ export interface CouponDTO {
   couponId: string;
   tenantId: string;
   currentOwnerId: string;
-  nominalPrice: number; // Ej: 100.00
+  nominalPrice: number; // Importe nominal emitido en custodia
   state: CouponState;
-  qrEncryptedToken: string; // Token criptográfico rotativo
-  expirationDate: string; // ISO-8601
+  qrEncryptedToken: string; // Token firmado rotativo de 30s
+  expirationDate: string; // ISO-8601 UTC
   createdAt: string;
 }
 
@@ -80,10 +67,10 @@ export interface CommissionBreakdown {
   askingPrice: number;
   sellerFeePct: number;
   sellerFeeAmount: number; // askingPrice * (sellerTakeRate / 100)
-  netSellerProceeds: number; // askingPrice - sellerFeeAmount
+  netSellerProceeds: number; // askingPrice - sellerFeeAmount (lo que cobra el vendedor)
   buyerFeePct: number;
   buyerFeeAmount: number; // askingPrice * (buyerTakeRate / 100)
-  totalBuyerPrice: number; // askingPrice + buyerFeeAmount
+  totalBuyerPrice: number; // askingPrice + buyerFeeAmount (lo que paga el comprador)
 }
 
 export interface P2POrderDTO {
@@ -91,7 +78,7 @@ export interface P2POrderDTO {
   tenantId: string;
   couponId: string;
   sellerId: string;
-  askingPrice: number; // Precio de reventa propuesto
+  askingPrice: number;
   side: OrderSide;
   status: OrderStatus;
   createdAt: string;
@@ -102,22 +89,18 @@ export interface QRTokenPayload {
   couponId: string;
   tenantId: string;
   ownerId: string;
-  nonce: string; // Generado aleatoriamente cada 30 segundos
-  timestamp: number; // Epoch millis
-  signature: string; // HMAC-SHA256 firmado con clave secreta del tenant
-  tokenVersion?: number; // Invalida QRs viejos incluso si el cupón vuelve al dueño original (A->B->A)
+  nonce: string; // Sal aleatoria generada en cada rotación para evitar colisiones
+  timestamp: number; // Epoch millis del momento de emisión
+  signature: string; // HMAC-SHA256 firmado con el secreto interno del tenant
+  tokenVersion?: number; // Contador incremental que revoca tokens viejos tras transferencias
 }
 
-// ==========================================
-// PAYLOADS DE PETICIÓN (request bodies)
-// ==========================================
-
 export interface CheckoutPrimaryRequest {
-  productName?: string; // producto/plantilla elegido en la tienda
+  productName?: string;
   nominalPrice: number;
-  buyerId: string; // usuario autenticado que compra la emisión primaria
-  expirationDate?: string; // ISO-8601 (fecha del evento / caducidad); default +30d
-  paymentToken?: string; // token de la pasarela (PSP mock); 'fail' fuerza rechazo
+  buyerId: string;
+  expirationDate?: string; // ISO-8601 UTC opcional; si no viene por defecto dura 30 días
+  paymentToken?: string; // Token del PSP simulado ('fail' fuerza rechazo para tests)
 }
 
 export interface PublishOrderRequest {
@@ -131,10 +114,9 @@ export interface BuyOrderRequest {
 }
 
 export interface ValidateQrRequest {
-  token: string; // QR firmado escaneado en el TPV
+  token: string;
 }
 
-/** Formato estándar de error de negocio (Protocolo §4). */
 export interface ApiErrorBody {
   errorCode: string;
   message: string;

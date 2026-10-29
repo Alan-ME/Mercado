@@ -17,7 +17,8 @@ const patchSchema = z.object({
   themeLogoUrl: z.string().optional(),
 });
 
-/** PUT /api/v1/admin/tenant/config — US-05 (Portal Admin B2B). */
+// Portal Admin B2B (US-05): actualiza parámetros de negocio (bandas, comisiones) y tema visual
+// en caliente sin reiniciar el servidor ni recompilar el frontend.
 export function registerAdminRoutes(app: FastifyInstance): void {
   app.put('/admin/tenant/config', async (request) => {
     const patch = patchSchema.parse(request.body);

@@ -2,12 +2,12 @@ import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { H, usersOf, checkout, publish } from './helpers';
 
-/**
- * QA-02 (TASK-005): compras concurrentes sobre la misma orden P2P.
- * Exactamente 1 debe ser aprobada (200) y el resto rechazadas (423/409),
- * sin duplicidad de cupones ni inconsistencias.
- * (QA Checklist pide 20; la Hoja de Ruta Rol 1 §1.9 exige 50 → se prueba con 50.)
- */
+// QA-02: Prueba de estrés por carrera crítica. Disparamos 50 compras simultáneas con Promise.all()
+// sobre una única orden P2P abierta.
+// Para que esto pase sin dejar plata fantasma ni órdenes huérfanas, el lock distribuido
+// y la transacción SERIALIZABLE tienen que coordinar a la perfección:
+// exactamente 1 petición debe llevarse el cupón (HTTP 200) y las 49 restantes deben
+// rebotar con 423 P2P_ORDER_LOCKED o 409 ORDER_NOT_OPEN sin duplicar registros en base.
 test('QA-02 · concurrencia atómica: 1 ganador, 49 rechazados', async ({ request }) => {
   const [ana] = await usersOf(request, 'festival');
   const couponId = await checkout(request, 'festival', ana!);

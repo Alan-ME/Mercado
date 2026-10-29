@@ -6,7 +6,8 @@ export interface LedgerEntryInput {
   tenantId: string;
   couponId: string;
   transactionType: LedgerTransactionType;
-  /** Delta firmado sobre el saldo en custodia (+nominal checkout, -nominal release, 0 split). */
+  // Delta con signo sobre el saldo en custodia:
+  // +nominal en CHECKOUT primario, -nominal en REDEEM_RELEASE o REFUND, 0 en P2P_SPLIT.
   amountInEscrow: number;
   tenantFeeAccumulated?: number;
   platformFee?: number;
@@ -62,7 +63,8 @@ export async function getEscrowTotals(
   };
 }
 
-/** Suma del valor nominal de los cupones vivos (deben seguir cubiertos por escrow). */
+// Suma del valor nominal de los cupones activos (EN_WALLET y PUBLICADO_P2P).
+// Por definición contable, esta suma tiene que empatar exactamente con el saldo total en custodia.
 export async function getLiveCouponsNominal(
   db: Queryable,
   tenantId: string,

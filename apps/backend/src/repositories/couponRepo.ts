@@ -70,7 +70,9 @@ export async function setCouponToken(
   ]);
 }
 
-/** Transferencia de propiedad + re-emisión de token (invalida el anterior). Matching P2P. */
+// En el matching P2P no alcanza con cambiar current_owner_id: hay que regenerar el qr_encrypted_token
+// y subir token_version = token_version + 1 en la misma sentencia SQL.
+// Esto garantiza que cualquier QR viejo en circulación quede revocado de forma atómica e irreversible.
 export async function transferAndReissue(
   tx: Queryable,
   couponId: string,
