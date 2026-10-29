@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { H, usersOf, tenantIdOf, checkout, publish } from './helpers';
 
-/**
- * QA-03 (TASK-006): tras un ciclo completo (Compra Primaria -> Reventa P2P con
- * Plusvalía -> Canje TPV), los asientos de escrow_ledgers deben cuadrar y la
- * auditoría de balance debe dar diferencia exactamente 0, con precisión decimal.
- */
+// QA-03: Conciliación contable de custodia (Escrow).
+// Ejecuta el ciclo de vida completo: Compra Primaria -> Reventa P2P con plusvalía y split -> Canje en TPV.
+// Al final, la diferencia entre los asientos del libro mayor y los cupones activos tiene que ser 0.00 exacto.
 test('QA-03 · ciclo completo y auditoría de balance = 0', async ({ request }) => {
   const [ana, beto] = await usersOf(request, 'festival');
   const tenantId = await tenantIdOf(request, 'festival');

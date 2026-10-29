@@ -1,17 +1,13 @@
 import { Decimal } from 'decimal.js';
 import { d, money } from './money.js';
 
-/**
- * Banda de precios (Price Collar) — RN-02.
- *
- * Convención adoptada: price_floor_pct y price_ceiling_pct son PORCENTAJE DIRECTO
- * del valor nominal (floor 50 => 50% del nominal; ceiling 200 => 200% del nominal).
- * Es la convención de: DDL (default 50/200), Protocolo DTO ("% del nominal"),
- * la matriz .xlsx, el criterio BDD de US-03 (piso 50%=$50, techo 200%=$200, rechazar $250)
- * y el criterio QA-01 ("$250 sobre nominal $100 con techo 200% => HTTP 422").
- * (El texto de REQ-002 §RN-02 usa V0*(1±) pero su propio ejemplo se contradice con
- *  los valores por defecto; se prioriza la convención verificable por QA.)
- */
+// Banda de precios anti-especulación (Price Collar, RN-02).
+// Protege al consumidor final para que nadie compre cupones baratos y los revenda a precios astronómicos,
+// ni los liquide a precio de remate destruyendo la marca del comercio.
+//
+// OJO con la fórmula: price_floor_pct y price_ceiling_pct representan el porcentaje directo sobre el valor nominal.
+// Ej. piso 50% de $100 = $50.00; techo 200% de $100 = $200.00.
+// Cualquier orden fuera de ese rango rebota con HTTP 422 (PRICE_COLLAR_VIOLATION).
 export interface PriceCollar {
   min: number;
   max: number;

@@ -1,10 +1,9 @@
 import { useEffect, type ReactNode } from 'react';
 import type { TenantConfigDTO } from '@smcta/shared';
 
-/**
- * Tarea 2.1 (Rol 2): inyecta la identidad visual del tenant como CSS variables
- * en :root, permitiendo cambiar de marca en tiempo de ejecución sin recompilar.
- */
+// Inyecta los tokens de diseño del comercio (colores primario, acento, superficie y fuente)
+// como variables CSS en :root del DOM. Esto permite cambiar de inquilino White-Label al instante
+// en la interfaz sin recompilar la SPA ni recargar la pestaña.
 export function TenantThemeProvider({
   config,
   children,

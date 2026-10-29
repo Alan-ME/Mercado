@@ -1,10 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { H, usersOf, checkout } from './helpers';
 
-/**
- * QA-01 (TASK-004): retornar HTTP 422 si el importe excede el techo o baja del piso
- * parametrizado en el Tenant.
- */
+// QA-01: Verificación de Price Collar en la API de reventa P2P.
+// Si un usuario propone un precio que perfora el piso o excede el techo porcentual del nominal,
+// el backend debe responder HTTP 422 con código PRICE_COLLAR_VIOLATION y abortar sin insertar la orden.
 test.describe('QA-01 · Price Collar => HTTP 422', () => {
   test('rechaza precio por encima del techo con PRICE_COLLAR_VIOLATION', async ({ request }) => {
     const [ana] = await usersOf(request, 'festival');

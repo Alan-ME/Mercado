@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { H, usersOf, checkout } from './helpers';
 
-/**
- * QA-04 (TASK-007): peticiones con subdominios festival.smcta.local y
- * hotel.smcta.local deben resolver tenants completamente aislados sin fuga de
- * datos entre sí.
- */
+// QA-04: Aislamiento estricto multi-tenant (arquitectura White-Label).
+// Valida que los datos, billeteras y firmas criptográficas de un comercio (ej. festival)
+// sean invisibles e inválidos para otro comercio (ej. hotel), garantizando segregación lógica total.
 test.describe('QA-04 · aislamiento multi-tenant', () => {
   test('un cupón de festival no aparece en la wallet del mismo owner bajo hotel', async ({ request }) => {
     const [ana] = await usersOf(request, 'festival');

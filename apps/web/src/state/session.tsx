@@ -37,7 +37,7 @@ function lsSet(key: string, value: string): void {
   try {
     localStorage.setItem(key, value);
   } catch {
-    /* modo privado: ignora */
+    // Modo incógnito estricto o almacenamiento bloqueado: no rompemos la app por no poder recordar la sesión.
   }
 }
 

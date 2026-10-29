@@ -19,6 +19,8 @@ function num(value: string | undefined, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+// Si no definen CORS_ORIGINS en el entorno, permitimos únicamente el loopback local en los puertos
+// habituales de desarrollo (Vite en 5173 y Fastify en 8080).
 function parseOrigins(raw: string | undefined): string[] {
   if (!raw) {
     return ['http://localhost:5173', 'http://localhost:8080', 'http://127.0.0.1:5173', 'http://127.0.0.1:8080'];
@@ -29,6 +31,8 @@ function parseOrigins(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+// Las rutas /dev/* exponen usuarios y cupones para el selector visual de la demo.
+// En producción (NODE_ENV=production) se apagan automáticamente salvo que alguien fuerce ENABLE_DEV_ROUTES=true.
 function resolveDevRoutesFlag(env: NodeJS.ProcessEnv): boolean {
   if (env.ENABLE_DEV_ROUTES !== undefined) {
     return env.ENABLE_DEV_ROUTES === 'true';
