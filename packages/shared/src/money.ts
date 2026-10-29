@@ -2,9 +2,9 @@ import { Decimal } from 'decimal.js';
 import type { CommissionBreakdown } from './dtos.js';
 
 /**
- * Aritmética monetaria exacta.
- * Regla obligatoria (Hoja de Ruta Rol 1): toda operación de divisas/porcentajes
- * usa decimal.js. JAMÁS `Number` flotante nativo.
+ * Aritmética monetaria de alta precisión:
+ * Toda operación de divisas, comisiones y porcentajes se ejecuta obligatoriamente con decimal.js.
+ * Evitamos cualquier uso de `Number` IEEE-754 flotante nativo para operaciones intermedias.
  */
 
 // Si usás Number nativo de JS para plata, en dos transacciones tenés 0.1 + 0.2 = 0.30000000000000004
@@ -35,12 +35,9 @@ export function pctOf(base: Decimal.Value, pct: Decimal.Value): Decimal {
 }
 
 /**
- * Cálculo del split de comisiones P2P (RN-03).
- * Verificado contra 03_Matriz_de_Comisiones_y_Monetizacion_WhiteLabel.xlsx:
- *  - V0=100, P=100, s=3.5%, b=2.5% -> sellerFee 3.50, buyerFee 2.50, fees 6.00, core 1.80
- *  - V0=100, P=150                 -> 5.25, 3.75, 9.00, 2.70
- *  - V0=100, P=70                  -> 2.45, 1.75, 4.20, 1.26
- *  - V0=500, P=750                 -> 26.25, 18.75, 45.00, 13.50
+ * Cálculo del split de comisiones del mercado secundario P2P:
+ * Desglosa monto cobrado al vendedor, recargo al comprador, neto final a percibir
+ * y precio total a abonar, redondeando a 2 decimales según estándar bancario.
  */
 export function computeCommission(params: {
   nominalPrice: Decimal.Value;

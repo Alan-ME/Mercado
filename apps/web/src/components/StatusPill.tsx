@@ -1,6 +1,6 @@
 import { CouponState } from '@smcta/shared';
 
-// Colores del badge de estado (Fase 04 - Guía de Componentes §3.1).
+// Paleta visual semántica para identificar el estado del cupón de un solo vistazo.
 const STYLES: Record<CouponState, { bg: string; fg: string; label: string }> = {
   [CouponState.EMITIDO]: { bg: '#E0E7FF', fg: '#3730A3', label: 'Emitido' },
   [CouponState.EN_WALLET]: { bg: '#DEF7EC', fg: '#03543F', label: 'En billetera' },

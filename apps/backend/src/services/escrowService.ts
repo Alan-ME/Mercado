@@ -43,7 +43,7 @@ function computeRedemptionRate(redeemed: number, expired: number): number {
   return closed === 0 ? 0 : money(d(redeemed).div(closed).mul(100));
 }
 
-// Auditoría estricta de custodia (TASK-006 / QA-03):
+// Auditoría estricta de custodia en cuentas de garantía:
 // Compara la sumatoria real del libro mayor (asientos CHECKOUT - RELEASE - REFUND) contra
 // el valor nominal de todos los cupones que siguen vivos (EN_WALLET y PUBLICADO_P2P).
 // La diferencia tiene que dar 0.00 exacto. Si da distinto de cero, hubo fuga de plata o asiento duplicado.

@@ -47,8 +47,8 @@ export async function findOrderById(
   return rows[0] ? rows[0] : null;
 }
 
-// RN-05 pide tope DIARIO de reventas, no "cuántas órdenes tenés abiertas ahora mismo".
-// Contamos OPEN + MATCHED en las últimas 24h; si canceló una por error de tipeo no lo castigamos.
+// El tope anti-reventa es DIARIO (ventana móvil de 24h), no de órdenes concurrentes en vuelo.
+// Contamos tanto OPEN como MATCHED; si el usuario canceló una orden por error de precio no lo penalizamos.
 export async function countDailyResalesBySeller(
   db: Queryable,
   tenantId: string,

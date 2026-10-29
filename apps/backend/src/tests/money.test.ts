@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { computeCommission, totalFees, platformShare } from '@smcta/shared';
 
 /**
- * Verifica el split de comisiones (RN-03) contra los 5 escenarios de
- * 03_Matriz_de_Comisiones_y_Monetizacion_WhiteLabel.xlsx (seller 3.5%, buyer 2.5%, plataforma 30%).
+ * Verificación matemática del split de comisiones y monetización:
+ * Comprueba que el neto al vendedor, el cargo al comprador y el revenue share de la plataforma
+ * coincidan al centavo exacto sin desvíos de redondeo en IEEE-754.
  */
 const CASES = [
   { v0: 100, p: 100, sellerFee: 3.5, buyerFee: 2.5, fees: 6.0, core: 1.8 },
@@ -13,7 +14,7 @@ const CASES = [
   { v0: 500, p: 750, sellerFee: 26.25, buyerFee: 18.75, fees: 45.0, core: 13.5 },
 ];
 
-describe('computeCommission (RN-03) vs Matriz de Comisiones .xlsx', () => {
+describe('Cálculo de comisiones y revenue share de plataforma', () => {
   for (const c of CASES) {
     it(`V0=${c.v0} P=${c.p} => fees ${c.fees}, SMCTA Core ${c.core}`, () => {
       const b = computeCommission({

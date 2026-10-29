@@ -44,7 +44,7 @@ function AuditSummary({ audit }: { audit: Audit }) {
         <div>
           <div className="font-bold">{title}</div>
           <div className="text-sm">
-            Diferencia: ${audit.difference.toFixed(2)} · TASK-006 exige exactamente 0.
+            Diferencia: ${audit.difference.toFixed(2)} · El balance de custodia debe ser estrictamente cero.
           </div>
         </div>
       </div>

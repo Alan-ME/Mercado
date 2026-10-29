@@ -29,11 +29,11 @@ afterAll(async () => {
   await app.ctx.db.close();
 });
 
-describe('Ciclo de vida completo P2P (US-01..US-06)', () => {
-  it('checkout -> publicar -> comprar -> canjear, con split correcto y auditoría en 0 (QA-03)', async () => {
+describe('Ciclo de vida completo del mercado secundario P2P', () => {
+  it('checkout -> publicar -> comprar -> canjear, con split exacto de comisiones y custodia en cero', async () => {
     const [ana, beto] = festival.userIds;
 
-    // US-01: checkout primario
+    // 1. Emisión primaria y resguardo en cuenta de garantía (Escrow)
     const checkout = await app.inject({
       method: 'POST',
       url: '/api/v1/checkout/primary',
@@ -44,7 +44,7 @@ describe('Ciclo de vida completo P2P (US-01..US-06)', () => {
     const coupon = checkout.json() as { couponId: string; state: string };
     expect(coupon.state).toBe('EN_WALLET');
 
-    // US-03: publicar a $150 (festival: seller 3%, buyer 2%)
+    // 2. Publicación en el mercado P2P a $150 (inquilino festival: seller 3%, buyer 2%)
     const publish = await app.inject({
       method: 'POST',
       url: '/api/v1/p2p/orders',
@@ -58,7 +58,7 @@ describe('Ciclo de vida completo P2P (US-01..US-06)', () => {
     expect(order.commissionBreakdown.netSellerProceeds).toBe(145.5);
     expect(order.commissionBreakdown.totalBuyerPrice).toBe(153.0);
 
-    // US-04: comprar (beto)
+    // 3. Match atómico de compra por parte de un segundo usuario
     const buy = await app.inject({
       method: 'POST',
       url: `/api/v1/p2p/orders/${order.orderId}/buy`,
@@ -68,7 +68,7 @@ describe('Ciclo de vida completo P2P (US-01..US-06)', () => {
     expect(buy.statusCode).toBe(200);
     expect((buy.json() as { status: string }).status).toBe('MATCHED');
 
-    // US-02: token QR del nuevo propietario
+    // 4. Generación del token QR criptográfico a nombre del nuevo comprador
     const qr = await app.inject({
       method: 'GET',
       url: `/api/v1/coupons/${coupon.couponId}/qr-token`,
@@ -77,7 +77,7 @@ describe('Ciclo de vida completo P2P (US-01..US-06)', () => {
     expect(qr.statusCode).toBe(200);
     const token = (qr.json() as { token: string }).token;
 
-    // US-06: canje en TPV
+    // 5. Admisión y canje final en el Punto de Venta (TPV)
     const redeem = await app.inject({
       method: 'POST',
       url: '/api/v1/tpv/validate-qr',

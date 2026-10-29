@@ -31,12 +31,12 @@ export function canTransition(from: CouponState, to: CouponState): boolean {
   return ALLOWED_TRANSITIONS[from].includes(to);
 }
 
-// RN-01: Sólo EN_WALLET admite canje. Si está en venta P2P o emitido sin aceptar, rebota.
+// Sólo un cupón en custodia activa (EN_WALLET) admite canje en TPV. Si está publicado en venta P2P rebota.
 export function allowsRedeem(state: CouponState): boolean {
   return state === CouponState.EN_WALLET;
 }
 
-// RN-01: Sólo EN_WALLET admite publicarse en el mercado. No podés vender algo que ya canjeaste o venció.
+// Sólo cupones disponibles en la billetera pueden listarse en el mercado. No podés revender lo ya canjeado o vencido.
 export function allowsResale(state: CouponState): boolean {
   return state === CouponState.EN_WALLET;
 }

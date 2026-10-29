@@ -1,6 +1,6 @@
 import { computeCommission } from '@smcta/shared';
 
-/** Desglose de comisiones en vivo (RN-03), como en la Guía UX §3.2. */
+/** Desglose dinámico de comisiones en vivo: muestra neto al vendedor, costo al comprador y take rates. */
 export function FeeBreakdown({
   nominalPrice,
   askingPrice,

@@ -7,7 +7,7 @@ import { bootstrap } from '../bootstrap.js';
 import { buildApp } from '../app.js';
 import { QrSecret } from '../domain/qrSecret.js';
 
-describe('Defensa de secretos y reglas críticas de negocio (RN-02..RN-06)', () => {
+describe('Defensa de secretos criptográficos y reglas críticas de negocio', () => {
   let app: FastifyInstance;
   let currentTimeMs = Date.now();
   let festivalUsers: string[] = [];
@@ -206,7 +206,7 @@ describe('Defensa de secretos y reglas críticas de negocio (RN-02..RN-06)', () 
     expect(qrAfterExp.statusCode).toBe(409);
   });
 
-  it('aplica RN-05 (tope de 5 reventas en 24h) contando órdenes MATCHED y no sólo OPEN', async () => {
+  it('aplica tope diario de reventas (máx 5 en 24h) acumulando órdenes MATCHED y no sólo OPEN', async () => {
     const [, , caro] = festivalUsers;
     const [ana] = festivalUsers;
     currentTimeMs = Date.now();
@@ -371,7 +371,7 @@ describe('Defensa de secretos y reglas críticas de negocio (RN-02..RN-06)', () 
     expect((queryFallback.json() as { subdomain: string }).subdomain).toBe('festival');
   });
 
-  it('cubre US-05 (admin config), cancelación P2P, RN-04 (expiración breakage) y feed de actividad', async () => {
+  it('cubre configuración admin B2B, cancelación P2P, expiración de cupones y feed de actividad', async () => {
     const usersRes = await app.inject({
       method: 'GET',
       url: '/api/v1/dev/users',
@@ -385,7 +385,7 @@ describe('Defensa de secretos y reglas críticas de negocio (RN-02..RN-06)', () 
     });
     const { tenantId } = cfgRes.json() as { tenantId: string };
 
-    // US-05: validación de rango inválida -> 400; actualización válida -> 200
+    // Validación de rangos en portal B2B: fuera de límite -> 400; actualización válida -> 200
     const badCfg = await app.inject({
       method: 'PUT',
       url: '/api/v1/admin/tenant/config',
@@ -437,7 +437,7 @@ describe('Defensa de secretos y reglas críticas de negocio (RN-02..RN-06)', () 
     });
     expect(cancel2.statusCode).toBe(409);
 
-    // RN-04: adelantamos el reloj más allá del vencimiento y corremos expire
+    // Expiración y retención: adelantamos el reloj simulado más allá del vencimiento y corremos expire
     currentTimeMs += 5 * 3_600_000;
     const expRes = await app.inject({
       method: 'POST',

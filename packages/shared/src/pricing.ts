@@ -1,7 +1,7 @@
 import { Decimal } from 'decimal.js';
 import { d, money } from './money.js';
 
-// Banda de precios anti-especulación (Price Collar, RN-02).
+// Banda de precios anti-especulación (Price Collar):
 // Protege al consumidor final para que nadie compre cupones baratos y los revenda a precios astronómicos,
 // ni los liquide a precio de remate destruyendo la marca del comercio.
 //

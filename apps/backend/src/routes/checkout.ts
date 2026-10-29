@@ -10,7 +10,7 @@ const bodySchema = z.object({
   paymentToken: z.string().optional(),
 });
 
-// Emisión primaria (US-01 / TASK-001): cobra al comprador y deposita el nominal en Escrow.
+// Emisión primaria: procesa el cobro al comprador inicial, genera el cupón cifrado y deposita el nominal en Escrow.
 export function registerCheckoutRoutes(app: FastifyInstance): void {
   app.post('/checkout/primary', async (request, reply) => {
     const body = bodySchema.parse(request.body);

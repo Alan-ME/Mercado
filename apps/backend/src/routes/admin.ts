@@ -17,8 +17,8 @@ const patchSchema = z.object({
   themeLogoUrl: z.string().optional(),
 });
 
-// Portal Admin B2B (US-05): actualiza parámetros de negocio (bandas, comisiones) y tema visual
-// en caliente sin reiniciar el servidor ni recompilar el frontend.
+// Portal de Administración B2B: actualiza parámetros de negocio (bandas de precios, comisiones)
+// y tema visual en caliente sin reiniciar el servidor ni recompilar la SPA.
 export function registerAdminRoutes(app: FastifyInstance): void {
   app.put('/admin/tenant/config', async (request) => {
     const patch = patchSchema.parse(request.body);

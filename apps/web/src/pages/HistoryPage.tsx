@@ -3,7 +3,7 @@ import { RefreshCw, ShoppingCart, Tag, TrendingUp, TrendingDown, QrCode, Ban } f
 import { useSession } from '../state/session';
 import { api, type ActivityEvent, type ActivityType } from '../api/client';
 
-/** Historial de transacciones por usuario con filtros (UX §1 / Tarea 2.8). */
+/** Historial unificado de actividad y transacciones por usuario con filtros por tipo de evento. */
 const FILTERS: { key: ActivityType | 'ALL'; label: string }[] = [
   { key: 'ALL', label: 'Todo' },
   { key: 'PRIMARY_PURCHASE', label: 'Compras primarias' },

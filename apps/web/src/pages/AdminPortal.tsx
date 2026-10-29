@@ -89,7 +89,7 @@ export function AdminPortal() {
       <div className="lg:col-span-2">
         <h1 className="mb-1 text-2xl font-bold text-slate-900">Panel de administración B2B</h1>
         <p className="mb-4 text-sm text-slate-500">
-          Parámetros de negocio del mercado P2P (US-05). Los valores se validan por rango en el servidor.
+          Parámetros de comisiones, bandas de precios y límites operativos del mercado P2P. Los valores se validan en tiempo real.
         </p>
 
         <div className="grid gap-4 rounded-brand bg-white p-5 shadow-sm sm:grid-cols-2">

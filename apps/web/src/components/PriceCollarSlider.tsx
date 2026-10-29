@@ -1,9 +1,8 @@
 import { computePriceCollar, isWithinCollar } from '@smcta/shared';
 
 /**
- * Tarea 2.4 (Rol 2) / Guía UX §3.2: control de banda de precios que impide
- * físicamente ingresar un valor fuera de [P_min, P_max] (RN-02). El botón de
- * confirmar se deshabilita si el valor sale del rango.
+ * Control interactivo de banda de precios (Price Collar): restringe la entrada
+ * al intervalo permitido [P_min, P_max] y deshabilita la acción si el usuario tipea fuera del rango.
  */
 export function PriceCollarSlider({
   nominalPrice,

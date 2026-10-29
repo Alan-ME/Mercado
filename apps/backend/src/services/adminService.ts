@@ -12,7 +12,8 @@ interface Range {
   max: number;
 }
 
-// Rangos del Portal Admin B2B (Hoja de Ruta Rol 3, US-05) + matriz .xlsx.
+// Límites operativos del portal B2B: protegen al inquilino de configuraciones disparatadas
+// (como bandas de reventa negativas, take rates usurarios o cero margen de liquidación).
 const RANGES: Record<string, Range> = {
   sellerTakeRatePct: { min: 1, max: 10 },
   buyerTakeRatePct: { min: 0, max: 10 },
@@ -37,7 +38,7 @@ function assertRange(field: keyof typeof RANGES, value: number | undefined): voi
   }
 }
 
-/** US-05: persiste la configuración de negocio y marca del tenant, validando rangos. */
+/** Persiste la configuración de negocio y marca del tenant, validando rangos operativos y colores. */
 export async function updateConfig(
   ctx: ServiceContext,
   tenant: TenantRow,

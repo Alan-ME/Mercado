@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { computePriceCollar, isWithinCollar } from '@smcta/shared';
 
-describe('Price Collar (RN-02)', () => {
+describe('Bandas de control de precios (Price Collar)', () => {
   it('nominal 100, piso 50%, techo 200% => [50, 200]', () => {
     const collar = computePriceCollar(100, 50, 200);
     expect(collar).toEqual({ min: 50, max: 200 });
@@ -12,7 +12,7 @@ describe('Price Collar (RN-02)', () => {
     expect(isWithinCollar(140, collar)).toBe(true);
   });
 
-  it('rechaza $250 sobre nominal 100 con techo 200% (criterio QA-01)', () => {
+  it('rechaza sobreprecios especulativos ($250 sobre nominal 100 con techo 200%)', () => {
     const collar = computePriceCollar(100, 50, 200);
     expect(isWithinCollar(250, collar)).toBe(false);
   });

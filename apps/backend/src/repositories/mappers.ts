@@ -9,11 +9,14 @@ import {
 } from '@smcta/shared';
 import { QrSecret } from '../domain/qrSecret.js';
 
+// Postgres devuelve los tipos NUMERIC/DECIMAL como strings (ej. "100.00") para evitar
+// que el parseador de JSON o el driver pierdan precisión IEEE-754.
 export function toNum(v: unknown): number {
   if (typeof v === 'number') return v;
   return Number(v);
 }
 
+// Estandariza timestamps: node-pg devuelve Date, pero PGlite o mocks pueden mandar strings.
 export function toIso(v: unknown): string {
   if (v instanceof Date) return v.toISOString();
   return new Date(String(v)).toISOString();
@@ -42,6 +45,8 @@ export interface TenantRow extends Omit<RawTenantRow, 'qr_secret'> {
   qr_secret: QrSecret;
 }
 
+// Encapsula qr_secret en un Value Object inmutable y no-enumerable para que ningún console.log
+// o serializador JSON filtre la clave criptográfica en los logs del servidor.
 export function hydrateTenantRow(raw: RawTenantRow): TenantRow {
   return {
     ...raw,

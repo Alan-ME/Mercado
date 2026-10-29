@@ -9,7 +9,7 @@ const base = {
   secret: 'super-secret-tenant-key',
 };
 
-describe('QR token (TASK-003)', () => {
+describe('Tokens QR dinámicos con firma HMAC y TTL', () => {
   it('genera y verifica un token válido', () => {
     const { token } = generateQrToken(base);
     const payload = verifyQrToken(token, base.secret);

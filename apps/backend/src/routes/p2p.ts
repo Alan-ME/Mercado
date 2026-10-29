@@ -16,9 +16,12 @@ const buySchema = z.object({ buyerId: z.string().min(1) });
 const cancelSchema = z.object({ sellerId: z.string().min(1) });
 const orderParams = z.object({ id: z.string().uuid() });
 
-/** Endpoints del mercado P2P — US-03/US-04, TASK-004/005/006. */
+/**
+ * Endpoints del mercado secundario P2P: publicación regulada, libro de órdenes,
+ * compra atómica con split de comisiones y cancelación anticipada.
+ */
 export function registerP2PRoutes(app: FastifyInstance): void {
-  // POST /api/v1/p2p/orders — publicar (Price Collar, límite diario, ventana).
+  // Publica una orden validando Price Collar, cuota diaria anti-bots y ventana de cierre.
   app.post('/p2p/orders', async (request, reply) => {
     const body = publishSchema.parse(request.body);
     const order = await publishOrder(request.server.ctx, request.tenant, body);
@@ -26,19 +29,19 @@ export function registerP2PRoutes(app: FastifyInstance): void {
     return order;
   });
 
-  // GET /api/v1/p2p/orders — libro de órdenes abiertas (filtrado por tenant).
+  // Retorna el libro de ofertas activas segregado estrictamente por inquilino (tenant).
   app.get('/p2p/orders', async (request) => {
     return listOpenOrders(request.server.ctx, request.tenant);
   });
 
-  // POST /api/v1/p2p/orders/:id/buy — match atómico + split de comisiones.
+  // Ejecuta el match atómico: liquida comisiones, reasigna titular y rota tokenVersion.
   app.post('/p2p/orders/:id/buy', async (request) => {
     const { id } = orderParams.parse(request.params);
     const { buyerId } = buySchema.parse(request.body);
     return buyOrder(request.server.ctx, request.tenant, id, buyerId);
   });
 
-  // POST /api/v1/p2p/orders/:id/cancel — RN-01: devuelve el cupón a EN_WALLET.
+  // Cancela la publicación, liberando el cupón y devolviéndolo al estado EN_WALLET.
   app.post('/p2p/orders/:id/cancel', async (request) => {
     const { id } = orderParams.parse(request.params);
     const { sellerId } = cancelSchema.parse(request.body);

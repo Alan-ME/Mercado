@@ -16,7 +16,8 @@ export interface Database extends Queryable {
   exec(sql: string): Promise<void>;
   /**
    * Ejecuta `fn` dentro de una transacción con aislamiento SERIALIZABLE.
-   * Reintenta ante serialization_failure (SQLSTATE 40001) — requisito TASK-005.
+   * Si dos matches P2P colisionan sobre el mismo registro, Postgres aborta uno
+   * con serialization_failure (SQLSTATE 40001); reintentamos con backoff exponencial.
    */
   transactionSerializable<T>(fn: (tx: Queryable) => Promise<T>): Promise<T>;
   close(): Promise<void>;

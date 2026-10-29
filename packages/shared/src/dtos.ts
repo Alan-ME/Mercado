@@ -45,8 +45,8 @@ export interface TenantConfigDTO {
   buyerTakeRatePct: number; // Porcentaje cobrado al comprador (ej. 2.50 = 2.5%)
   priceFloorPct: number; // Porcentaje mínimo del nominal permitido en reventa (ej. 50 = 50%)
   priceCeilingPct: number; // Porcentaje máximo del nominal permitido en reventa (ej. 200 = 200%)
-  maxDailyResalesPerUser: number; // Límite de reventas por usuario en 24h (RN-05)
-  closureHoursBeforeEvent: number; // Horas previas al evento donde se bloquea el P2P (RN-06)
+  maxDailyResalesPerUser: number; // Límite de reventas por usuario en 24h para frenar scalpers y bots
+  closureHoursBeforeEvent: number; // Horas previas al evento donde se congela el P2P para evitar fraudes en puerta
   platformRevenueSharePct: number; // Tajada de SMCTA Core sobre las comisiones totales
   theme: TenantTheme;
 }

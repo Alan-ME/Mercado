@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Lector de QR por cámara (Hoja de Ruta Rol 3: html5-qrcode).
- * Funciona en navegadores con permiso de cámara (HTTPS o localhost).
+ * Escáner óptico de tokens QR vía cámara web / trasera: inicializa el stream de video
+ * mediante `html5-qrcode` y dispara el callback de validación al detectar un código válido.
  */
 export function QrCameraReader({ onScan }: { onScan: (text: string) => void }) {
   const elementId = useRef(`qr-cam-${Math.random().toString(36).slice(2)}`);
