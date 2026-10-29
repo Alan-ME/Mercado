@@ -62,6 +62,9 @@ export function QrCanje({
     void fetchToken();
   }, [fetchToken]);
 
+  // Timer visual a 250ms para que la barra circular gire fluida en pantalla.
+  // Si expiresAt se vence, dispara la rotación al backend; si dio error cortamos acá
+  // para no ametrallar el servidor a 4 peticiones por segundo en bucle infinito.
   useEffect(() => {
     if (expiresAt === 0 || error) return;
     const id = window.setInterval(() => {
@@ -73,6 +76,8 @@ export function QrCanje({
   }, [expiresAt, error, fetchToken]);
 
   const pct = Math.max(0, Math.min(1, (secondsLeft * 1000) / ttlMs));
+  // Marca de agua en mosaico con nombre del titular y timestamp para que, si le sacan captura
+  // de pantalla con otro teléfono, el personal de admisión en puerta vea el screenshot clonado de una.
   const watermark = `${userName}\n${new Date().toLocaleString()}\nSMCTA`.repeat(6);
 
   return (

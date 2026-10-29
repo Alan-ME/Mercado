@@ -48,6 +48,9 @@ function streamUserNotifications(
     if (v !== undefined) rawHeaders[k] = v;
   }
 
+  // Hijackeamos la respuesta de Fastify porque SSE requiere mantener el socket TCP abierto
+  // escribiendo chunks directos en la conexión cruda de Node, sin que Fastify intente cerrar o serializar JSON.
+  // x-accel-buffering: no le avisa a Nginx o Cloudflare que no bufferice los chunks en memoria intermedia.
   reply.hijack();
   reply.raw.writeHead(200, {
     ...rawHeaders,
@@ -64,6 +67,8 @@ function streamUserNotifications(
     }
   });
 
+  // Los balanceadores de carga (AWS ALB, Nginx, proxies corporativos) te matan la conexión TCP
+  // si pasa 30 o 60 segundos sin tráfico. El ping con un comentario SSE mantiene viva la tubería.
   const heartbeat = setInterval(() => {
     if (!reply.raw.writableEnded) {
       reply.raw.write(': ping\n\n');

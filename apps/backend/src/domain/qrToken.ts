@@ -2,12 +2,17 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { AppError, ErrorCode, type QRTokenPayload } from '@smcta/shared';
 import { type QrSecret, unwrapQrSecret } from './qrSecret.js';
 
+// Toleramos hasta 5 segundos de desfasaje hacia el futuro por si el servidor NTP del cluster
+// anda desfasado con la máquina local. Más de 5s en el futuro es un token trucho queriendo esquivar el TTL.
 const MAX_FUTURE_SKEW_MS = 5_000;
 
 type UnsignedPayload = Omit<QRTokenPayload, 'signature'>;
 
 // Si el token trae tokenVersion lo metemos en la cadena canónica; si no viene (clientes
 // viejos del protocolo base), mantenemos el formato de 5 partes para no romper compatibilidad.
+// OJO: meter tokenVersion acá es vital para neutralizar el ataque boomerang A -> B -> A:
+// si Ana le vende el cupón a Beto y Beto se lo revende a Ana dentro de los 30s,
+// como el dueño vuelve a ser Ana, sin tokenVersion el QR viejo de Ana seguiría siendo válido.
 function canonical(p: UnsignedPayload): string {
   if (p.tokenVersion !== undefined) {
     return [p.couponId, p.tenantId, p.ownerId, String(p.tokenVersion), p.nonce, String(p.timestamp)].join('|');
@@ -32,6 +37,9 @@ function parseTokenPayload(token: string): QRTokenPayload {
   }
 }
 
+// Usamos timingSafeEqual sí o sí: si hacés un === normal entre strings,
+// el motor de V8 corta en el primer byte diferente y le regalás un ataque de timing al atacante
+// para ir adivinando la firma byte por byte.
 function assertValidSignature(secret: string, payload: QRTokenPayload): void {
   const { signature, ...base } = payload;
   const expected = sign(secret, base);

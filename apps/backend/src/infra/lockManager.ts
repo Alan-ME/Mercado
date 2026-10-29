@@ -92,6 +92,9 @@ export class RedisLockManager implements LockManager {
   }
 }
 
+// Envolvemos la operación crítica en el candado. Si otro hilo o nodo lo tiene tomado,
+// respondemos 423 P2P_ORDER_LOCKED al toque: nada de quedarse colgado esperando a que venza el TTL
+// para terminar fallando igual. La UI recibe 423 y le muestra al usuario el toast de conflicto.
 export async function withLock<T>(
   lockManager: LockManager,
   key: string,
@@ -106,6 +109,8 @@ export async function withLock<T>(
       { lockKey: key },
     );
   }
+  // Liberamos siempre en el finally asegurando pasar el token de quien adquirió el lock.
+  // Si la función de adentro tardó más que ttlMs, release() devolverá false sin volar candados ajenos.
   try {
     return await fn();
   } finally {

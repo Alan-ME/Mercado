@@ -245,11 +245,16 @@ export async function buyOrder(
           buyerTakeRatePct: r.buyer,
         });
 
+        // Doble guarda: aunque tengamos el lock del cupón, el UPDATE en SQL exige status = 'OPEN'.
+        // Si otra transacción en paralelo ganó la carrera y commiteó justo antes, affected da 0
+        // y abortamos de inmediato sin transferir plata ni emitir QR inválido.
         const affected = await matchOrderIfOpen(tx, orderId, buyerId, breakdown);
         if (affected === 0) {
           throw new AppError(ErrorCode.ORDER_NOT_OPEN, 'La orden ya fue tomada por otro usuario.');
         }
 
+        // Cada reventa exitosa sube token_version en 1. Esto deja obsoleto cualquier QR viejo
+        // que el dueño anterior haya capturado en foto o screenshot antes de vender.
         const nextVersion = toNum(coupon.token_version) + 1;
         const { token } = generateQrToken({
           couponId: coupon.coupon_id,
