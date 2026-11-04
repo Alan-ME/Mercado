@@ -5,14 +5,14 @@ import { api, type ActivityEvent } from '../api/client';
 
 function NotificationPanel({ events }: { events: ActivityEvent[] }) {
   if (events.length === 0) {
-    return <div className="px-4 py-6 text-center text-sm text-slate-400">Sin novedades</div>;
+    return <div className="px-4 py-6 text-center text-sm text-muted">Sin novedades</div>;
   }
   return (
-    <ul className="max-h-80 overflow-y-auto">
+    <ul className="max-h-80 overflow-y-auto divide-y divide-line">
       {events.map((e) => (
-        <li key={e.eventId} className="border-b border-slate-50 px-4 py-2.5 text-sm">
-          <div className="text-slate-800">{e.title}</div>
-          <div className="text-xs text-slate-400">{new Date(e.createdAt).toLocaleString()}</div>
+        <li key={e.eventId} className="px-4 py-2.5 text-sm hover:bg-raised/60">
+          <div className="font-medium text-fg">{e.title}</div>
+          <div className="mt-0.5 text-xs text-muted">{new Date(e.createdAt).toLocaleString()}</div>
         </li>
       ))}
     </ul>
@@ -79,19 +79,22 @@ export function NotificationBell() {
       <button
         onClick={() => void toggle()}
         aria-label="Notificaciones"
-        className="relative grid h-9 w-9 place-items-center rounded-brand bg-white/10 hover:bg-white/20"
+        className="relative grid h-9 w-9 place-items-center rounded-ctl border border-line bg-panel text-muted transition hover:bg-raised hover:text-fg"
       >
-        <Bell size={18} />
+        <Bell size={17} />
         {unread > 0 && (
-          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-down px-1 text-[10px] font-bold text-white">
             {unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-brand bg-white text-slate-800 shadow-2xl">
-          <div className="border-b border-slate-100 px-4 py-2 text-sm font-semibold">Notificaciones</div>
+        <div className="rise-in absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-card border border-line bg-panel text-fg shadow-2xl">
+          <div className="flex items-center justify-between border-b border-line px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-muted">
+            <span>Feed en tiempo real</span>
+            <span className="live-dot h-2 w-2 rounded-full bg-up" />
+          </div>
           <NotificationPanel events={events} />
         </div>
       )}

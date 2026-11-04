@@ -1,11 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshCw, TrendingUp, Tag, Loader2 } from 'lucide-react';
+import { ArrowUpDown, BookOpen, DollarSign, Loader2, Percent, RefreshCw, Shield, Tag, TrendingUp } from 'lucide-react';
 import { CouponState, type P2POrderDTO, type TenantConfigDTO } from '@smcta/shared';
 import { useSession } from '../state/session';
 import { useToast } from '../ui/toast';
 import { api, ApiError, type WalletCoupon } from '../api/client';
 import { PriceCollarSlider } from '../components/PriceCollarSlider';
 import { FeeBreakdown } from '../components/FeeBreakdown';
+import { Badge, Button, Card, EmptyState, FIELD_CLASS, PageHeader, SectionTitle, money } from '../ui/kit';
+import { KpiCard } from '../ui/KpiCard';
+
+type SortKey = 'cheapest' | 'discount' | 'recent';
+
+// Lookup de comparadores en vez de un switch largo como tenía orders_screen.dart:
+// mantiene cada función chiquita y sumar otro criterio es una sola entrada.
+const SORTERS: Record<SortKey, (a: P2POrderDTO, b: P2POrderDTO) => number> = {
+  cheapest: (a, b) => a.askingPrice - b.askingPrice,
+  discount: (a, b) =>
+    a.askingPrice / a.commissionBreakdown.nominalPrice - b.askingPrice / b.commissionBreakdown.nominalPrice,
+  recent: (a, b) => b.createdAt.localeCompare(a.createdAt),
+};
 
 function errorMessage(e: unknown, fallback: string): string {
   return e instanceof ApiError ? e.message : fallback;
@@ -14,6 +27,28 @@ function errorMessage(e: unknown, fallback: string): string {
 function isConcurrencyConflict(e: unknown): boolean {
   if (!(e instanceof ApiError)) return false;
   return e.status === 423 || e.status === 409;
+}
+
+function SpreadBadge({ asking, nominal }: { asking: number; nominal: number }) {
+  const pct = ((asking - nominal) / nominal) * 100;
+  if (pct < -0.01) return <Badge tone="up">{pct.toFixed(1)}% bajo par</Badge>;
+  if (pct > 0.01) return <Badge tone="warn">+{pct.toFixed(1)}% sobre par</Badge>;
+  return <Badge tone="neutral">A la par</Badge>;
+}
+
+function MarketKpis({ orders, config }: { orders: P2POrderDTO[]; config: TenantConfigDTO }) {
+  const bestAsk = orders.length > 0 ? money(Math.min(...orders.map((o) => o.askingPrice))) : '—';
+  const collarText = `${config.priceFloorPct}%–${config.priceCeilingPct}%`;
+  const feeText = `${config.sellerTakeRatePct}% / ${config.buyerTakeRatePct}%`;
+
+  return (
+    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiCard label="Órdenes abiertas" value={orders.length} icon={BookOpen} tone="accent" />
+      <KpiCard label="Mejor Ask disponible" value={bestAsk} icon={DollarSign} tone="up" />
+      <KpiCard label="Banda Price Collar" value={collarText} icon={Shield} tone="primary" />
+      <KpiCard label="Take-rate (Vend / Comp)" value={feeText} icon={Percent} tone="info" />
+    </div>
+  );
 }
 
 function PublishForm({
@@ -35,8 +70,11 @@ function PublishForm({
 }) {
   if (!selected) return null;
   return (
-    <div className="mt-4 rounded-brand bg-white p-5 shadow-sm">
-      <h3 className="mb-3 font-semibold text-slate-900">Publicar: {selected.productName}</h3>
+    <Card className="rise-in mt-4 p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-semibold text-fg">Ticket de orden · {selected.productName}</h3>
+        <Badge tone="primary">SELL</Badge>
+      </div>
       <PriceCollarSlider
         nominalPrice={selected.nominalPrice}
         priceFloorPct={config.priceFloorPct}
@@ -44,7 +82,7 @@ function PublishForm({
         value={price}
         onChange={onChangePrice}
       />
-      <div className="mt-3">
+      <div className="mt-3.5">
         <FeeBreakdown
           nominalPrice={selected.nominalPrice}
           askingPrice={price}
@@ -52,69 +90,71 @@ function PublishForm({
           buyerTakeRatePct={config.buyerTakeRatePct}
         />
       </div>
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={onConfirm}
-          disabled={busy}
-          className="flex items-center gap-2 rounded-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          style={{ background: 'var(--smcta-brand-primary)' }}
-        >
-          {busy && <Loader2 size={16} className="animate-spin" />} Confirmar publicación
-        </button>
-        <button onClick={onCancel} className="rounded-brand px-4 py-2 text-sm text-slate-500">
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button onClick={onConfirm} disabled={busy}>
+          {busy && <Loader2 size={15} className="animate-spin" />} Publicar orden
+        </Button>
+        <Button variant="ghost" onClick={onCancel}>
           Cancelar
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
+  );
+}
+
+function OrderRow({
+  order,
+  isMine,
+  onBuy,
+}: {
+  order: P2POrderDTO;
+  isMine: boolean;
+  onBuy: () => void;
+}) {
+  const nominal = order.commissionBreakdown.nominalPrice;
+  const totalBuyer = order.commissionBreakdown.totalBuyerPrice;
+  const label = isMine ? 'Tu posición' : `Comprar ${money(totalBuyer)}`;
+
+  return (
+    <Card interactive className="p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold tabular-nums text-fg">{money(order.askingPrice)}</span>
+            <SpreadBadge asking={order.askingPrice} nominal={nominal} />
+          </div>
+          <div className="mt-0.5 text-xs tabular-nums text-muted">
+            Nominal {money(nominal)} · Final c/ fee {money(totalBuyer)}
+          </div>
+        </div>
+        <Button size="sm" onClick={onBuy} disabled={isMine}>
+          {label}
+        </Button>
+      </div>
+    </Card>
   );
 }
 
 function OrderBookList({
   orders,
+  sort,
   currentUserId,
   onBuy,
 }: {
   orders: P2POrderDTO[];
+  sort: SortKey;
   currentUserId: string | undefined;
   onBuy: (order: P2POrderDTO) => void;
 }) {
   if (orders.length === 0) {
-    return (
-      <div className="rounded-brand bg-white p-6 text-sm text-slate-500 shadow-sm">
-        No hay órdenes abiertas.
-      </div>
-    );
+    return <EmptyState>Libro vacío. Publicá un cupón desde la columna izquierda para abrir liquidez.</EmptyState>;
   }
+  const sorted = [...orders].sort(SORTERS[sort]);
   return (
-    <div className="space-y-2">
-      {orders.map((o) => {
-        const isMine = o.sellerId === currentUserId;
-        const discount = o.askingPrice < o.commissionBreakdown.nominalPrice;
-        const btnLabel = isMine ? 'Tu orden' : `Comprar $${o.commissionBreakdown.totalBuyerPrice.toFixed(2)}`;
-        return (
-          <div key={o.orderId} className="rounded-brand bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-semibold text-slate-900">${o.askingPrice.toFixed(2)}</div>
-                <div className="text-xs text-slate-400">Nominal ${o.commissionBreakdown.nominalPrice.toFixed(2)}</div>
-              </div>
-              {discount && (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                  Bajo nominal
-                </span>
-              )}
-              <button
-                onClick={() => onBuy(o)}
-                disabled={isMine}
-                className="rounded-brand px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ background: 'var(--smcta-brand-accent)' }}
-              >
-                {btnLabel}
-              </button>
-            </div>
-          </div>
-        );
-      })}
+    <div className="space-y-2.5">
+      {sorted.map((o) => (
+        <OrderRow key={o.orderId} order={o} isMine={o.sellerId === currentUserId} onBuy={() => onBuy(o)} />
+      ))}
     </div>
   );
 }
@@ -129,24 +169,24 @@ function MyEligibleList({
   onSelect: (c: WalletCoupon) => void;
 }) {
   if (mine.length === 0) {
-    return (
-      <div className="rounded-brand bg-white p-6 text-sm text-slate-500 shadow-sm">
-        No tenés cupones EN_WALLET para publicar.
-      </div>
-    );
+    return <EmptyState>No tenés cupones EN_WALLET disponibles para ofertar.</EmptyState>;
   }
   return (
     <div className="space-y-2">
       {mine.map((c) => {
-        const activeRing = selectedId === c.couponId ? 'ring-2 ring-[var(--smcta-brand-accent)]' : '';
+        const active = selectedId === c.couponId;
+        const ring = active ? 'border-brand-accent bg-brand-accent/10' : 'border-line bg-panel hover:bg-raised';
         return (
           <button
             key={c.couponId}
             onClick={() => onSelect(c)}
-            className={`flex w-full items-center justify-between rounded-brand bg-white p-4 text-left shadow-sm transition hover:ring-2 ${activeRing}`}
+            className={`flex w-full items-center justify-between rounded-card border p-4 text-left transition ${ring}`}
           >
-            <span className="font-medium text-slate-800">{c.productName}</span>
-            <span className="text-sm text-slate-500">Nominal ${c.nominalPrice.toFixed(2)}</span>
+            <div>
+              <div className="font-semibold text-fg">{c.productName}</div>
+              <div className="text-xs text-muted">Listo para listar en libro secundario</div>
+            </div>
+            <span className="text-sm font-bold tabular-nums text-brand-accent">{money(c.nominalPrice)}</span>
           </button>
         );
       })}
@@ -161,6 +201,7 @@ export function Marketplace() {
   const [orders, setOrders] = useState<P2POrderDTO[]>([]);
   const [selected, setSelected] = useState<WalletCoupon | null>(null);
   const [price, setPrice] = useState(0);
+  const [sort, setSort] = useState<SortKey>('cheapest');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -184,7 +225,7 @@ export function Marketplace() {
     setBusy(true);
     try {
       await api.publishOrder(tenantKey, { couponId, sellerId, askingPrice: price });
-      toast.push('success', 'Cupón publicado en el mercado P2P.');
+      toast.push('success', 'Cupón publicado en el libro P2P.');
       setSelected(null);
       await load();
     } catch (e) {
@@ -212,7 +253,7 @@ export function Marketplace() {
     if (!tenant || !user) return;
     try {
       await api.buyOrder(tenant, order.orderId, user.userId);
-      toast.push('success', '¡Compra P2P exitosa! El cupón ya está en tu billetera.');
+      toast.push('success', '¡Match ejecutado! El cupón rotó de clave y ya está en tu billetera.');
       await load();
     } catch (e) {
       await handleBuyFailure(e);
@@ -220,48 +261,71 @@ export function Marketplace() {
   };
 
   if (!config) return null;
-  const refreshClass = loading ? 'animate-spin' : '';
+  const spin = loading ? 'animate-spin' : '';
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section>
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-slate-900">
-          <Tag size={18} /> Publicar en el mercado
-        </h2>
-        <MyEligibleList
-          mine={mine}
-          selectedId={selected?.couponId}
-          onSelect={(c) => {
-            setSelected(c);
-            setPrice(c.nominalPrice);
-          }}
-        />
-        <PublishForm
-          selected={selected}
-          config={config}
-          price={price}
-          busy={busy}
-          onChangePrice={setPrice}
-          onConfirm={() => void publish()}
-          onCancel={() => setSelected(null)}
-        />
-      </section>
+    <div>
+      <PageHeader
+        title="Mercado secundario P2P"
+        subtitle="Cruce atómico con aislamiento serializable y rotación criptográfica de titularidad."
+        icon={TrendingUp}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            <RefreshCw size={14} className={spin} /> Actualizar libro
+          </Button>
+        }
+      />
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
-            <TrendingUp size={18} /> Libro de órdenes P2P
-          </h2>
-          <button onClick={() => void load()} className="flex items-center gap-1.5 rounded-brand bg-white px-3 py-1.5 text-sm shadow-sm">
-            <RefreshCw size={15} className={refreshClass} /> Actualizar
-          </button>
-        </div>
-        <OrderBookList
-          orders={orders}
-          currentUserId={user?.userId}
-          onBuy={(o) => void buy(o)}
-        />
-      </section>
+      <MarketKpis orders={orders} config={config} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section>
+          <SectionTitle icon={Tag}>1. Seleccioná un activo para ofertar</SectionTitle>
+          <MyEligibleList
+            mine={mine}
+            selectedId={selected?.couponId}
+            onSelect={(c) => {
+              setSelected(c);
+              setPrice(c.nominalPrice);
+            }}
+          />
+          <PublishForm
+            selected={selected}
+            config={config}
+            price={price}
+            busy={busy}
+            onChangePrice={setPrice}
+            onConfirm={() => void publish()}
+            onCancel={() => setSelected(null)}
+          />
+        </section>
+
+        <section>
+          <SectionTitle
+            icon={ArrowUpDown}
+            right={
+              <select
+                aria-label="Ordenar libro"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className={`${FIELD_CLASS} !h-8 !w-auto !py-1 !text-xs`}
+              >
+                <option value="cheapest">Precio: menor a mayor</option>
+                <option value="discount">Mayor descuento vs par</option>
+                <option value="recent">Más recientes</option>
+              </select>
+            }
+          >
+            2. Libro de órdenes abiertas (Order Book)
+          </SectionTitle>
+          <OrderBookList
+            orders={orders}
+            sort={sort}
+            currentUserId={user?.userId}
+            onBuy={(o) => void buy(o)}
+          />
+        </section>
+      </div>
     </div>
   );
 }

@@ -2,12 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Paleta de terminal de trading portada del diseño Flutter (vers/cafeteria_trading_app, AppColors).
+ * Todo va en canales "R G B" para que Tailwind pueda meterle opacidad encima.
+ * Los defaults de marca (violeta + mint) son los del diseño; cuando carga la config del tenant,
+ * TenantThemeProvider los pisa con los colores del comercio.
+ */
 :root {
-  --smcta-brand-primary: #1a365d;
-  --smcta-brand-accent: #3182ce;
+  --term-bg: 11 14 20;
+  --term-surface: 19 22 31;
+  --term-elevated: 26 30 41;
+  --term-border: 37 42 56;
+  --term-text: 228 231 235;
+  --term-muted: 139 146 165;
+
+  --mkt-up: 34 197 94;
+  --mkt-down: 239 68 68;
+  --mkt-warn: 245 158 11;
+  --mkt-info: 59 130 246;
+
+  --smcta-brand-primary: #7c5cff;
+  --smcta-brand-accent: #00d9a3;
+  --smcta-brand-primary-rgb: 124 92 255;
+  --smcta-brand-accent-rgb: 0 217 163;
+  --smcta-brand-primary-fg: 255 255 255;
+  --smcta-brand-accent-fg: 11 14 20;
   --smcta-brand-surface: #ffffff;
   --smcta-font-family: 'Inter', system-ui, sans-serif;
   --smcta-border-radius: 12px;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --term-bg: 245 247 251;
+  --term-surface: 255 255 255;
+  --term-elevated: 240 243 248;
+  --term-border: 225 230 239;
+  --term-text: 26 29 38;
+  --term-muted: 96 104 122;
+
+  color-scheme: light;
 }
 
 html,
@@ -19,11 +54,34 @@ body,
 body {
   margin: 0;
   font-family: var(--smcta-font-family);
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgb(var(--term-bg));
+  color: rgb(var(--term-text));
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Prevención visual de captura de pantalla en la vista de canje (US-02 / Tarea 2.7). */
+/* Los <option> nativos ignoran el fondo del <select> en Chrome si no se los pintás a mano. */
+select option {
+  background: rgb(var(--term-surface));
+  color: rgb(var(--term-text));
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--term-border));
+  border-radius: 999px;
+  border: 2px solid rgb(var(--term-bg));
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/*
+ * Marca de agua en mosaico sobre el QR de canje. Si alguien le saca captura con otro teléfono,
+ * el operador de puerta ve el nombre y la hora congelados y se da cuenta del clon.
+ */
 .screenshot-guard {
   position: relative;
   overflow: hidden;
@@ -36,7 +94,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  color: rgba(15, 23, 42, 0.08);
+  color: rgb(var(--term-text) / 0.07);
   transform: rotate(-20deg);
   pointer-events: none;
   white-space: pre-wrap;
@@ -44,8 +102,30 @@ body {
   font-weight: 700;
 }
 
-@keyframes smcta-spin {
-  to {
-    transform: rotate(360deg);
+/* Punto "en vivo" del header, mismo pulso que el _MarketPulse de Flutter (1.2s ida y vuelta). */
+@keyframes smcta-pulse {
+  0%,
+  100% {
+    opacity: 1;
   }
+  50% {
+    opacity: 0.25;
+  }
+}
+.live-dot {
+  animation: smcta-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes smcta-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise-in {
+  animation: smcta-rise 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }

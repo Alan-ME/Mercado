@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScanLine, CheckCircle2, XCircle, RefreshCw, Camera } from 'lucide-react';
+import { Camera, CheckCircle2, RefreshCw, ScanLine, XCircle } from 'lucide-react';
 import { useSession } from '../state/session';
 import { api, ApiError } from '../api/client';
 import { QrCameraReader } from '../components/QrCameraReader';
+import { Button, Card, FIELD_CLASS, PageHeader, money } from '../ui/kit';
 
 interface RedeemableCoupon {
   couponId: string;
@@ -18,23 +19,23 @@ type Result =
 function ResultBanner({ result }: { result: Exclude<Result, null> }) {
   if (result.kind === 'ok') {
     return (
-      <div className="mt-4 flex items-center gap-3 rounded-brand bg-emerald-600 p-5 text-white">
-        <CheckCircle2 size={32} />
+      <div className="rise-in mt-4 flex items-center gap-3.5 rounded-card border border-up/40 bg-up/15 p-5 text-up">
+        <CheckCircle2 size={30} className="shrink-0" />
         <div>
-          <div className="font-bold">Canje válido</div>
-          <div className="text-sm opacity-90">
-            Se liberaron ${result.amount.toFixed(2)} del Escrow al comercio.
+          <div className="font-bold">Canje válido · Admisión autorizada</div>
+          <div className="text-sm text-fg">
+            Se liberaron <span className="font-bold tabular-nums">{money(result.amount)}</span> del Escrow al comercio.
           </div>
         </div>
       </div>
     );
   }
   return (
-    <div className="mt-4 flex items-center gap-3 rounded-brand bg-red-600 p-5 text-white">
-      <XCircle size={32} />
+    <div className="rise-in mt-4 flex items-center gap-3.5 rounded-card border border-down/40 bg-down/15 p-5 text-down">
+      <XCircle size={30} className="shrink-0" />
       <div>
         <div className="font-bold">Canje rechazado</div>
-        <div className="text-sm opacity-90">{result.message}</div>
+        <div className="text-sm text-fg">{result.message}</div>
       </div>
     </div>
   );
@@ -49,27 +50,26 @@ function CameraSection({
   onToggle: () => void;
   onScan: (token: string) => void;
 }) {
-  const bg = cameraOn ? '#DC2626' : 'var(--smcta-brand-primary)';
+  const variant = cameraOn ? 'danger' : 'primary';
   const label = cameraOn ? 'Apagar cámara' : 'Encender cámara';
   return (
-    <div className="mb-4 rounded-brand bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700">Lector de cámara (QR real)</label>
-        <button
-          onClick={onToggle}
-          className="flex items-center gap-1.5 rounded-brand px-3 py-1.5 text-sm font-semibold text-white"
-          style={{ background: bg }}
-        >
-          <Camera size={16} /> {label}
-        </button>
+    <Card className="mb-4 p-5">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="text-sm font-semibold text-fg">Lector óptico (cámara en vivo)</div>
+          <div className="text-xs text-muted">Valida firma HMAC-SHA256, TTL de 30s y versión de titularidad.</div>
+        </div>
+        <Button variant={variant} size="sm" onClick={onToggle}>
+          <Camera size={15} /> {label}
+        </Button>
       </div>
       {cameraOn && (
-        <div className="mt-3">
+        <div className="mt-4">
           <QrCameraReader onScan={onScan} />
-          <p className="mt-2 text-xs text-slate-400">Apuntá al QR del cliente. Requiere permiso de cámara.</p>
+          <p className="mt-2 text-xs text-muted">Apuntá al QR dinámico del cliente. Requiere permiso del navegador.</p>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -124,12 +124,11 @@ export function TpvPage() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold text-slate-900">
-        <ScanLine size={22} /> Terminal de canje (TPV)
-      </h1>
-      <p className="mb-4 text-sm text-slate-500">
-        Escaneá el QR del cliente para validar el cupón y liberar los fondos del Escrow al comercio.
-      </p>
+      <PageHeader
+        title="Terminal de punto de venta (TPV)"
+        subtitle="Escaneá el QR del tenedor actual para quemar el activo y liquidar la garantía."
+        icon={ScanLine}
+      />
 
       <CameraSection
         cameraOn={cameraOn}
@@ -137,52 +136,48 @@ export function TpvPage() {
         onScan={(token) => void redeem(token)}
       />
 
-      <div className="rounded-brand bg-white p-5 shadow-sm">
-        <label className="text-sm font-medium text-slate-700">Simular escaneo de un cupón EN_WALLET</label>
-        <div className="mt-1 flex gap-2">
-          <select
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-            className="w-full rounded-brand border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">— Elegí un cupón —</option>
+      <Card className="p-5">
+        <label className="text-xs font-bold uppercase tracking-wider text-muted">
+          Simulador rápido (cupones EN_WALLET del recinto)
+        </label>
+        <div className="mt-2 flex gap-2">
+          <select value={selected} onChange={(e) => setSelected(e.target.value)} className={FIELD_CLASS}>
+            <option value="">— Elegí un cupón activo —</option>
             {coupons.map((c) => (
               <option key={c.couponId} value={c.couponId}>
                 {c.productName}
               </option>
             ))}
           </select>
-          <button onClick={() => void load()} className="rounded-brand bg-slate-100 px-3" aria-label="Actualizar">
-            <RefreshCw size={16} />
-          </button>
+          <Button variant="outline" onClick={() => void load()} aria-label="Actualizar">
+            <RefreshCw size={15} />
+          </Button>
         </div>
-        <button
-          onClick={() => void scanSelected()}
-          disabled={!selected || busy}
-          className="mt-3 w-full rounded-brand py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          style={{ background: 'var(--smcta-brand-primary)' }}
-        >
-          Escanear y validar
-        </button>
+        <Button className="mt-3 w-full" onClick={() => void scanSelected()} disabled={!selected || busy}>
+          Escanear y liquidar Escrow
+        </Button>
 
-        <div className="mt-4 border-t border-slate-200 pt-4">
-          <label className="text-sm font-medium text-slate-700">…o pegá un token QR manualmente</label>
+        <div className="mt-5 border-t border-line pt-4">
+          <label className="text-xs font-bold uppercase tracking-wider text-muted">
+            Verificación manual de payload firmado
+          </label>
           <textarea
             value={manualToken}
             onChange={(e) => setManualToken(e.target.value)}
             rows={3}
-            placeholder="Token del QR escaneado"
-            className="mt-1 w-full rounded-brand border border-slate-300 p-2 font-mono text-xs"
+            placeholder="couponId:tenantId:ownerId:ts:nonce:ver:hmac"
+            className={`mt-2 font-mono text-xs ${FIELD_CLASS}`}
           />
-          <button
+          <Button
+            variant="outline"
+            className="mt-2.5 w-full"
             onClick={() => void redeem(manualToken)}
             disabled={!manualToken || busy}
-            className="mt-2 w-full rounded-brand border border-slate-300 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
           >
-            Validar token
-          </button>
+            Validar token crudo
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {result && <ResultBanner result={result} />}
     </div>

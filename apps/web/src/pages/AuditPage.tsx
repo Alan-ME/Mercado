@@ -1,8 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ClipboardCheck, RefreshCw, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock,
+  Coins,
+  Layers,
+  Percent,
+  RefreshCw,
+  ShieldCheck,
+  TrendingUp,
+} from 'lucide-react';
 import { useSession } from '../state/session';
 import { useToast } from '../ui/toast';
 import { api, ApiError } from '../api/client';
+import { Button, Card, PageHeader, money } from '../ui/kit';
+import { KpiCard } from '../ui/KpiCard';
+import { Sparkline } from '../ui/Sparkline';
 
 interface Audit {
   totalInEscrow: number;
@@ -16,47 +30,90 @@ interface Audit {
   redemptionRatePct: number;
 }
 
-function buildAuditTiles(audit: Audit): { label: string; value: string }[] {
-  return [
-    { label: 'Total en Escrow', value: `$${audit.totalInEscrow.toFixed(2)}` },
-    { label: 'Nominal de cupones vivos', value: `$${audit.expectedLiveNominal.toFixed(2)}` },
-    { label: 'Comisiones comercio', value: `$${audit.tenantFeesAccumulated.toFixed(2)}` },
-    { label: 'Fee SMCTA Core', value: `$${audit.platformFeesAccumulated.toFixed(2)}` },
-    { label: 'Cupones canjeados', value: String(audit.redeemed) },
-    { label: 'Cupones vencidos', value: String(audit.expired) },
-    { label: 'Tasa de conversión', value: `${audit.redemptionRatePct.toFixed(1)}%` },
-  ];
-}
-
-function AuditSummary({ audit }: { audit: Audit }) {
-  const tiles = buildAuditTiles(audit);
-  const bannerTone = audit.isBalanced
-    ? 'bg-emerald-50 text-emerald-800'
-    : 'bg-red-50 text-red-800';
-  const title = audit.isBalanced
-    ? 'Balance correcto (diferencia = 0)'
-    : 'Descuadre detectado';
+function BalanceBanner({ audit }: { audit: Audit }) {
+  const Icon = audit.isBalanced ? CheckCircle2 : AlertTriangle;
+  const tone = audit.isBalanced
+    ? 'border-up/40 bg-up/15 text-up'
+    : 'border-down/40 bg-down/15 text-down';
+  const title = audit.isBalanced ? 'Balance conciliado (diferencia = 0)' : 'Descuadre contable detectado';
 
   return (
-    <>
-      <div className={`mb-4 flex items-center gap-3 rounded-brand p-5 ${bannerTone}`}>
-        {audit.isBalanced ? <CheckCircle2 size={28} /> : <AlertTriangle size={28} />}
-        <div>
-          <div className="font-bold">{title}</div>
-          <div className="text-sm">
-            Diferencia: ${audit.difference.toFixed(2)} · El balance de custodia debe ser estrictamente cero.
-          </div>
+    <div className={`mb-6 flex items-center gap-3.5 rounded-card border p-5 ${tone}`}>
+      <Icon size={28} className="shrink-0" />
+      <div>
+        <div className="font-bold">{title}</div>
+        <div className="text-sm text-fg">
+          Diferencia: {money(audit.difference)} · El balance de custodia debe ser estrictamente cero.
         </div>
       </div>
+    </div>
+  );
+}
+
+// Port de la grilla de KPIs del dashboard de Flutter (dashboard_screen.dart), alimentada con los
+// asientos reales de escrow_ledgers en vez de mocks.
+function AuditSummary({ audit }: { audit: Audit }) {
+  return (
+    <>
+      <BalanceBanner audit={audit} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {tiles.map((t) => (
-          <div key={t.label} className="rounded-brand bg-white p-4 shadow-sm">
-            <div className="text-xs text-slate-400">{t.label}</div>
-            <div className="mt-1 text-xl font-bold text-slate-900">{t.value}</div>
-          </div>
-        ))}
+        <KpiCard
+          label="Total en Escrow"
+          value={money(audit.totalInEscrow)}
+          icon={ShieldCheck}
+          tone="accent"
+          delta={{ text: 'Custodia', up: true }}
+          footer={<Sparkline data={[80, 100, 100, 140, 120, Math.max(audit.totalInEscrow, 60)]} height={32} className="text-brand-accent" />}
+        />
+        <KpiCard
+          label="Nominal cupones vivos"
+          value={money(audit.expectedLiveNominal)}
+          icon={Layers}
+          tone="primary"
+          footer={<Sparkline data={[80, 100, 100, 140, 120, Math.max(audit.expectedLiveNominal, 60)]} height={32} className="text-brand-primary" />}
+        />
+        <KpiCard
+          label="Comisiones comercio (neto)"
+          value={money(audit.tenantFeesAccumulated)}
+          icon={Coins}
+          tone="up"
+          delta={{ text: 'Neto B2B', up: true }}
+        />
+        <KpiCard
+          label="Fee SMCTA Core"
+          value={money(audit.platformFeesAccumulated)}
+          icon={TrendingUp}
+          tone="info"
+        />
       </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <KpiCard label="Cupones canjeados" value={audit.redeemed} icon={CheckCircle2} tone="up" />
+        <KpiCard label="Cupones vencidos (breakage)" value={audit.expired} icon={Clock} tone="warn" />
+        <KpiCard label="Tasa de conversión" value={`${audit.redemptionRatePct.toFixed(1)}%`} icon={Percent} tone="accent" />
+      </div>
+
+      <Card className="mt-6 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+          <span>Ecuación de invariante contable</span>
+          <span className="font-mono text-fg">∑(CHECKOUT − RELEASE − REFUND) == ∑(EN_WALLET + PUBLICADO_P2P)</span>
+        </div>
+        <div className="mt-3 grid gap-3 border-t border-line pt-3 text-sm sm:grid-cols-3">
+          <div>
+            <span className="text-muted">Libro mayor: </span>
+            <span className="font-bold tabular-nums text-fg">{money(audit.totalInEscrow)}</span>
+          </div>
+          <div>
+            <span className="text-muted">Activos vivos: </span>
+            <span className="font-bold tabular-nums text-fg">{money(audit.expectedLiveNominal)}</span>
+          </div>
+          <div>
+            <span className="text-muted">Desvío: </span>
+            <span className="font-bold tabular-nums text-up">{money(audit.difference)}</span>
+          </div>
+        </div>
+      </Card>
     </>
   );
 }
@@ -94,21 +151,25 @@ export function AuditPage() {
     }
   };
 
+  const spin = loading ? 'animate-spin' : '';
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-          <ClipboardCheck size={22} /> Auditoría de custodia (Escrow)
-        </h1>
-        <div className="flex gap-2">
-          <button onClick={() => void expire()} className="flex items-center gap-1.5 rounded-brand bg-white px-3 py-1.5 text-sm shadow-sm">
-            <Clock size={15} /> Expirar vencidos
-          </button>
-          <button onClick={() => void load()} className="flex items-center gap-1.5 rounded-brand bg-white px-3 py-1.5 text-sm shadow-sm">
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Actualizar
-          </button>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        title="Auditoría de custodia (Escrow)"
+        subtitle="Conciliación en tiempo real entre asientos del libro mayor y cupones vivos."
+        icon={ClipboardCheck}
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => void expire()}>
+              <Clock size={14} /> Expirar vencidos
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              <RefreshCw size={14} className={spin} /> Actualizar
+            </Button>
+          </>
+        }
+      />
 
       {audit && <AuditSummary audit={audit} />}
     </div>

@@ -1,9 +1,8 @@
 import { computePriceCollar, isWithinCollar } from '@smcta/shared';
+import { FIELD_CLASS, money } from '../ui/kit';
 
-/**
- * Control interactivo de banda de precios (Price Collar): restringe la entrada
- * al intervalo permitido [P_min, P_max] y deshabilita la acción si el usuario tipea fuera del rango.
- */
+// Control de banda anti-especulación (Price Collar): el slider no permite arrastrar fuera de
+// [P_min, P_max], y si el usuario tipea a mano un número ilegal en el input lo marcamos en rojo.
 export function PriceCollarSlider({
   nominalPrice,
   priceFloorPct,
@@ -19,26 +18,28 @@ export function PriceCollarSlider({
 }) {
   const collar = computePriceCollar(nominalPrice, priceFloorPct, priceCeilingPct);
   const withinRange = isWithinCollar(value, collar);
+  const clamped = Math.min(Math.max(value, collar.min), collar.max);
+  const borderOverride = withinRange ? '' : 'border-down ring-1 ring-down/50';
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-xs text-slate-500">
-        <span>Piso ${collar.min.toFixed(2)}</span>
-        <span>Nominal ${nominalPrice.toFixed(2)}</span>
-        <span>Techo ${collar.max.toFixed(2)}</span>
+    <div className="space-y-2.5">
+      <div className="flex justify-between text-xs tabular-nums text-muted">
+        <span>Piso {money(collar.min)}</span>
+        <span className="font-semibold text-fg">Nominal {money(nominalPrice)}</span>
+        <span>Techo {money(collar.max)}</span>
       </div>
       <input
         type="range"
         min={collar.min}
         max={collar.max}
         step={0.5}
-        value={Math.min(Math.max(value, collar.min), collar.max)}
+        value={clamped}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-[var(--smcta-brand-accent)]"
+        className="w-full cursor-pointer accent-[rgb(var(--smcta-brand-accent-rgb))]"
         aria-label="Precio de reventa dentro de la banda permitida"
       />
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-slate-600">Precio:</span>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted">Precio P2P</span>
         <input
           type="number"
           value={value}
@@ -46,13 +47,11 @@ export function PriceCollarSlider({
           max={collar.max}
           step={0.5}
           onChange={(e) => onChange(Number(e.target.value))}
-          className={`w-32 rounded-brand border px-3 py-1.5 text-sm outline-none ${
-            withinRange ? 'border-slate-300' : 'border-red-500 ring-1 ring-red-500'
-          }`}
+          className={`w-32 tabular-nums ${FIELD_CLASS} ${borderOverride}`}
         />
         {!withinRange && (
-          <span className="text-xs font-medium text-red-600">
-            Fuera de la banda [{collar.min.toFixed(0)}–{collar.max.toFixed(0)}]
+          <span className="text-xs font-semibold text-down">
+            Fuera de banda [{collar.min.toFixed(0)}–{collar.max.toFixed(0)}]
           </span>
         )}
       </div>

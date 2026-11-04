@@ -1,22 +1,21 @@
 import { CouponState } from '@smcta/shared';
+import { Badge, type Tone } from '../ui/kit';
 
-// Paleta visual semántica para identificar el estado del cupón de un solo vistazo.
-const STYLES: Record<CouponState, { bg: string; fg: string; label: string }> = {
-  [CouponState.EMITIDO]: { bg: '#E0E7FF', fg: '#3730A3', label: 'Emitido' },
-  [CouponState.EN_WALLET]: { bg: '#DEF7EC', fg: '#03543F', label: 'En billetera' },
-  [CouponState.PUBLICADO_P2P]: { bg: '#FEF08A', fg: '#713F12', label: 'Publicado P2P' },
-  [CouponState.CANJEADO]: { bg: '#E5E7EB', fg: '#374151', label: 'Canjeado' },
-  [CouponState.VENCIDO]: { bg: '#FEE2E2', fg: '#991B1B', label: 'Vencido' },
+// Mapea cada estado de la máquina finita a la semántica de colores de mercado (up/warn/down/info).
+// Al usar canales con alpha se lee bien tanto sobre fondo #13161F oscuro como sobre blanco.
+const STATE_META: Record<CouponState, { tone: Tone; label: string }> = {
+  [CouponState.EMITIDO]: { tone: 'info', label: 'Emitido' },
+  [CouponState.EN_WALLET]: { tone: 'up', label: 'En billetera' },
+  [CouponState.PUBLICADO_P2P]: { tone: 'warn', label: 'Publicado P2P' },
+  [CouponState.CANJEADO]: { tone: 'neutral', label: 'Canjeado' },
+  [CouponState.VENCIDO]: { tone: 'down', label: 'Vencido' },
 };
 
 export function StatusPill({ state }: { state: CouponState }) {
-  const s = STYLES[state];
+  const meta = STATE_META[state];
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
-      style={{ background: s.bg, color: s.fg }}
-    >
-      {s.label}
-    </span>
+    <Badge tone={meta.tone} dot>
+      {meta.label}
+    </Badge>
   );
 }

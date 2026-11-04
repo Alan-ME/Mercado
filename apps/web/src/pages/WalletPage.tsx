@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshCw, QrCode, Ban } from 'lucide-react';
+import { Ban, CheckCircle2, Coins, QrCode, RefreshCw, Tag, Wallet } from 'lucide-react';
 import { CouponState, type P2POrderDTO } from '@smcta/shared';
 import { useSession } from '../state/session';
 import { useToast } from '../ui/toast';
 import { api, ApiError, type WalletCoupon } from '../api/client';
 import { StatusPill } from '../components/StatusPill';
 import { QrCanje } from '../components/QrCanje';
+import { AssetArt, assetMeta } from '../ui/AssetArt';
+import { Button, Card, EmptyState, PageHeader, money } from '../ui/kit';
+import { KpiCard } from '../ui/KpiCard';
 
 function CouponAction({
   coupon,
@@ -18,28 +21,36 @@ function CouponAction({
 }) {
   if (coupon.state === CouponState.EN_WALLET) {
     return (
-      <button
-        onClick={() => onRedeem(coupon)}
-        className="flex w-full items-center justify-center gap-2 rounded-brand py-2 text-sm font-semibold text-white"
-        style={{ background: 'var(--smcta-brand-primary)' }}
-      >
+      <Button className="w-full" onClick={() => onRedeem(coupon)}>
         <QrCode size={16} /> Generar QR de canje
-      </button>
+      </Button>
     );
   }
   if (coupon.state === CouponState.PUBLICADO_P2P) {
     return (
-      <button
-        onClick={() => onCancel(coupon.couponId)}
-        className="flex w-full items-center justify-center gap-2 rounded-brand border border-amber-300 bg-amber-50 py-2 text-sm font-semibold text-amber-800"
-      >
-        <Ban size={16} /> En venta P2P — Cancelar oferta
-      </button>
+      <Button variant="warn" className="w-full" onClick={() => onCancel(coupon.couponId)}>
+        <Ban size={15} /> En venta P2P — Cancelar oferta
+      </Button>
     );
   }
   return (
-    <div className="rounded-brand bg-slate-50 py-2 text-center text-sm text-slate-400">
-      Sin acciones disponibles
+    <div className="rounded-ctl border border-line bg-raised py-2 text-center text-xs font-medium text-muted">
+      Posición cerrada
+    </div>
+  );
+}
+
+function WalletKpis({ coupons }: { coupons: WalletCoupon[] }) {
+  const ready = coupons.filter((c) => c.state === CouponState.EN_WALLET);
+  const listed = coupons.filter((c) => c.state === CouponState.PUBLICADO_P2P);
+  const liveNominal = [...ready, ...listed].reduce((acc, c) => acc + c.nominalPrice, 0);
+
+  return (
+    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiCard label="Total en portafolio" value={coupons.length} icon={Wallet} tone="primary" />
+      <KpiCard label="Listos para canje" value={ready.length} icon={CheckCircle2} tone="up" />
+      <KpiCard label="Ofertados en P2P" value={listed.length} icon={Tag} tone="warn" />
+      <KpiCard label="Nominal activo" value={money(liveNominal)} icon={Coins} tone="accent" />
     </div>
   );
 }
@@ -54,31 +65,35 @@ function CouponGrid({
   onCancel: (couponId: string) => void;
 }) {
   if (coupons.length === 0) {
-    return (
-      <div className="rounded-brand bg-white p-8 text-center text-slate-500 shadow-sm">
-        No tenés cupones. Comprá uno en la Tienda.
-      </div>
-    );
+    return <EmptyState>No tenés cupones en tu portafolio. Adquirí uno en Tienda o en el Mercado P2P.</EmptyState>;
   }
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {coupons.map((c) => (
-        <div key={c.couponId} className="rounded-brand bg-white p-5 shadow-sm">
-          <div className="mb-2 flex items-start justify-between">
-            <h3 className="font-semibold text-slate-900">{c.productName}</h3>
-            <StatusPill state={c.state} />
-          </div>
-          <div className="text-2xl font-bold text-[var(--smcta-brand-primary)]">
-            ${c.nominalPrice.toFixed(2)}
-          </div>
-          <div className="mt-1 text-xs text-slate-400">
-            Vence: {new Date(c.expirationDate).toLocaleDateString()}
-          </div>
-          <div className="mt-4">
-            <CouponAction coupon={c} onRedeem={onRedeem} onCancel={onCancel} />
-          </div>
-        </div>
-      ))}
+      {coupons.map((c) => {
+        const { category } = assetMeta(c.productName);
+        return (
+          <Card key={c.couponId} interactive className="flex flex-col p-4">
+            <AssetArt productName={c.productName} compact />
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-brand-accent">{category}</span>
+              <StatusPill state={c.state} />
+            </div>
+            <h3 className="mt-1.5 line-clamp-1 font-semibold text-fg">{c.productName}</h3>
+            <div className="mt-2 flex items-baseline justify-between border-t border-line pt-2.5">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Valor nominal</div>
+                <div className="text-xl font-bold tabular-nums text-fg">{money(c.nominalPrice)}</div>
+              </div>
+              <div className="text-right text-[11px] text-muted">
+                Vence {new Date(c.expirationDate).toLocaleDateString()}
+              </div>
+            </div>
+            <div className="mt-3.5">
+              <CouponAction coupon={c} onRedeem={onRedeem} onCancel={onCancel} />
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -104,33 +119,6 @@ function ActiveQrModal({
       userName={user.displayName}
       onClose={onClose}
     />
-  );
-}
-
-function WalletHeader({
-  ownerName,
-  loading,
-  onRefresh,
-}: {
-  ownerName: string | undefined;
-  loading: boolean;
-  onRefresh: () => void;
-}) {
-  const label = ownerName ?? '—';
-  const spin = loading ? 'animate-spin' : '';
-  return (
-    <div className="mb-4 flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Billetera digital</h1>
-        <p className="text-sm text-slate-500">Cupones de {label}</p>
-      </div>
-      <button
-        onClick={onRefresh}
-        className="flex items-center gap-1.5 rounded-brand bg-white px-3 py-1.5 text-sm shadow-sm"
-      >
-        <RefreshCw size={15} className={spin} /> Actualizar
-      </button>
-    </div>
   );
 }
 
@@ -178,9 +166,22 @@ export function WalletPage() {
     await performCancel(tenant, order.orderId, user.userId);
   };
 
+  const ownerLabel = user ? user.displayName : '—';
+  const spin = loading ? 'animate-spin' : '';
+
   return (
     <div>
-      <WalletHeader ownerName={user?.displayName} loading={loading} onRefresh={() => void load()} />
+      <PageHeader
+        title="Billetera digital"
+        subtitle={`Portafolio custodiado de ${ownerLabel}`}
+        icon={Wallet}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            <RefreshCw size={14} className={spin} /> Actualizar
+          </Button>
+        }
+      />
+      <WalletKpis coupons={coupons} />
       <CouponGrid coupons={coupons} onRedeem={setCanje} onCancel={(id) => void cancel(id)} />
       <ActiveQrModal
         canje={canje}
