@@ -17,11 +17,11 @@ describe('Integridad DDL PostgreSQL / PGlite', () => {
 
   it('re-ejecutar migrate y seedDatabase no borra ni duplica tenants existentes', async () => {
     const first = await seedDatabase(db);
-    expect(first.tenants).toHaveLength(3);
+    expect(first.tenants).toHaveLength(4);
 
     await migrate(db);
     const second = await seedDatabase(db);
-    expect(second.tenants).toHaveLength(3);
+    expect(second.tenants).toHaveLength(4);
     expect(second.tenants[0]?.tenantId).toBe(first.tenants[0]?.tenantId);
   });
 

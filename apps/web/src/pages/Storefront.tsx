@@ -1,194 +1,276 @@
 import { useState } from 'react';
-import { ArrowRight, Flame, Loader2, ShieldCheck, ShoppingBag } from 'lucide-react';
-import { useSession } from '../state/session';
-import { useToast } from '../ui/toast';
-import { api, ApiError } from '../api/client';
-import { AssetArt, assetMeta } from '../ui/AssetArt';
-import { Badge, Button, Card, money } from '../ui/kit';
-import { Sparkline } from '../ui/Sparkline';
+import { ArrowRight, ShoppingBag } from 'lucide-react';
+import { COFFEE_PRODUCTS, type CoffeeProduct } from '../data/coffeeCatalog';
+import { ProductDetailModal } from '../components/ProductDetailModal';
+import { useCart } from '../state/cart';
+import { Card, money } from '../ui/kit';
 
-interface CatalogItem {
-  name: string;
-  price: number;
-  ticker: string;
-  description: string;
-  trend: number[];
+export function Storefront() {
+  const [activeProduct, setActiveProduct] = useState<CoffeeProduct | null>(null);
+  const { addToCart } = useCart();
+
+  const promos = COFFEE_PRODUCTS.slice(0, 3);
+  const featured = COFFEE_PRODUCTS.slice(3, 7);
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-10 py-6">
+      {/* 1. Hero Banner Principal */}
+      <StorefrontHero onExplore={() => (window.location.hash = '#/carta')} />
+
+      {/* 2. Sección: Promos de la barra */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-xl font-black uppercase tracking-tight text-fg sm:text-2xl">
+            Promos de la barra
+          </h2>
+          <p className="mt-0.5 text-xs text-muted sm:text-sm">
+            Combos armados para hoy — ideales para arrancar el día
+          </p>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {promos.map((p) => (
+            <PromoCard
+              key={p.id}
+              product={p}
+              onSelect={() => setActiveProduct(p)}
+              onOrder={() => addToCart(p)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* 3. Sección: Nuestra carta destacada */}
+      <section className="space-y-4">
+        <div className="flex items-end justify-between">
+          <div>
+            <h2 className="text-xl font-black uppercase tracking-tight text-fg sm:text-2xl">
+              Nuestra carta destacada
+            </h2>
+            <p className="mt-0.5 text-xs text-muted sm:text-sm">
+              Los favoritos de la semana con opciones para cada hora
+            </p>
+          </div>
+          <button
+            onClick={() => (window.location.hash = '#/carta')}
+            className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-brand-accent hover:underline"
+          >
+            Ver toda la carta <ArrowRight size={14} />
+          </button>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {featured.map((p) => (
+            <FeaturedCard
+              key={p.id}
+              product={p}
+              onSelect={() => setActiveProduct(p)}
+              onOrder={() => addToCart(p)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* 4. Banner inferior: Club de la barra */}
+      <ClubBanner />
+
+      {/* Modal de detalle si el usuario toca cualquier tarjeta */}
+      {activeProduct && (
+        <ProductDetailModal product={activeProduct} onClose={() => setActiveProduct(null)} />
+      )}
+    </div>
+  );
 }
 
-const PRODUCTS: CatalogItem[] = [
-  {
-    name: 'Entrada VIP - Cosmic Fest',
-    price: 100,
-    ticker: 'CSMC-VIP',
-    description: 'Acceso preferencial con barra libre y ingreso por carril rápido.',
-    trend: [96, 98, 102, 101, 106, 112, 118],
-  },
-  {
-    name: 'Drop Air Limited - Par #051',
-    price: 200,
-    ticker: 'DROP-051',
-    description: 'Reserva numerada de edición limitada lista para retirar en flagship.',
-    trend: [195, 200, 198, 210, 218, 224, 232],
-  },
-  {
-    name: 'Suite Fin de Semana',
-    price: 300,
-    ticker: 'SUIT-WKND',
-    description: 'Dos noches base doble con desayuno y late check-out garantizado.',
-    trend: [290, 294, 292, 298, 305, 308, 315],
-  },
-];
-
-// Port del _Hero de home_screen.dart: gradiente cálido/acento, pastilla viva arriba y CTAs directos.
-function StoreHero({
-  companyName,
-  floorPct,
-  ceilingPct,
-  sellerFee,
-}: {
-  companyName: string;
-  floorPct: number;
-  ceilingPct: number;
-  sellerFee: number;
-}) {
+function StorefrontHero({ onExplore }: { onExplore: () => void }) {
   return (
-    <div className="mb-8 rounded-[20px] border border-line bg-gradient-to-br from-warn/15 via-brand-primary/10 to-brand-accent/10 p-6 sm:p-8">
-      <div className="grid items-center gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Badge tone="warn" dot>
-            EMISIÓN PRIMARIA · ESCROW SEGREGADO
-          </Badge>
-          <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
-            {companyName}
+    <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-r from-panel via-raised/90 to-panel shadow-2xl">
+      <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-12 lg:p-10">
+        <div className="space-y-4 lg:col-span-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-warn/40 bg-warn/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-warn">
+            <span className="h-2 w-2 rounded-full bg-up animate-pulse" />
+            <span>BARRA ABIERTA · HOY</span>
+          </div>
+
+          <h1 className="text-3xl font-black uppercase tracking-tight text-fg sm:text-4xl lg:text-5xl leading-tight">
+            BUEN DÍA.
+            <br />
+            <span className="text-brand-primary">HOY HAY CAFÉ RECIÉN TOSTADO.</span>
           </h1>
-          <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-            Adquirí cupones de valor al precio nominal de lanzamiento. El 100% del capital queda resguardado en
-            custodia hasta que canjees el QR dinámico en puerta, o podés revender tu posición en el libro P2P.
+
+          <p className="max-w-xl text-xs sm:text-sm leading-relaxed text-muted">
+            Elegí tu combo, sumá algo dulce o entrá directo a la carta. Cada taza se prepara al
+            momento — pedí y pasá a buscar por la barra.
           </p>
-          <div className="mt-5 flex flex-wrap gap-2.5">
-            <Button onClick={() => (window.location.hash = '#/market')}>
-              <Flame size={16} /> Ir al Mercado P2P
-            </Button>
-            <Button variant="outline" onClick={() => (window.location.hash = '#/wallet')}>
-              Abrir Billetera <ArrowRight size={15} />
-            </Button>
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              onClick={onExplore}
+              className="rounded-xl bg-brand-primary px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black shadow-lg transition-all hover:brightness-110 active:scale-95"
+            >
+              Ver la carta
+            </button>
+            <button
+              onClick={() => (window.location.hash = '#/wallet')}
+              className="rounded-xl border border-line bg-panel/80 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-fg transition-all hover:bg-raised active:scale-95"
+            >
+              Cupones de la semana
+            </button>
           </div>
         </div>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-xs text-muted">
-            <span className="font-semibold uppercase tracking-wider">Reglas del recinto</span>
-            <Badge tone="up">Activo</Badge>
-          </div>
-          <Sparkline data={[100, 108, 105, 116, 122, 119, 130]} height={48} className="mt-2 text-brand-accent" />
-          <div className="mt-2 grid grid-cols-2 gap-2 border-t border-line pt-2.5 text-xs tabular-nums">
-            <div>
-              <div className="text-muted">Price Collar</div>
-              <div className="font-bold text-fg">
-                {floorPct}% – {ceilingPct}%
+        <div className="lg:col-span-5 relative flex items-center justify-center">
+          <div className="relative w-full overflow-hidden rounded-xl border border-line/60 bg-black/40 shadow-inner">
+            <img
+              src="/images/carta/fondo banner.png"
+              alt="Coffee Trading"
+              className="h-56 w-full object-cover object-center brightness-95 contrast-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-4">
+              <div>
+                <div className="text-xs font-black uppercase tracking-wider text-white">
+                  COFFEE TRADING
+                </div>
+                <div className="text-[10px] text-muted">Mesa de liquidez y canje en mostrador</div>
               </div>
             </div>
-            <div>
-              <div className="text-muted">Take-rate venta</div>
-              <div className="font-bold text-fg">{sellerFee}%</div>
-            </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
 }
 
-// Port de ProductCard.dart: arte con gradiente, categoría en versalitas, sparkline y precio tabular.
-function CatalogCard({
-  item,
-  isBusy,
-  disabled,
-  onBuy,
+function PromoCard({
+  product,
+  onSelect,
+  onOrder,
 }: {
-  item: CatalogItem;
-  isBusy: boolean;
-  disabled: boolean;
-  onBuy: () => void;
+  product: CoffeeProduct;
+  onSelect: () => void;
+  onOrder: () => void;
 }) {
-  const { category } = assetMeta(item.name);
   return (
-    <Card interactive className="flex flex-col p-4">
-      <AssetArt productName={item.name} />
-      <div className="mt-3.5 flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-brand-accent">{category}</span>
-        <span className="font-mono text-[11px] text-muted">{item.ticker}</span>
-      </div>
-      <h3 className="mt-1 line-clamp-1 text-base font-semibold text-fg">{item.name}</h3>
-      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{item.description}</p>
-
-      <Sparkline data={item.trend} height={36} className="mt-3 text-up" />
-
-      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-up">
-        <ShieldCheck size={13} /> Custodia en Escrow segregada
-      </div>
-
-      <div className="mt-4 flex items-end justify-between border-t border-line pt-3">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Nominal</div>
-          <div className="text-xl font-bold tabular-nums text-fg">{money(item.price)}</div>
+    <Card className="group flex flex-col justify-between overflow-hidden p-5 transition-all hover:-translate-y-1 hover:border-brand-primary/50">
+      <div onClick={onSelect} className="cursor-pointer space-y-4">
+        <div
+          className={`relative flex h-52 w-full items-center justify-center rounded-xl bg-gradient-to-br ${product.glowGradient} p-4`}
+        >
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-44 max-w-full object-contain drop-shadow-2xl transition-transform duration-300 group-hover:scale-105"
+          />
+          {product.badge && (
+            <span
+              className="absolute right-3 top-3 rounded-md px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-black shadow-md"
+              style={{ backgroundColor: product.badgeColor || '#F59E0B' }}
+            >
+              {product.badge}
+            </span>
+          )}
         </div>
-        <Button size="sm" onClick={onBuy} disabled={disabled}>
-          {isBusy ? <Loader2 className="animate-spin" size={14} /> : <ShoppingBag size={14} />}
-          Comprar cupón
-        </Button>
+
+        <div>
+          <h3 className="text-base font-extrabold uppercase tracking-tight text-fg group-hover:text-brand-primary transition-colors">
+            {product.name}
+          </h3>
+          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted">
+            {product.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center justify-between border-t border-line pt-4">
+        <span className="text-xl font-black text-fg tabular-nums">{money(product.price)}</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOrder();
+          }}
+          className="flex items-center gap-1.5 rounded-lg bg-brand-accent px-4 py-2 text-xs font-black uppercase tracking-wider text-black transition-all hover:brightness-110 active:scale-95"
+        >
+          <ShoppingBag size={14} /> + Pedir
+        </button>
       </div>
     </Card>
   );
 }
 
-export function Storefront() {
-  const { tenant, user, config } = useSession();
-  const toast = useToast();
-  const [busy, setBusy] = useState<string | null>(null);
-
-  const buy = async (name: string, price: number) => {
-    if (!tenant || !user) {
-      toast.push('error', 'Seleccioná un usuario primero.');
-      return;
-    }
-    setBusy(name);
-    try {
-      await api.checkout(tenant, { nominalPrice: price, buyerId: user.userId, productName: name });
-      toast.push('success', 'Cupón emitido y depositado en Escrow. Revisá tu Billetera.');
-    } catch (e) {
-      toast.push('error', e instanceof ApiError ? e.message : 'Error en el checkout.');
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  if (!config) return null;
-
+function FeaturedCard({
+  product,
+  onSelect,
+  onOrder,
+}: {
+  product: CoffeeProduct;
+  onSelect: () => void;
+  onOrder: () => void;
+}) {
   return (
-    <div>
-      <StoreHero
-        companyName={config.companyName}
-        floorPct={config.priceFloorPct}
-        ceilingPct={config.priceCeilingPct}
-        sellerFee={config.sellerTakeRatePct}
-      />
+    <Card className="group flex flex-col justify-between overflow-hidden p-4 transition-all hover:-translate-y-1 hover:border-brand-primary/50">
+      <div onClick={onSelect} className="cursor-pointer space-y-3">
+        <div
+          className={`relative flex h-40 w-full items-center justify-center rounded-xl bg-gradient-to-br ${product.glowGradient} p-2`}
+        >
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-32 max-w-full object-contain drop-shadow-2xl transition-transform duration-300 group-hover:scale-105"
+          />
+          <span
+            className="absolute right-2.5 top-2.5 rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-black shadow-sm"
+            style={{ backgroundColor: product.tagColor || product.badgeColor || '#00D9A3' }}
+          >
+            {product.categoryTag}
+          </span>
+        </div>
 
-      <div className="mb-3">
-        <h2 className="text-lg font-bold text-fg">Emisiones primarias disponibles</h2>
-        <p className="text-xs text-muted">Liquidación atómica contra cuenta de garantía del comercio.</p>
+        <div>
+          <h3 className="text-xs font-extrabold uppercase tracking-tight text-fg group-hover:text-brand-primary transition-colors">
+            {product.name}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted">
+            {product.description}
+          </p>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {PRODUCTS.map((p) => (
-          <CatalogCard
-            key={p.name}
-            item={p}
-            isBusy={busy === p.name}
-            disabled={busy !== null}
-            onBuy={() => void buy(p.name, p.price)}
-          />
-        ))}
+      <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
+        <span className="text-sm font-black text-fg tabular-nums">{money(product.price)}</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOrder();
+          }}
+          className="flex items-center gap-1 rounded-md bg-brand-accent px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-black transition-all hover:brightness-110 active:scale-95"
+        >
+          <ShoppingBag size={13} /> + Pedir
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+function ClubBanner() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-r from-panel via-raised/80 to-panel p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="max-w-xl">
+          <h3 className="text-base font-extrabold uppercase tracking-tight text-fg sm:text-lg">
+            ¿Querés sumarte al club de la barra?
+          </h3>
+          <p className="mt-1 text-xs text-muted leading-relaxed">
+            Creá tu cuenta y guardá tus favoritos. Te avisamos cuando bajan de precio o entra una
+            nueva partida.
+          </p>
+        </div>
+
+        <button
+          onClick={() => (window.location.hash = '#/settings')}
+          className="shrink-0 rounded-xl bg-brand-accent px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black transition-all hover:brightness-110 active:scale-95"
+        >
+          Crear mi cuenta
+        </button>
       </div>
     </div>
   );

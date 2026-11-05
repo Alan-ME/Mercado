@@ -22,6 +22,30 @@ interface SeedTenant {
 
 const TENANTS: SeedTenant[] = [
   {
+    subdomain: 'cafeteria',
+    companyName: 'BREW/DESK Specialty Coffee',
+    sellerTakeRate: 2.5,
+    buyerTakeRate: 1.5,
+    priceFloorPct: 70,
+    priceCeilingPct: 150,
+    maxResales: 5,
+    closureHours: 2,
+    platformShare: 30,
+    primary: '#F59E0B',
+    accent: '#00D9A3',
+    surface: '#13161F',
+    font: 'Inter, sans-serif',
+    users: ['Barista Martin', 'Camila (Habitual)', 'Lucas (Trader)'],
+    coupons: [
+      { product: 'Combo Espresso + Medialuna', nominal: 4.9, ownerIndex: 1, daysToExpire: 7 },
+      { product: 'Sándwich + Latte', nominal: 4.2, ownerIndex: 1, daysToExpire: 7 },
+      { product: 'Mokaccino Tostado Especial', nominal: 4.9, ownerIndex: 2, daysToExpire: 5 },
+      { product: 'Espresso Origen Colombia', nominal: 2.8, ownerIndex: 0, daysToExpire: 10 },
+      { product: 'Affogato de Vainilla', nominal: 6.2, ownerIndex: 0, daysToExpire: 10 },
+      { product: 'Matcha Latte Ceremonial', nominal: 5.1, ownerIndex: 2, daysToExpire: 10 },
+    ],
+  },
+  {
     subdomain: 'festival',
     companyName: 'Ticketera Festival Live',
     sellerTakeRate: 3.0,
@@ -99,7 +123,7 @@ async function loadExistingSeed(db: Database): Promise<SeedResult | null> {
     company_name: string;
   }>(
     `SELECT tenant_id, subdomain, company_name FROM tenants
-     ORDER BY CASE subdomain WHEN 'festival' THEN 1 WHEN 'hotel' THEN 2 WHEN 'sneakers' THEN 3 ELSE 4 END, created_at ASC`,
+     ORDER BY CASE subdomain WHEN 'cafeteria' THEN 1 WHEN 'festival' THEN 2 WHEN 'hotel' THEN 3 WHEN 'sneakers' THEN 4 ELSE 5 END, created_at ASC`,
   );
 
   if (existing.length === 0) return null;

@@ -55,7 +55,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const list = await api.getTenants();
       setTenants(list);
       const saved = lsGet(LS_TENANT);
-      const initial = list.find((t) => t.subdomain === saved) ?? list[0];
+      const initial =
+        list.find((t) => t.subdomain === saved) ??
+        list.find((t) => t.subdomain === 'cafeteria') ??
+        list[0];
       if (initial) setTenantState(initial.subdomain);
       setLoading(false);
     })();
