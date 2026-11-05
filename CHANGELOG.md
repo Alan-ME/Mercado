@@ -7,13 +7,13 @@ Todos los cambios relevantes de arquitectura, lógica de dominio, interfaz *Whit
 ## [2.1.0] — 2026-11-05
 
 ### Added
-- **Gobernanza Técnica y Suite Documental Académica (`Proyecto - SMCTA/06_Gobernanza_Ingenieria_y_Blindaje_Tecnico/`):** Incorporación de monografía de investigación arquitectónica, catálogo oficial `ADR-001..ADR-006`, glosario maestro de lenguaje ubicuo y blindaje legal B2C, casos de uso *Fully Dressed* (`UC-01..UC-04`), registro formal de cambios (`CR-001`, `CR-002`), estudio comparativo del estado del arte y bitácora forense de ingeniería, compilados en formato PDF académico minimalista.
+- **Gobernanza Técnica y Suite Documental Académica (`Proyecto - SMCTA/Documentos MD/06_Gobernanza_Ingenieria_y_Blindaje_Tecnico/` y `Documentos PDF/`):** Incorporación de monografía de investigación arquitectónica, catálogo oficial `ADR-001..ADR-006`, glosario maestro de lenguaje ubicuo y blindaje legal B2C, casos de uso *Fully Dressed* (`UC-01..UC-04`), registro formal de cambios (`CR-001`, `CR-002`), estudio comparativo del estado del arte y bitácora forense de ingeniería, compilados en formato PDF académico minimalista.
 - **Migración Integral `BREW/DESK Specialty Coffee` en React (`@smcta/web`):** Portabilidad completa de las maquetas originales de Dart/Flutter (`vers/diseños/`) al cliente web multi-tenant: catálogo especializado (`coffeeCatalog.ts`), carrito lateral (`CartDrawer.tsx`), ficha interactiva con curva temporal (`ProductDetailModal.tsx`), vista completa de carta (`CartaPage.tsx`) y panel maestro-detalle de ajustes (`SettingsPage.tsx`) (`9acebda`, `f4153fa`, `4766f27`).
 - **Cuarto Tenant Oficial (`cafeteria`):** Alta idempotente de `BREW/DESK Specialty Coffee` en `apps/backend/src/db/seed.ts` como experiencia predeterminada de demostración comercial.
 
 ### Changed
 - **Sincronización del Modelo de Datos Oficial (`DOC-SMCTA-ARQ-002`):** Actualización de `02_Diseno_de_Modelo_de_Datos_y_Entidades.md` para reflejar fielmente las 6 tablas productivas (`tenants`, `users`, `coupons`, `p2p_orders`, `escrow_ledgers`, `user_events`), índices únicos parciales y disparador de inmutabilidad `trg_escrow_ledgers_immutable`.
-- **Renovación Estética de PDFs y HTMLs (Fases 01–06):** Unificación tipográfica y visual de toda la documentación bajo diseño académico minimalista (A4, márgenes $\ge 2\text{ cm}$, tipografía `Inter` + `JetBrains Mono`, acento único índigo `#4F46E5` y gráficos vectoriales SVG generados con métricas reales del repositorio).
+- **Renovación Estética y Separación Estructural de Documentación (Fases 01–06):** Eliminación de exportaciones HTML y archivos comprimidos obsoletos; organización limpia de `Proyecto - SMCTA/` en `Documentos MD/`, `Documentos PDF/` y `Planillas XLSX/`, con compilación directa de los 22 documentos bajo diseño académico minimalista (A4, márgenes $\ge 2\text{ cm}$, tipografía `Inter` + `JetBrains Mono`, acento único índigo `#4F46E5` y gráficos vectoriales SVG generados con métricas reales del repositorio).
 
 ---
 

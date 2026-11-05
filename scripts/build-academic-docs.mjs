@@ -1,6 +1,6 @@
-// Compilador propio de Markdown a HTML + PDF académico usando el Chromium de Playwright
-// que ya vive en @smcta/e2e. Nos ahorra instalar LaTeX (3 GB) o Pandoc en las máquinas
-// del equipo y garantiza que los 22 documentos salgan con el mismo diseño exacto.
+// Compilador propio de Markdown a PDF académico usando el Chromium de Playwright
+// que ya vive en @smcta/e2e. Lee las fuentes desde "Documentos MD/" y escupe directo
+// a "Documentos PDF/" en memoria sin dejar archivos HTML intermedios tirados en el repo.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,6 +9,8 @@ import { FIGURE_REGISTRY } from './svg-figures.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const docsRoot = path.join(repoRoot, 'Proyecto - SMCTA');
+const mdRoot = path.join(docsRoot, 'Documentos MD');
+const pdfRoot = path.join(docsRoot, 'Documentos PDF');
 const requireE2E = createRequire(path.join(repoRoot, 'e2e', 'package.json'));
 const { chromium } = requireE2E('@playwright/test');
 
@@ -965,24 +967,9 @@ function collectMarkdownFiles(dir) {
   return results.sort();
 }
 
-function resolveExistingHtmlTarget(mdFile) {
-  const dir = path.dirname(mdFile);
-  const baseNoExt = path.basename(mdFile, '.md');
-  const prefixMatch = baseNoExt.match(/^(\d+_)/);
-  if (prefixMatch) {
-    const existingHtml = fs
-      .readdirSync(dir)
-      .find((f) => f.endsWith('.html') && f.startsWith(prefixMatch[1]));
-    if (existingHtml) {
-      return path.join(dir, existingHtml);
-    }
-  }
-  return path.join(dir, `${baseNoExt}.html`);
-}
-
 async function main() {
-  const mdFiles = collectMarkdownFiles(docsRoot);
-  console.log(`Encontrados ${mdFiles.length} documentos Markdown en Proyecto - SMCTA.`);
+  const mdFiles = collectMarkdownFiles(mdRoot);
+  console.log(`Encontrados ${mdFiles.length} documentos Markdown en Proyecto - SMCTA/Documentos MD.`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
@@ -995,10 +982,9 @@ async function main() {
       const bodyHtml = compileMarkdownBody(body, meta);
       const fullHtml = buildHtmlDocument(meta, bodyHtml);
 
-      const htmlPath = resolveExistingHtmlTarget(mdPath);
-      const pdfPath = path.join(path.dirname(mdPath), `${baseNoExt}.pdf`);
-
-      fs.writeFileSync(htmlPath, fullHtml, 'utf8');
+      const relDir = path.relative(mdRoot, path.dirname(mdPath));
+      const pdfPath = path.join(pdfRoot, relDir, `${baseNoExt}.pdf`);
+      fs.mkdirSync(path.dirname(pdfPath), { recursive: true });
 
       const page = await context.newPage();
       await page.setContent(fullHtml, { waitUntil: 'load', timeout: 10000 });

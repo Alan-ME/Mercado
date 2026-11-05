@@ -23,7 +23,7 @@ npm run lint:complexity # Verifica complejidad ciclomática estricta (CC <= 5 po
 npm test                # Suite unitaria y de integración con Vitest
 npm run test:coverage   # Cobertura v8 (>= 80%) + reporte LCOV para SonarCloud
 npm run test:e2e        # Suite E2E con Playwright validando QA-01..QA-04
-npm run docs:pdf        # Compila los 22 documentos académicos/oficiales a HTML + PDF A4
+npm run docs:pdf        # Compila los 22 documentos desde Documentos MD/ hacia Documentos PDF/
 docker compose up --build # Despliegue completo con PostgreSQL 15 + Redis 7 + App
 ```
 
@@ -43,9 +43,10 @@ Sacamos del medio los microservicios duplicados que habían quedado a mitad de c
 │                         Tienda, Billetera con QR rotativo, Mercado P2P, Historial, Admin y TPV.
 ├─ e2e/                   Pruebas de extremo a extremo en Playwright (QA-01..QA-04).
 ├─ vers/                  Archivo histórico del prototipo visual original en Dart/Flutter.
-└─ Proyecto - SMCTA/      Documentación oficial completa en Markdown, HTML y PDF académico
-                          (Fases 01 a 05 + Fase 06 de Gobernanza, ADRs, Glosario, Casos de Uso
-                          Fully Dressed, Change Requests, Benchmarking y Bitácora Forense).
+└─ Proyecto - SMCTA/      Documentación oficial separada por formato (Fases 01 a 06):
+   ├─ Documentos MD/      Fuentes editables en Markdown de arquitectura, requisitos y gobernanza.
+   ├─ Documentos PDF/     Los 22 entregables compilados en PDF A4 académico listos para imprenta.
+   └─ Planillas XLSX/     Matrices financieras, backlog, roadmap y QA Checklist en Excel.
 ```
 
 Para pasar del modo embebido a PostgreSQL 15 y Redis 7 en red no hay que tocar ni una línea de dominio: alcanza con definir `DATABASE_URL` y `REDIS_URL` (fijate `.env.example` o `docker-compose.yml`).
