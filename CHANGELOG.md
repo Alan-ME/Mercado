@@ -15,6 +15,9 @@ Todos los cambios relevantes de arquitectura, lógica de dominio, interfaz *Whit
 - **Sincronización del Modelo de Datos Oficial (`DOC-SMCTA-ARQ-002`):** Actualización de `02_Diseno_de_Modelo_de_Datos_y_Entidades.md` para reflejar fielmente las 6 tablas productivas (`tenants`, `users`, `coupons`, `p2p_orders`, `escrow_ledgers`, `user_events`), índices únicos parciales y disparador de inmutabilidad `trg_escrow_ledgers_immutable`.
 - **Renovación Estética y Separación Estructural de Documentación (Fases 01–06):** Eliminación de exportaciones HTML y archivos comprimidos obsoletos; organización limpia de `Proyecto - SMCTA/` en `Documentos MD/`, `Documentos PDF/` y `Planillas XLSX/`, con compilación directa de los 22 documentos bajo diseño académico minimalista (A4, márgenes $\ge 2\text{ cm}$, tipografía `Inter` + `JetBrains Mono`, acento único índigo `#4F46E5` y gráficos vectoriales SVG generados con métricas reales del repositorio).
 
+### Removed
+- **Depuración de Activos Muertos y Prototipo Heredado (`vers/` y `public/images/designs/`):** Eliminación definitiva del directorio legado en Dart/Flutter (`vers/`, ~524 MB en disco / 199 archivos) tras completar su portabilidad a `@smcta/web`, purga de capturas PNG no referenciadas en `apps/web/public/images/designs/` (~5,87 MB excluidos del bundle productivo de Vite) y remoción de la dependencia directa redundante `decimal.js` en `@smcta/backend` (centralizada en `@smcta/shared`).
+
 ---
 
 ## [2.0.0] — 2026-10-28

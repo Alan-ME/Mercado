@@ -42,7 +42,7 @@ Sacamos del medio los microservicios duplicados que habían quedado a mitad de c
 ├─ apps/web/              SPA React + Vite + Tailwind con tematización White-Label en vivo,
 │                         Tienda, Billetera con QR rotativo, Mercado P2P, Historial, Admin y TPV.
 ├─ e2e/                   Pruebas de extremo a extremo en Playwright (QA-01..QA-04).
-├─ vers/                  Archivo histórico del prototipo visual original en Dart/Flutter.
+├─ scripts/               Compilador tipográfico y motor de gráficos vectoriales SVG (docs:pdf).
 └─ Proyecto - SMCTA/      Documentación oficial separada por formato (Fases 01 a 06):
    ├─ Documentos MD/      Fuentes editables en Markdown de arquitectura, requisitos y gobernanza.
    ├─ Documentos PDF/     Los 22 entregables compilados en PDF A4 académico listos para imprenta.
