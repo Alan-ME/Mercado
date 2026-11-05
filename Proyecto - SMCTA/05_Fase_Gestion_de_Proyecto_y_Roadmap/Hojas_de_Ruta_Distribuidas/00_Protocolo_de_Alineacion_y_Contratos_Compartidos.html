@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Protocolo de Alineación y Contratos Compartidos (SMCTA)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-page: #FFFFFF;
+      --text-primary: #1A1A1A;
+      --text-secondary: #4A4A4A;
+      --text-muted: #64748B;
+      --accent: #4F46E5;
+      --bg-code: #F8FAFC;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Roboto, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+    }
+
+    @page {
+      size: A4;
+      margin: 2.35cm 2.2cm 2.2cm 2.2cm;
+    }
+
+    @page :first {
+      margin-top: 2.2cm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 11pt;
+      line-height: 1.46;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Vista cómoda en navegador web cuando abren el .html directo */
+    @media screen {
+      body {
+        max-width: 21cm;
+        margin: 2rem auto;
+        padding: 2.2cm;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    /* 1. Portada Académica Minimalista */
+    .cover-page {
+      min-height: 23.6cm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      break-after: page;
+      padding-top: 1.2cm;
+      padding-bottom: 0.6cm;
+    }
+
+    .cover-top {
+      border-top: 2.5px solid var(--accent);
+      padding-top: 1.4cm;
+    }
+
+    .cover-code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.9cm;
+    }
+
+    .cover-title {
+      font-size: 23pt;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin: 0 0 0.65cm 0;
+    }
+
+    .cover-subtitle {
+      font-size: 13.5pt;
+      font-weight: 400;
+      line-height: 1.42;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 94%;
+    }
+
+    .cover-bottom {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.75cm;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.32cm;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 10pt;
+    }
+
+    .meta-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-width: 170px;
+    }
+
+    .meta-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* 2. Jerarquía Tipográfica de Secciones */
+    h2 {
+      font-size: 16.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      margin-top: 1.9em;
+      margin-bottom: 0.65em;
+      padding-bottom: 0.22em;
+      border-bottom: 1px solid var(--border-subtle);
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 0.82em;
+      background: var(--accent);
+      margin-right: 0.48em;
+      vertical-align: -0.08em;
+      border-radius: 1px;
+    }
+
+    h3 {
+      font-size: 13.5pt;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1.45em;
+      margin-bottom: 0.45em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h4 {
+      font-size: 11.5pt;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 1.2em;
+      margin-bottom: 0.35em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 0.85em 0;
+      color: var(--text-primary);
+      text-align: left;
+    }
+
+    ul, ol {
+      margin: 0.35em 0 1em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin-bottom: 0.38em;
+      color: var(--text-primary);
+    }
+
+    li strong {
+      color: var(--text-primary);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    hr.section-rule {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1.5em 0;
+    }
+
+    /* 3. Índice de Contenidos */
+    .toc-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.1em 1.4em;
+      margin: 1.4em 0 2em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .toc-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.6em;
+      letter-spacing: -0.01em;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .toc-item {
+      margin-bottom: 0.28em;
+      font-size: 10pt;
+      line-height: 1.38;
+    }
+
+    .toc-item a {
+      color: var(--text-secondary);
+    }
+
+    .toc-l2 {
+      font-weight: 600;
+      margin-top: 0.35em;
+    }
+
+    .toc-l2 a {
+      color: var(--text-primary);
+    }
+
+    .toc-l3 {
+      padding-left: 1.2em;
+    }
+
+    /* 4. Citas Destacadas */
+    blockquote {
+      margin: 1.15em 0;
+      padding: 0.55em 1.1em;
+      border-left: 3px solid var(--accent);
+      background: #FAFBFD;
+      color: var(--text-secondary);
+      font-style: italic;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    /* 5. Código Monoespaciado */
+    code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      background: var(--bg-code);
+      color: var(--text-primary);
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin: 1.1em 0 1.35em 0;
+      padding: 0.85em 1em;
+      overflow-x: hidden;
+    }
+
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45em;
+    }
+
+    .code-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--font-mono);
+      font-size: 9.2pt;
+      line-height: 1.42;
+    }
+
+    .code-block code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .code-line {
+      display: inline;
+    }
+
+    .ln {
+      display: inline-block;
+      width: 2.1em;
+      color: #94A3B8;
+      user-select: none;
+      margin-right: 0.65em;
+      text-align: right;
+      font-size: 8.5pt;
+    }
+
+    /* 6. Tablas Académicas Limpias (Solo Líneas Horizontales Finas) */
+    .table-wrap {
+      margin: 1.15em 0 1.5em 0;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.6pt;
+      line-height: 1.38;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead tr {
+      background: var(--bg-code);
+      border-top: 1.5px solid var(--text-primary);
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    th {
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 7px 9px;
+      vertical-align: bottom;
+    }
+
+    td {
+      padding: 6.5px 8px;
+      color: var(--text-primary);
+      border-bottom: 0.75px solid var(--border-subtle);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    td code {
+      font-size: 8.6pt;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 1.25px solid var(--border-strong);
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* 7. Gráficos y Diagramas Vectoriales */
+    figure.academic-figure {
+      margin: 1.4em 0 1.65em 0;
+      padding: 0.9em 1em 0.75em 1em;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: #FFFFFF;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .svg-container {
+      width: 100%;
+      margin-bottom: 0.55em;
+    }
+
+    figcaption {
+      font-size: 9.4pt;
+      line-height: 1.38;
+      color: var(--text-secondary);
+      border-top: 0.75px solid var(--border-subtle);
+      padding-top: 0.5em;
+    }
+
+    figcaption strong {
+      color: var(--accent);
+    }
+
+    /* 8. Expresiones Matemáticas */
+    .math-block {
+      margin: 1.05em 0;
+      padding: 0.65em 1em;
+      background: var(--bg-code);
+      border-left: 2.5px solid var(--accent);
+      border-radius: 0 5px 5px 0;
+      text-align: center;
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 11.2pt;
+      color: var(--text-primary);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .math-inline {
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 10.8pt;
+      white-space: nowrap;
+    }
+
+    .m-rom {
+      font-family: var(--font-sans);
+      font-size: 0.9em;
+    }
+
+    .m-frac {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 0.2em;
+      font-size: 0.9em;
+      line-height: 1.1;
+    }
+
+    .m-num {
+      border-bottom: 0.9px solid var(--text-primary);
+      padding: 0 0.15em 1px 0.15em;
+    }
+
+    .m-den {
+      padding: 1px 0.15em 0 0.15em;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover-page">
+    <div class="cover-top">
+      <div class="cover-code">DOCUMENTACIÓN TÉCNICA OFICIAL · VERSIÓN 2.0.0</div>
+      <h1 class="cover-title">Protocolo de Alineación y Contratos Compartidos (SMCTA)</h1>
+      <p class="cover-subtitle">Definir los contratos de interfaz (APIs, Tipos, Eventos y Códigos de Error) inmutables para que los 3 integrantes del equipo desarrollen en paralelo de forma 100% independiente con sus respectivas IAs.</p>
+    </div>
+    <div class="cover-bottom">
+      <div class="meta-row">
+        <span class="meta-label">Proyecto / Sistema</span>
+        <span class="meta-value">Sistema de Mercado Comportamental y Trading de Activos (SMCTA)</span>
+      </div>
+      <div class="meta-row"><span class="meta-label">Fase / Área Normativa</span><span class="meta-value">Gestión de Proyecto y Arquitectura Distribuida</span></div>
+      <div class="meta-row">
+        <span class="meta-label">Autoría y Gobernanza</span>
+        <span class="meta-value">Equipo de Ingeniería de Software — Proyecto SMCTA</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Fecha de Emisión</span>
+        <span class="meta-value">Noviembre 2026</span>
+      </div>
+    </div>
+  </section>
+  <main class="document-body">
+    <hr class="section-rule"/>
+<h2 id="1-principio-de-desacoplamiento-y-regla-de-oro-1">1. Principio de Desacoplamiento y Regla de Oro</h2>
+<p>Cada integrante tiene la propiedad absoluta (<em>ownership</em>) de su subsistema y <strong>no debe esperar a que los otros terminen</strong> para avanzar. Para lograr esto:</p>
+<ol><li><strong>Contratos Inmutables:</strong> Los endpoints, DTOs, enumerados y códigos de error definidos en este documento son la única fuente de verdad técnica.</li>
+<li><strong>Mocking First:</strong> Frontend (Rol 2) e Infraestructura/QA (Rol 3) deben inicializar mocks tipados basados en los esquemas de este documento durante los primeros sprints, permitiendo avanzar sin esperar despliegues reales de Backend (Rol 1).</li>
+<li><strong>Cero Dependencias Circulares:</strong> Ningún componente puede depender en tiempo de compilación de la implementación interna de otro componente; solo de las interfaces y contratos REST/WebSocket/JSON aquí documentados.</li></ol>
+<hr class="section-rule"/>
+<h2 id="2-tipos-y-modelos-de-datos-compartidos-shared-typescript-dtos-2">2. Tipos y Modelos de Datos Compartidos (Shared TypeScript DTOs)</h2>
+<p>Todos los integrantes deben respetar estas estructuras de datos en sus respectivos repositorios o módulos:</p>
+<div class="code-block"><div class="code-lang">TYPESCRIPT</div><pre><code><span class="code-line"><span class="ln"> 1</span>// ==========================================</span>
+<span class="code-line"><span class="ln"> 2</span>// ENUMERADOS DEL SISTEMA</span>
+<span class="code-line"><span class="ln"> 3</span>// ==========================================</span>
+<span class="code-line"><span class="ln"> 4</span> </span>
+<span class="code-line"><span class="ln"> 5</span>export enum CouponState {</span>
+<span class="code-line"><span class="ln"> 6</span>  EMITIDO = 'EMITIDO',</span>
+<span class="code-line"><span class="ln"> 7</span>  EN_WALLET = 'EN_WALLET',</span>
+<span class="code-line"><span class="ln"> 8</span>  PUBLICADO_P2P = 'PUBLICADO_P2P',</span>
+<span class="code-line"><span class="ln"> 9</span>  CANJEADO = 'CANJEADO',</span>
+<span class="code-line"><span class="ln">10</span>  VENCIDO = 'VENCIDO'</span>
+<span class="code-line"><span class="ln">11</span>}</span>
+<span class="code-line"><span class="ln">12</span> </span>
+<span class="code-line"><span class="ln">13</span>export enum OrderSide {</span>
+<span class="code-line"><span class="ln">14</span>  BUY = 'BUY',</span>
+<span class="code-line"><span class="ln">15</span>  SELL = 'SELL'</span>
+<span class="code-line"><span class="ln">16</span>}</span>
+<span class="code-line"><span class="ln">17</span> </span>
+<span class="code-line"><span class="ln">18</span>export enum OrderStatus {</span>
+<span class="code-line"><span class="ln">19</span>  OPEN = 'OPEN',</span>
+<span class="code-line"><span class="ln">20</span>  MATCHED = 'MATCHED',</span>
+<span class="code-line"><span class="ln">21</span>  CANCELLED = 'CANCELLED'</span>
+<span class="code-line"><span class="ln">22</span>}</span>
+<span class="code-line"><span class="ln">23</span> </span>
+<span class="code-line"><span class="ln">24</span>export enum LedgerTransactionType {</span>
+<span class="code-line"><span class="ln">25</span>  CHECKOUT = 'CHECKOUT',</span>
+<span class="code-line"><span class="ln">26</span>  P2P_SPLIT = 'P2P_SPLIT',</span>
+<span class="code-line"><span class="ln">27</span>  REDEEM_RELEASE = 'REDEEM_RELEASE',</span>
+<span class="code-line"><span class="ln">28</span>  REFUND = 'REFUND'</span>
+<span class="code-line"><span class="ln">29</span>}</span>
+<span class="code-line"><span class="ln">30</span> </span>
+<span class="code-line"><span class="ln">31</span>// ==========================================</span>
+<span class="code-line"><span class="ln">32</span>// DTOs Y ENTIDADES MAESTRAS</span>
+<span class="code-line"><span class="ln">33</span>// ==========================================</span>
+<span class="code-line"><span class="ln">34</span> </span>
+<span class="code-line"><span class="ln">35</span>export interface TenantConfigDTO {</span>
+<span class="code-line"><span class="ln">36</span>  tenantId: string;</span>
+<span class="code-line"><span class="ln">37</span>  companyName: string;</span>
+<span class="code-line"><span class="ln">38</span>  subdomain: string;</span>
+<span class="code-line"><span class="ln">39</span>  sellerTakeRatePct: number;    // Ej: 3.50 (%)</span>
+<span class="code-line"><span class="ln">40</span>  buyerTakeRatePct: number;     // Ej: 2.50 (%)</span>
+<span class="code-line"><span class="ln">41</span>  priceFloorPct: number;        // Ej: 50.00 (% del nominal)</span>
+<span class="code-line"><span class="ln">42</span>  priceCeilingPct: number;      // Ej: 200.00 (% del nominal)</span>
+<span class="code-line"><span class="ln">43</span>  maxDailyResalesPerUser: number; // Ej: 5</span>
+<span class="code-line"><span class="ln">44</span>  closureHoursBeforeEvent: number;// Ej: 2 (horas antes para cerrar P2P)</span>
+<span class="code-line"><span class="ln">45</span>  platformRevenueSharePct: number;// Ej: 30.00 (%)</span>
+<span class="code-line"><span class="ln">46</span>  theme: {</span>
+<span class="code-line"><span class="ln">47</span>    primaryColor: string;       // Ej: &quot;#1A365D&quot;</span>
+<span class="code-line"><span class="ln">48</span>    accentColor: string;        // Ej: &quot;#3182CE&quot;</span>
+<span class="code-line"><span class="ln">49</span>    surfaceColor: string;       // Ej: &quot;#FFFFFF&quot;</span>
+<span class="code-line"><span class="ln">50</span>    fontFamily: string;         // Ej: &quot;Inter, sans-serif&quot;</span>
+<span class="code-line"><span class="ln">51</span>    logoUrl: string;</span>
+<span class="code-line"><span class="ln">52</span>  };</span>
+<span class="code-line"><span class="ln">53</span>}</span>
+<span class="code-line"><span class="ln">54</span> </span>
+<span class="code-line"><span class="ln">55</span>export interface CouponDTO {</span>
+<span class="code-line"><span class="ln">56</span>  couponId: string;</span>
+<span class="code-line"><span class="ln">57</span>  tenantId: string;</span>
+<span class="code-line"><span class="ln">58</span>  currentOwnerId: string;</span>
+<span class="code-line"><span class="ln">59</span>  nominalPrice: number;         // Ej: 100.00</span>
+<span class="code-line"><span class="ln">60</span>  state: CouponState;</span>
+<span class="code-line"><span class="ln">61</span>  qrEncryptedToken: string;     // Token criptográfico rotativo</span>
+<span class="code-line"><span class="ln">62</span>  expirationDate: string;       // ISO-8601</span>
+<span class="code-line"><span class="ln">63</span>  createdAt: string;</span>
+<span class="code-line"><span class="ln">64</span>}</span>
+<span class="code-line"><span class="ln">65</span> </span>
+<span class="code-line"><span class="ln">66</span>export interface P2POrderDTO {</span>
+<span class="code-line"><span class="ln">67</span>  orderId: string;</span>
+<span class="code-line"><span class="ln">68</span>  tenantId: string;</span>
+<span class="code-line"><span class="ln">69</span>  couponId: string;</span>
+<span class="code-line"><span class="ln">70</span>  sellerId: string;</span>
+<span class="code-line"><span class="ln">71</span>  askingPrice: number;          // Precio de reventa propuesto</span>
+<span class="code-line"><span class="ln">72</span>  side: OrderSide;</span>
+<span class="code-line"><span class="ln">73</span>  status: OrderStatus;</span>
+<span class="code-line"><span class="ln">74</span>  createdAt: string;</span>
+<span class="code-line"><span class="ln">75</span>  commissionBreakdown: {</span>
+<span class="code-line"><span class="ln">76</span>    nominalPrice: number;</span>
+<span class="code-line"><span class="ln">77</span>    askingPrice: number;</span>
+<span class="code-line"><span class="ln">78</span>    sellerFeePct: number;</span>
+<span class="code-line"><span class="ln">79</span>    sellerFeeAmount: number;    // askingPrice * (sellerTakeRate / 100)</span>
+<span class="code-line"><span class="ln">80</span>    netSellerProceeds: number;  // askingPrice - sellerFeeAmount</span>
+<span class="code-line"><span class="ln">81</span>    buyerFeePct: number;</span>
+<span class="code-line"><span class="ln">82</span>    buyerFeeAmount: number;     // askingPrice * (buyerTakeRate / 100)</span>
+<span class="code-line"><span class="ln">83</span>    totalBuyerPrice: number;    // askingPrice + buyerFeeAmount</span>
+<span class="code-line"><span class="ln">84</span>  };</span>
+<span class="code-line"><span class="ln">85</span>}</span>
+<span class="code-line"><span class="ln">86</span> </span>
+<span class="code-line"><span class="ln">87</span>export interface QRTokenPayload {</span>
+<span class="code-line"><span class="ln">88</span>  couponId: string;</span>
+<span class="code-line"><span class="ln">89</span>  tenantId: string;</span>
+<span class="code-line"><span class="ln">90</span>  ownerId: string;</span>
+<span class="code-line"><span class="ln">91</span>  nonce: string;                // Generado aleatoriamente cada 30 segundos</span>
+<span class="code-line"><span class="ln">92</span>  timestamp: number;            // Epoch millis</span>
+<span class="code-line"><span class="ln">93</span>  signature: string;            // HMAC-SHA256 firmado con clave secreta del tenant</span>
+<span class="code-line"><span class="ln">94</span>}</span></code></pre></div>
+<hr class="section-rule"/>
+<h2 id="3-catalogo-de-endpoints-rest-oficiales-3">3. Catálogo de Endpoints REST Oficiales</h2>
+<div class="table-wrap"><table><thead><tr><th style="text-align:left">Método</th><th style="text-align:left">Endpoint</th><th style="text-align:left">Responsable Productor</th><th style="text-align:left">Consumidores</th><th style="text-align:left">Descripción</th></tr></thead><tbody><tr><td style="text-align:left"><code>GET</code></td><td style="text-align:left"><code>/api/v1/tenant/config</code></td><td style="text-align:left">Rol 3 (Gateway/Context)</td><td style="text-align:left">Rol 2 (Frontend)</td><td style="text-align:left">Resuelve configuración y tema visual según subdominio.</td></tr>
+<tr><td style="text-align:left"><code>POST</code></td><td style="text-align:left"><code>/api/v1/checkout/primary</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 2 (Frontend)</td><td style="text-align:left">Compra inicial de cupón y fondeo de cuenta Escrow.</td></tr>
+<tr><td style="text-align:left"><code>GET</code></td><td style="text-align:left"><code>/api/v1/coupons/my-wallet</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 2 (Frontend)</td><td style="text-align:left">Retorna cupones del usuario autenticado con su estado.</td></tr>
+<tr><td style="text-align:left"><code>GET</code></td><td style="text-align:left"><code>/api/v1/coupons/:id/qr-token</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 2 (Frontend)</td><td style="text-align:left">Retorna token dinámico rotativo firmado para canje TPV.</td></tr>
+<tr><td style="text-align:left"><code>POST</code></td><td style="text-align:left"><code>/api/v1/p2p/orders</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 2 (Frontend)</td><td style="text-align:left">Publica orden en mercado P2P validando Price Collar.</td></tr>
+<tr><td style="text-align:left"><code>GET</code></td><td style="text-align:left"><code>/api/v1/p2p/orders</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 2 (Frontend)</td><td style="text-align:left">Listado público del libro de órdenes filtrado por Tenant.</td></tr>
+<tr><td style="text-align:left"><code>POST</code></td><td style="text-align:left"><code>/api/v1/p2p/orders/:id/buy</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 2 (Frontend)</td><td style="text-align:left">Ejecuta match atómico de compra P2P y split de fees.</td></tr>
+<tr><td style="text-align:left"><code>POST</code></td><td style="text-align:left"><code>/api/v1/tpv/validate-qr</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 3 (TPV App)</td><td style="text-align:left">Escanea QR, valida token, pasa estado a <code>CANJEADO</code> y emite webhook.</td></tr>
+<tr><td style="text-align:left"><code>POST</code></td><td style="text-align:left"><code>/api/v1/escrow/webhook-release</code></td><td style="text-align:left">Rol 1 (Backend Core)</td><td style="text-align:left">Rol 3 (PSP Mock)</td><td style="text-align:left">Libera balance de custodia tras confirmación de redención.</td></tr></tbody></table></div>
+<hr class="section-rule"/>
+<h2 id="4-codigos-de-error-semanticos-inflexibles-4">4. Códigos de Error Semánticos Inflexibles</h2>
+<p>Cualquier error de negocio debe retornar formato estándar JSON:</p>
+<div class="code-block"><div class="code-lang">JSON</div><pre><code><span class="code-line">{</span>
+<span class="code-line">  &quot;errorCode&quot;: &quot;ERR_STRING_CODE&quot;,</span>
+<span class="code-line">  &quot;message&quot;: &quot;Descripción clara del motivo del rechazo.&quot;,</span>
+<span class="code-line">  &quot;details&quot;: {}</span>
+<span class="code-line">}</span></code></pre></div>
+<div class="table-wrap"><table><thead><tr><th style="text-align:left">Código de Error</th><th style="text-align:left">HTTP Status</th><th style="text-align:left">Causa</th><th style="text-align:left">Rol Responsable</th></tr></thead><tbody><tr><td style="text-align:left"><code>PRICE_COLLAR_VIOLATION</code></td><td style="text-align:left"><code>422 Unprocessable Entity</code></td><td style="text-align:left">Precio fuera del rango <span class="math-inline">[P<sub>min</sub>, P<sub>max</sub>]</span> del Tenant.</td><td style="text-align:left">Rol 1</td></tr>
+<tr><td style="text-align:left"><code>COUPON_NOT_IN_WALLET</code></td><td style="text-align:left"><code>409 Conflict</code></td><td style="text-align:left">Intento de vender o canjear cupón que no está <code>EN_WALLET</code>.</td><td style="text-align:left">Rol 1</td></tr>
+<tr><td style="text-align:left"><code>P2P_ORDER_LOCKED</code></td><td style="text-align:left"><code>423 Locked</code></td><td style="text-align:left">Concurrencia detectada en Redis: orden en proceso de match.</td><td style="text-align:left">Rol 1</td></tr>
+<tr><td style="text-align:left"><code>DAILY_RESALE_LIMIT_REACHED</code></td><td style="text-align:left"><code>429 Too Many Requests</code></td><td style="text-align:left">Usuario superó las 5 reventas diarias parametrizadas.</td><td style="text-align:left">Rol 1</td></tr>
+<tr><td style="text-align:left"><code>QR_TOKEN_EXPIRED</code></td><td style="text-align:left"><code>401 Unauthorized</code></td><td style="text-align:left">Token QR tiene más de 30 segundos de antigüedad.</td><td style="text-align:left">Rol 1</td></tr>
+<tr><td style="text-align:left"><code>TENANT_NOT_FOUND</code></td><td style="text-align:left"><code>404 Not Found</code></td><td style="text-align:left">Subdominio no registrado en tabla <code>tenants</code>.</td><td style="text-align:left">Rol 3</td></tr></tbody></table></div>
+<hr class="section-rule"/>
+<h2 id="5-matriz-de-reparto-de-responsabilidades-5">5. Matriz de Reparto de Responsabilidades</h2>
+<figure class="academic-figure">
+  <div class="svg-container"><svg viewBox="0 0 740 205" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Reparto de Responsabilidades por Rol">
+  <defs>
+    <marker id="arr-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#4F46E5"/>
+    </marker>
+  </defs>
+  <rect x="16" y="24" width="216" height="152" rx="6" fill="#FFFFFF" stroke="#4F46E5" stroke-width="1.3"/>
+  <text x="30" y="46" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#4F46E5">ROL 1 · BACKEND CORE &amp; MOTOR P2P</text>
+  <text x="30" y="68" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• PostgreSQL 15 / PGlite WASM</text>
+  <text x="30" y="86" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• LockManager (Redis Lua / TTL)</text>
+  <text x="30" y="104" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Price Collar &amp; Split Decimal</text>
+  <text x="30" y="122" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Ledger Inmutable + QR HMAC</text>
+  <text x="30" y="152" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">Contrato: @smcta/shared DTOs</text>
+
+  <rect x="262" y="24" width="216" height="152" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.1"/>
+  <text x="276" y="46" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#1A1A1A">ROL 2 · FRONTEND WHITE-LABEL &amp; UX</text>
+  <text x="276" y="68" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Design Tokens CSS Dinámicos</text>
+  <text x="276" y="86" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Experiencia BREW/DESK React</text>
+  <text x="276" y="104" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Wallet QR Vivo + Slider P2P</text>
+  <text x="276" y="122" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Suscripción Reactiva SSE</text>
+  <text x="276" y="152" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">Paquete: apps/web (@smcta/web)</text>
+
+  <rect x="508" y="24" width="216" height="152" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.1"/>
+  <text x="522" y="46" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#1A1A1A">ROL 3 · GATEWAY, ADMIN B2B &amp; QA</text>
+  <text x="522" y="68" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• tenantResolver (Subdominio)</text>
+  <text x="522" y="86" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Consola B2B &amp; Auditoría = 0</text>
+  <text x="522" y="104" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Escáner TPV Punto de Venta</text>
+  <text x="522" y="122" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#1A1A1A">• Suite Playwright QA-01..QA-04</text>
+  <text x="522" y="152" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">Paquete: e2e (@smcta/e2e)</text>
+
+  <line x1="262" y1="98" x2="236" y2="98" stroke="#4F46E5" stroke-width="1.2" marker-end="url(#arr-r)"/>
+  <line x1="508" y1="98" x2="482" y2="98" stroke="#4F46E5" stroke-width="1.2" marker-end="url(#arr-r)"/>
+</svg></div>
+  <figcaption><strong>Figura 1.</strong> Topología de desacoplamiento por roles e integración mediante contratos tipados inmutables en <code>@smcta/shared</code>.</figcaption>
+</figure>
+  </main>
+</body>
+</html>

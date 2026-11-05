@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lecciones Aprendidas y Bitácora Forense de Ingeniería</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-page: #FFFFFF;
+      --text-primary: #1A1A1A;
+      --text-secondary: #4A4A4A;
+      --text-muted: #64748B;
+      --accent: #4F46E5;
+      --bg-code: #F8FAFC;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Roboto, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+    }
+
+    @page {
+      size: A4;
+      margin: 2.35cm 2.2cm 2.2cm 2.2cm;
+    }
+
+    @page :first {
+      margin-top: 2.2cm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 11pt;
+      line-height: 1.46;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Vista cómoda en navegador web cuando abren el .html directo */
+    @media screen {
+      body {
+        max-width: 21cm;
+        margin: 2rem auto;
+        padding: 2.2cm;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    /* 1. Portada Académica Minimalista */
+    .cover-page {
+      min-height: 23.6cm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      break-after: page;
+      padding-top: 1.2cm;
+      padding-bottom: 0.6cm;
+    }
+
+    .cover-top {
+      border-top: 2.5px solid var(--accent);
+      padding-top: 1.4cm;
+    }
+
+    .cover-code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.9cm;
+    }
+
+    .cover-title {
+      font-size: 23pt;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin: 0 0 0.65cm 0;
+    }
+
+    .cover-subtitle {
+      font-size: 13.5pt;
+      font-weight: 400;
+      line-height: 1.42;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 94%;
+    }
+
+    .cover-bottom {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.75cm;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.32cm;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 10pt;
+    }
+
+    .meta-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-width: 170px;
+    }
+
+    .meta-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* 2. Jerarquía Tipográfica de Secciones */
+    h2 {
+      font-size: 16.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      margin-top: 1.9em;
+      margin-bottom: 0.65em;
+      padding-bottom: 0.22em;
+      border-bottom: 1px solid var(--border-subtle);
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 0.82em;
+      background: var(--accent);
+      margin-right: 0.48em;
+      vertical-align: -0.08em;
+      border-radius: 1px;
+    }
+
+    h3 {
+      font-size: 13.5pt;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1.45em;
+      margin-bottom: 0.45em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h4 {
+      font-size: 11.5pt;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 1.2em;
+      margin-bottom: 0.35em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 0.85em 0;
+      color: var(--text-primary);
+      text-align: left;
+    }
+
+    ul, ol {
+      margin: 0.35em 0 1em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin-bottom: 0.38em;
+      color: var(--text-primary);
+    }
+
+    li strong {
+      color: var(--text-primary);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    hr.section-rule {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1.5em 0;
+    }
+
+    /* 3. Índice de Contenidos */
+    .toc-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.1em 1.4em;
+      margin: 1.4em 0 2em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .toc-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.6em;
+      letter-spacing: -0.01em;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .toc-item {
+      margin-bottom: 0.28em;
+      font-size: 10pt;
+      line-height: 1.38;
+    }
+
+    .toc-item a {
+      color: var(--text-secondary);
+    }
+
+    .toc-l2 {
+      font-weight: 600;
+      margin-top: 0.35em;
+    }
+
+    .toc-l2 a {
+      color: var(--text-primary);
+    }
+
+    .toc-l3 {
+      padding-left: 1.2em;
+    }
+
+    /* 4. Citas Destacadas */
+    blockquote {
+      margin: 1.15em 0;
+      padding: 0.55em 1.1em;
+      border-left: 3px solid var(--accent);
+      background: #FAFBFD;
+      color: var(--text-secondary);
+      font-style: italic;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    /* 5. Código Monoespaciado */
+    code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      background: var(--bg-code);
+      color: var(--text-primary);
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin: 1.1em 0 1.35em 0;
+      padding: 0.85em 1em;
+      overflow-x: hidden;
+    }
+
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45em;
+    }
+
+    .code-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--font-mono);
+      font-size: 9.2pt;
+      line-height: 1.42;
+    }
+
+    .code-block code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .code-line {
+      display: inline;
+    }
+
+    .ln {
+      display: inline-block;
+      width: 2.1em;
+      color: #94A3B8;
+      user-select: none;
+      margin-right: 0.65em;
+      text-align: right;
+      font-size: 8.5pt;
+    }
+
+    /* 6. Tablas Académicas Limpias (Solo Líneas Horizontales Finas) */
+    .table-wrap {
+      margin: 1.15em 0 1.5em 0;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.6pt;
+      line-height: 1.38;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead tr {
+      background: var(--bg-code);
+      border-top: 1.5px solid var(--text-primary);
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    th {
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 7px 9px;
+      vertical-align: bottom;
+    }
+
+    td {
+      padding: 6.5px 8px;
+      color: var(--text-primary);
+      border-bottom: 0.75px solid var(--border-subtle);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    td code {
+      font-size: 8.6pt;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 1.25px solid var(--border-strong);
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* 7. Gráficos y Diagramas Vectoriales */
+    figure.academic-figure {
+      margin: 1.4em 0 1.65em 0;
+      padding: 0.9em 1em 0.75em 1em;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: #FFFFFF;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .svg-container {
+      width: 100%;
+      margin-bottom: 0.55em;
+    }
+
+    figcaption {
+      font-size: 9.4pt;
+      line-height: 1.38;
+      color: var(--text-secondary);
+      border-top: 0.75px solid var(--border-subtle);
+      padding-top: 0.5em;
+    }
+
+    figcaption strong {
+      color: var(--accent);
+    }
+
+    /* 8. Expresiones Matemáticas */
+    .math-block {
+      margin: 1.05em 0;
+      padding: 0.65em 1em;
+      background: var(--bg-code);
+      border-left: 2.5px solid var(--accent);
+      border-radius: 0 5px 5px 0;
+      text-align: center;
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 11.2pt;
+      color: var(--text-primary);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .math-inline {
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 10.8pt;
+      white-space: nowrap;
+    }
+
+    .m-rom {
+      font-family: var(--font-sans);
+      font-size: 0.9em;
+    }
+
+    .m-frac {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 0.2em;
+      font-size: 0.9em;
+      line-height: 1.1;
+    }
+
+    .m-num {
+      border-bottom: 0.9px solid var(--text-primary);
+      padding: 0 0.15em 1px 0.15em;
+    }
+
+    .m-den {
+      padding: 1px 0.15em 0 0.15em;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover-page">
+    <div class="cover-top">
+      <div class="cover-code">DOC-SMCTA-GOV-006 · VERSIÓN 2.1.0</div>
+      <h1 class="cover-title">Lecciones Aprendidas y Bitácora Forense de Ingeniería</h1>
+      <p class="cover-subtitle">Análisis Post-Mortem de Anomalías Críticas Resueltas bajo Estándar IEEE 1044 y Reglas de No-Regresión</p>
+    </div>
+    <div class="cover-bottom">
+      <div class="meta-row">
+        <span class="meta-label">Proyecto / Sistema</span>
+        <span class="meta-value">Memoria Técnica Institucional y Aseguramiento Determinista de Calidad</span>
+      </div>
+      <div class="meta-row"><span class="meta-label">Fase / Área Normativa</span><span class="meta-value">06 — Gobernanza de Ingeniería y Blindaje Técnico Oficial</span></div>
+      <div class="meta-row">
+        <span class="meta-label">Autoría y Gobernanza</span>
+        <span class="meta-value">Equipo de Ingeniería Backend, Frontend y QA — Proyecto SMCTA</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Fecha de Emisión</span>
+        <span class="meta-value">Noviembre 2026</span>
+      </div>
+    </div>
+  </section>
+  <main class="document-body">
+    <h2 id="resumen-1">Resumen</h2>
+<p>La diferencia entre un prototipo académico frágil y un sistema de grado transaccional radica en cómo responde ante condiciones borde: carreras de hilos en un mismo milisegundo, redondeos de comisiones compuestas, desconexiones a mitad de transacción y reintentos maliciosos. Esta bitácora documenta con transparencia forense las <strong>seis anomalías técnicas reales (<code>INC-01</code> a <code>INC-06</code>)</strong> detectadas, diagnosticadas y erradicadas durante la construcción y endurecimiento de <strong>SMCTA v2</strong>, dejando constancia exacta de su causa raíz, su prueba de regresión automatizada y la regla obligatoria para evitar que cualquier integrante vuelva a introducirlas.</p>
+<hr class="section-rule"/>
+<nav class="toc-box" aria-label="Índice de Contenidos">
+      <div class="toc-title">Índice General de Contenidos</div>
+      <ol class="toc-list"><li class="toc-item toc-l2"><a href="#resumen-1">Resumen</a></li>
+<li class="toc-item toc-l2"><a href="#catalogo-consolidado-de-incidentes-resueltos-en-desarrollo-2">Catálogo Consolidado de Incidentes Resueltos en Desarrollo</a></li>
+<li class="toc-item toc-l2"><a href="#analisis-forense-detallado-por-anomalia-3">Análisis Forense Detallado por Anomalía</a></li>
+<li class="toc-item toc-l3"><a href="#inc-01-doble-descuento-de-platformshare-en-la-conciliacion-de-ingresos-del-comercio-4">INC-01: Doble Descuento de <code>platformShare</code> en la Conciliación de Ingresos del Comercio</a></li>
+<li class="toc-item toc-l3"><a href="#inc-02-entrelazamiento-transaccional-sobre-conexion-unica-en-pglite-wasm-5">INC-02: Entrelazamiento Transaccional sobre Conexión Única en <code>PGlite</code> WASM</a></li>
+<li class="toc-item toc-l3"><a href="#inc-03-despacho-prematuro-de-eventos-sse-antes-de-confirmar-commit-6">INC-03: Despacho Prematuro de Eventos SSE Antes de Confirmar <code>COMMIT</code></a></li>
+<li class="toc-item toc-l3"><a href="#inc-04-ventana-residual-de-fraude-por-captura-reciente-ataque-boomerang-7">INC-04: Ventana Residual de Fraude por Captura Reciente (<em>Ataque Boomerang</em>)</a></li>
+<li class="toc-item toc-l3"><a href="#inc-05-liberacion-no-propietaria-de-candados-distribuidos-ante-pausas-de-proceso-8">INC-05: Liberación No Propietaria de Candados Distribuidos ante Pausas de Proceso</a></li>
+<li class="toc-item toc-l3"><a href="#inc-06-inicializacion-destructiva-de-esquema-y-mutabilidad-implicita-del-libro-mayor-9">INC-06: Inicialización Destructiva de Esquema y Mutabilidad Implícita del Libro Mayor</a></li>
+<li class="toc-item toc-l2"><a href="#sintesis-de-disciplina-operativa-para-nuevas-contribuciones-del-equipo-10">Síntesis de Disciplina Operativa para Nuevas Contribuciones del Equipo</a></li></ol>
+    </nav>
+<h2 id="catalogo-consolidado-de-incidentes-resueltos-en-desarrollo-2">Catálogo Consolidado de Incidentes Resueltos en Desarrollo</h2>
+<div class="table-wrap"><table><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">Clasificación IEEE 1044</th><th style="text-align:left">Subsistema Afectado</th><th style="text-align:left">Impacto Potencial Pre-Corrección</th><th style="text-align:center">Commit de Solución</th><th style="text-align:left">Test Guardián</th></tr></thead><tbody><tr><td style="text-align:left"><strong>INC-01</strong></td><td style="text-align:left">Defecto Lógico / Contable</td><td style="text-align:left"><code>escrowService.ts</code>, <code>p2pService.ts</code></td><td style="text-align:left">Subestimación sistemática de <code>tenantNetFees</code> por doble resta de <code>platformShare</code></td><td style="text-align:center"><code>9d9d8bf</code></td><td style="text-align:left"><code>securityAndRules.test.ts</code></td></tr>
+<tr><td style="text-align:left"><strong>INC-02</strong></td><td style="text-align:left">Condición de Carrera I/O</td><td style="text-align:left"><code>db/pglite.ts</code></td><td style="text-align:left">Error <code>cannot start a transaction within a transaction</code> bajo peticiones paralelas</td><td style="text-align:center"><code>4641e78</code></td><td style="text-align:left"><code>qa02-concurrency.spec.ts</code></td></tr>
+<tr><td style="text-align:left"><strong>INC-03</strong></td><td style="text-align:left">Consistencia Eventual / UI</td><td style="text-align:left"><code>infra/eventHub.ts</code>, <code>services/*</code></td><td style="text-align:left">Notificaciones SSE &quot;fantasma&quot; emitidas antes de un potencial <code>ROLLBACK</code> SQL</td><td style="text-align:center"><code>0b1f251</code></td><td style="text-align:left"><code>sseAndCors.test.ts</code></td></tr>
+<tr><td style="text-align:left"><strong>INC-04</strong></td><td style="text-align:left">Vulnerabilidad de Replay</td><td style="text-align:left"><code>qrToken.ts</code>, <code>couponRepo.ts</code></td><td style="text-align:left">Ataque <em>boomerang</em>: uso de captura QR tomada &lt; 30 s antes de vender en P2P</td><td style="text-align:center"><code>9d9d8bf</code></td><td style="text-align:left"><code>qrToken.test.ts</code></td></tr>
+<tr><td style="text-align:left"><strong>INC-05</strong></td><td style="text-align:left">Exclusión Mutua Distribuida</td><td style="text-align:left"><code>infra/lockManager.ts</code></td><td style="text-align:left">Borrado accidental de candado Redis ajeno tras pausa GC &gt; TTL</td><td style="text-align:center"><code>fad5b10</code></td><td style="text-align:left"><code>lockManager.test.ts</code></td></tr>
+<tr><td style="text-align:left"><strong>INC-06</strong></td><td style="text-align:left">Destrucción de Datos / DDL</td><td style="text-align:left"><code>db/schema.sql</code></td><td style="text-align:left">Pérdida total de tablas al reiniciar proceso y ausencia de freno a <code>UPDATE</code> en ledger</td><td style="text-align:center"><code>4641e78</code></td><td style="text-align:left"><code>dbIntegrity.test.ts</code></td></tr></tbody></table></div>
+<hr class="section-rule"/>
+<h2 id="analisis-forense-detallado-por-anomalia-3">Análisis Forense Detallado por Anomalía</h2>
+<h3 id="inc-01-doble-descuento-de-platformshare-en-la-conciliacion-de-ingresos-del-comercio-4">INC-01: Doble Descuento de <code>platformShare</code> en la Conciliación de Ingresos del Comercio</h3>
+<ul><li><strong>Síntoma y Causa Raíz:</strong> Al registrar un asiento <code>P2P_SPLIT</code> en <code>escrow_ledgers</code>, <code>p2pService</code> almacenaba correctamente en <code>tenant_fee_accumulated</code> la comisión <strong>ya neta</strong> del comercio (<code>grossFee - platformShare</code>) y en <code>platform_fee</code> la porción de la plataforma. Sin embargo, en una versión preliminar del agregador de auditoría (<code>escrowService</code>), la consulta volvía a restar <code>platform_fee</code> sobre <code>SUM(tenant_fee_accumulated)</code>, descontando dos veces la participación de la plataforma SaaS y subreportando la ganancia real del cliente B2B.</li>
+<li><strong>Solución Implementada (<code>9d9d8bf</code>):</strong> Definición canónica única en <code>Glosario Maestro</code>: <code>tenant_fee_accumulated</code> representa invariablemente el neto devengado por el <em>Tenant</em>, mientras que <code>grossFees = tenantNetFees + platformFees</code>. Se incorporó una aserción algebraica explícita en <code>securityAndRules.test.ts</code> verificando al centavo que <code>tenantNetFees + platformFees === sellerFeeAmount + buyerFeeAmount</code>.</li>
+<li><strong>Regla de No-Regresión:</strong> Ningún servicio externo a <code>@smcta/shared/src/pricing.ts</code> puede recalcular porcentajes de reparto manualmente; debe consumir exclusivamente el objeto retornado por <code>calculateCommissionBreakdown</code>.</li></ul>
+<h3 id="inc-02-entrelazamiento-transaccional-sobre-conexion-unica-en-pglite-wasm-5">INC-02: Entrelazamiento Transaccional sobre Conexión Única en <code>PGlite</code> WASM</h3>
+<ul><li><strong>Síntoma y Causa Raíz:</strong> A diferencia de <code>pg.Pool</code> (que entrega un socket TCP independiente a cada <code>BEGIN</code>), <code>@electric-sql/pglite</code> ejecuta una instancia embebida monohilo de PostgreSQL en memoria/disco sobre una única sesión virtual. Cuando <code>Promise.all</code> disparaba 50 compras simultáneas en <code>QA-02</code>, dos corrutinas asíncronas de Node.js intercalaban <code>BEGIN ISOLATION LEVEL SERIALIZABLE</code> sobre la misma sesión activa, provocando fallos de protocolo transaccional.</li>
+<li><strong>Solución Implementada (<code>4641e78</code>):</strong> En <code>apps/backend/src/db/pglite.ts</code> se encapsuló el acceso en una cola determinista de promesas (<code>mutexChain</code>) que serializa de forma estricta cada bloque <code>withTransaction</code> y cada consulta individual sin alterar en absoluto la interfaz pública del puerto <code>Database</code>. En <code>PgDatabase</code> (<code>pg.ts</code>), por el contrario, el paralelismo real recae sobre el pool nativo de conexiones de PostgreSQL 15.</li>
+<li><strong>Regla de No-Regresión:</strong> Nunca invocar <code>this.db.query</code> crudo eludiendo el encolador interno dentro del adaptador embebido <code>PGliteDatabase</code>.</li></ul>
+<h3 id="inc-03-despacho-prematuro-de-eventos-sse-antes-de-confirmar-commit-6">INC-03: Despacho Prematuro de Eventos SSE Antes de Confirmar <code>COMMIT</code></h3>
+<ul><li><strong>Síntoma y Causa Raíz:</strong> Un error clásico al integrar canales en tiempo real (<em>WebSockets</em> o <em>Server-Sent Events</em>) consiste en llamar a <code>eventHub.publish(...)</code> en la última línea <strong>dentro</strong> del callback de <code>db.withTransaction(async (tx) =&gt; { ... })</code>. En <code>SERIALIZABLE</code>, PostgreSQL puede detectar una dependencia cíclica <code>rw-antidependency</code> recién en el instante exacto de ejecutar la sentencia <code>COMMIT</code>. Si el evento SSE ya había salido por red hacia el navegador, el usuario veía un cartel verde de <em>&quot;¡Compra exitosa!&quot;</em> sobre una operación que la base de datos acababa de revertir.</li>
+<li><strong>Solución Implementada (<code>0b1f251</code>):</strong> Todos los servicios de aplicación (<code>checkoutService</code>, <code>p2pService</code>, <code>tpvService</code>) retornan el resultado junto con los eventos pendientes fuera del ámbito de <code>withTransaction</code>, ejecutando <code>eventHub.publish</code> estrictamente en las líneas posteriores a la resolución exitosa del <code>COMMIT</code>.</li></ul>
+<h3 id="inc-04-ventana-residual-de-fraude-por-captura-reciente-ataque-boomerang-7">INC-04: Ventana Residual de Fraude por Captura Reciente (<em>Ataque Boomerang</em>)</h3>
+<ul><li><strong>Síntoma y Causa Raíz:</strong> Con un TTL de 30 segundos en el QR dinámico, un atacante parado a cinco metros del control de acceso podía abrir su QR (<code>t = 0 s</code>), tomar una captura desde otro teléfono, confirmar la venta o publicación del cupón en el mercado secundario (<code>t = 4 s</code>) y presentar la captura en el lector TPV (<code>t = 9 s</code>). Como la firma <code>HMAC-SHA256</code> era auténtica y no habían transcurrido 30 segundos, una validación puramente criptográfico-temporal sin estado habría sido engañada si solo miraba el payload o no ligaba la emisión al ciclo de tenencia.</li>
+<li><strong>Solución Implementada (<code>9d9d8bf</code>):</strong> Adición de la columna <code>token_version INT NOT NULL DEFAULT 0</code> en <code>coupons</code>, incluida dentro del mensaje autenticado por <code>HMAC-SHA256</code> e incrementada en cada mutación de estado o titularidad. El TPV exige <code>coupon.tokenVersion === payload.version</code> bajo bloqueo <code>FOR UPDATE</code>, anulando instantáneamente el ataque con <code>409 QR_STALE_TOKEN</code>.</li></ul>
+<h3 id="inc-05-liberacion-no-propietaria-de-candados-distribuidos-ante-pausas-de-proceso-8">INC-05: Liberación No Propietaria de Candados Distribuidos ante Pausas de Proceso</h3>
+<ul><li><strong>Síntoma y Causa Raíz:</strong> Si el Proceso A adquiere un candado con <code>TTL = 3000 ms</code>, sufre una pausa inesperada de red de <code>3500 ms</code> (expirando la clave en Redis), el Proceso B adquiere legítimamente el mismo candado en <code>t = 3100 ms</code>, y en <code>t = 3500 ms</code> el bloque <code>finally</code> del Proceso A ejecuta un <code>DEL key</code> ciego, el Proceso A destruye el candado activo del Proceso B abriendo la puerta a una carrera crítica triple (patrón documentado por Martin Kleppmann).</li>
+<li><strong>Solución Implementada (<code>fad5b10</code>):</strong> Generación de <code>owner = randomUUID()</code> único por adquisición tanto en <code>RedisLockManager</code> (liberado exclusivamente mediante script Lua condicional en el servidor Redis) como en <code>InMemoryLockManager</code> (con mapa acotado y desalojo automático de entradas vencidas para evitar fugas de memoria).</li></ul>
+<h3 id="inc-06-inicializacion-destructiva-de-esquema-y-mutabilidad-implicita-del-libro-mayor-9">INC-06: Inicialización Destructiva de Esquema y Mutabilidad Implícita del Libro Mayor</h3>
+<ul><li><strong>Síntoma y Causa Raíz:</strong> Los scripts académicos tempranos solían comenzar con <code>DROP TABLE IF EXISTS ... CASCADE</code> para facilitar pruebas manuales y carecían de frenos en base de datos contra <code>UPDATE escrow_ledgers SET ...</code>. Ejecutar accidentalmente ese arranque contra una base compartida destruiría todo el historial financiero.</li>
+<li><strong>Solución Implementada (<code>4641e78</code>):</strong> Reescritura íntegra de <code>schema.sql</code> empleando bloques idempotentes <code>DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$</code>, <code>CREATE TABLE IF NOT EXISTS</code>, <code>ON DELETE RESTRICT</code> en todas las claves foráneas y creación del disparador PL/pgSQL <code>trg_escrow_ledgers_immutable</code> que rechaza cualquier intento de mutación o borrado con <code>SQLSTATE 28000</code> (validado explícitamente en <code>dbIntegrity.test.ts</code>).</li></ul>
+<hr class="section-rule"/>
+<h2 id="sintesis-de-disciplina-operativa-para-nuevas-contribuciones-del-equipo-10">Síntesis de Disciplina Operativa para Nuevas Contribuciones del Equipo</h2>
+<ol><li><strong>Prohibido usar <code>number</code> nativo para aritmética monetaria:</strong> Todo cálculo de precios, bandas o comisiones debe delegarse en <code>packages/shared/src/money.ts</code> y <code>pricing.ts</code>.</li>
+<li><strong>Prohibido superar <span class="math-inline">CC = 5</span> por función:</strong> Antes de abrir un <em>Pull Request</em>, todo integrante debe ejecutar <code>npm run lint:complexity</code> y descomponer funciones extensas en predicados o mapeadores puros con responsabilidad única.</li>
+<li><strong>Prohibido emitir efectos secundarios externos dentro de <code>withTransaction</code>:</strong> Ni llamadas HTTP a terceros ni envíos por <code>EventHub</code> pueden ocurrir antes de completarse el <code>COMMIT</code>.</li>
+<li><strong>Prohibido serializar secretos:</strong> Toda nueva credencial criptográfica de <em>Tenant</em> debe envolverse en un objeto de valor opaco análogo a <code>QrSecret</code>.</li></ol>
+  </main>
+</body>
+</html>

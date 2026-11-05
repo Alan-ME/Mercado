@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hoja de Ruta - Rol 3: Ingeniero de Integración, Infraestructura, Tenant Portal y QA / TPV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-page: #FFFFFF;
+      --text-primary: #1A1A1A;
+      --text-secondary: #4A4A4A;
+      --text-muted: #64748B;
+      --accent: #4F46E5;
+      --bg-code: #F8FAFC;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Roboto, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+    }
+
+    @page {
+      size: A4;
+      margin: 2.35cm 2.2cm 2.2cm 2.2cm;
+    }
+
+    @page :first {
+      margin-top: 2.2cm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 11pt;
+      line-height: 1.46;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Vista cómoda en navegador web cuando abren el .html directo */
+    @media screen {
+      body {
+        max-width: 21cm;
+        margin: 2rem auto;
+        padding: 2.2cm;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    /* 1. Portada Académica Minimalista */
+    .cover-page {
+      min-height: 23.6cm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      break-after: page;
+      padding-top: 1.2cm;
+      padding-bottom: 0.6cm;
+    }
+
+    .cover-top {
+      border-top: 2.5px solid var(--accent);
+      padding-top: 1.4cm;
+    }
+
+    .cover-code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.9cm;
+    }
+
+    .cover-title {
+      font-size: 23pt;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin: 0 0 0.65cm 0;
+    }
+
+    .cover-subtitle {
+      font-size: 13.5pt;
+      font-weight: 400;
+      line-height: 1.42;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 94%;
+    }
+
+    .cover-bottom {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.75cm;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.32cm;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 10pt;
+    }
+
+    .meta-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-width: 170px;
+    }
+
+    .meta-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* 2. Jerarquía Tipográfica de Secciones */
+    h2 {
+      font-size: 16.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      margin-top: 1.9em;
+      margin-bottom: 0.65em;
+      padding-bottom: 0.22em;
+      border-bottom: 1px solid var(--border-subtle);
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 0.82em;
+      background: var(--accent);
+      margin-right: 0.48em;
+      vertical-align: -0.08em;
+      border-radius: 1px;
+    }
+
+    h3 {
+      font-size: 13.5pt;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1.45em;
+      margin-bottom: 0.45em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h4 {
+      font-size: 11.5pt;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 1.2em;
+      margin-bottom: 0.35em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 0.85em 0;
+      color: var(--text-primary);
+      text-align: left;
+    }
+
+    ul, ol {
+      margin: 0.35em 0 1em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin-bottom: 0.38em;
+      color: var(--text-primary);
+    }
+
+    li strong {
+      color: var(--text-primary);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    hr.section-rule {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1.5em 0;
+    }
+
+    /* 3. Índice de Contenidos */
+    .toc-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.1em 1.4em;
+      margin: 1.4em 0 2em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .toc-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.6em;
+      letter-spacing: -0.01em;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .toc-item {
+      margin-bottom: 0.28em;
+      font-size: 10pt;
+      line-height: 1.38;
+    }
+
+    .toc-item a {
+      color: var(--text-secondary);
+    }
+
+    .toc-l2 {
+      font-weight: 600;
+      margin-top: 0.35em;
+    }
+
+    .toc-l2 a {
+      color: var(--text-primary);
+    }
+
+    .toc-l3 {
+      padding-left: 1.2em;
+    }
+
+    /* 4. Citas Destacadas */
+    blockquote {
+      margin: 1.15em 0;
+      padding: 0.55em 1.1em;
+      border-left: 3px solid var(--accent);
+      background: #FAFBFD;
+      color: var(--text-secondary);
+      font-style: italic;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    /* 5. Código Monoespaciado */
+    code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      background: var(--bg-code);
+      color: var(--text-primary);
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin: 1.1em 0 1.35em 0;
+      padding: 0.85em 1em;
+      overflow-x: hidden;
+    }
+
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45em;
+    }
+
+    .code-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--font-mono);
+      font-size: 9.2pt;
+      line-height: 1.42;
+    }
+
+    .code-block code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .code-line {
+      display: inline;
+    }
+
+    .ln {
+      display: inline-block;
+      width: 2.1em;
+      color: #94A3B8;
+      user-select: none;
+      margin-right: 0.65em;
+      text-align: right;
+      font-size: 8.5pt;
+    }
+
+    /* 6. Tablas Académicas Limpias (Solo Líneas Horizontales Finas) */
+    .table-wrap {
+      margin: 1.15em 0 1.5em 0;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.6pt;
+      line-height: 1.38;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead tr {
+      background: var(--bg-code);
+      border-top: 1.5px solid var(--text-primary);
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    th {
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 7px 9px;
+      vertical-align: bottom;
+    }
+
+    td {
+      padding: 6.5px 8px;
+      color: var(--text-primary);
+      border-bottom: 0.75px solid var(--border-subtle);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    td code {
+      font-size: 8.6pt;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 1.25px solid var(--border-strong);
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* 7. Gráficos y Diagramas Vectoriales */
+    figure.academic-figure {
+      margin: 1.4em 0 1.65em 0;
+      padding: 0.9em 1em 0.75em 1em;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: #FFFFFF;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .svg-container {
+      width: 100%;
+      margin-bottom: 0.55em;
+    }
+
+    figcaption {
+      font-size: 9.4pt;
+      line-height: 1.38;
+      color: var(--text-secondary);
+      border-top: 0.75px solid var(--border-subtle);
+      padding-top: 0.5em;
+    }
+
+    figcaption strong {
+      color: var(--accent);
+    }
+
+    /* 8. Expresiones Matemáticas */
+    .math-block {
+      margin: 1.05em 0;
+      padding: 0.65em 1em;
+      background: var(--bg-code);
+      border-left: 2.5px solid var(--accent);
+      border-radius: 0 5px 5px 0;
+      text-align: center;
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 11.2pt;
+      color: var(--text-primary);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .math-inline {
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 10.8pt;
+      white-space: nowrap;
+    }
+
+    .m-rom {
+      font-family: var(--font-sans);
+      font-size: 0.9em;
+    }
+
+    .m-frac {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 0.2em;
+      font-size: 0.9em;
+      line-height: 1.1;
+    }
+
+    .m-num {
+      border-bottom: 0.9px solid var(--text-primary);
+      padding: 0 0.15em 1px 0.15em;
+    }
+
+    .m-den {
+      padding: 1px 0.15em 0 0.15em;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover-page">
+    <div class="cover-top">
+      <div class="cover-code">DOCUMENTACIÓN TÉCNICA OFICIAL · VERSIÓN 2.0.0</div>
+      <h1 class="cover-title">Hoja de Ruta - Rol 3: Ingeniero de Integración, Infraestructura, Tenant Portal y QA / TPV</h1>
+      <p class="cover-subtitle">Conectar todos los componentes del ecosistema SMCTA, proporcionar las herramientas operativas para comercios (Portal de Configuración B2B y TPV de Canje) y garantizar la calidad técnica integral auditando los criterios del QA Checklist.</p>
+    </div>
+    <div class="cover-bottom">
+      <div class="meta-row">
+        <span class="meta-label">Proyecto / Sistema</span>
+        <span class="meta-value">Sistema de Mercado Comportamental y Trading de Activos (SMCTA v2)</span>
+      </div>
+      <div class="meta-row"><span class="meta-label">Fase / Área Normativa</span><span class="meta-value">API Gateway, Aislamiento Multi-Tenant, Portal de Administración B2B, Terminal TPV y Suite QA E2E</span></div>
+      <div class="meta-row">
+        <span class="meta-label">Autoría y Gobernanza</span>
+        <span class="meta-value">Equipo de Ingeniería de Software — Proyecto SMCTA</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Fecha de Emisión</span>
+        <span class="meta-value">Noviembre 2026</span>
+      </div>
+    </div>
+  </section>
+  <main class="document-body">
+    <hr class="section-rule"/>
+<h2 id="1-documentacion-base-de-contexto-lectura-obligatoria-para-tu-ia-1">1. Documentación Base de Contexto (Lectura Obligatoria para tu IA)</h2>
+<p>Proporciona a tu IA asistente los siguientes documentos ubicados en el repositorio:</p>
+<ol><li><code>05_Fase_Gestion_de_Proyecto_y_Roadmap/Hojas_de_Ruta_Distribuidas/00_Protocolo_de_Alineacion_y_Contratos_Compartidos.md</code> (Contrato maestro de integración).</li>
+<li><code>03_Fase_Arquitectura_y_Diseño_de_Software/01_Especificacion_de_Arquitectura_Tecnica_y_Diagrama_C4.md</code> (Diagramas C4 y responsabilidades de microservicios).</li>
+<li><code>03_Fase_Arquitectura_y_Diseño_de_Software/03_Estrategia_Multitenancy_y_Parametrizacion.md</code> (Middleware de resolución de subdominio y aislamiento).</li>
+<li><code>01_Fase_Estrategia_y_Rediseño_de_Modelo/01_Matriz_de_Riesgos_y_Mitigacion_Legal_Financiera.md</code> (Salvaguardas de custodia y cuentas Escrow).</li>
+<li><code>05_Fase_Gestion_de_Proyecto_y_Roadmap/QA Checklist.xlsx</code> (Criterios de verificación técnica obligatorios).</li>
+<li><code>02_Fase_Especificacion_de_Requisitos_y_Negocio/04_Historias_de_Usuario_y_Criterios_de_Aceptacion.md</code> (US-05 Configuración B2B y US-06 Validación TPV).</li></ol>
+<hr class="section-rule"/>
+<h2 id="2-stack-tecnologico-recomendado-2">2. Stack Tecnológico Recomendado</h2>
+<ul><li><strong>Orquestación Local:</strong> Docker &amp; Docker Compose (PostgreSQL 15, Redis 7, Gateway, Apps).</li>
+<li><strong>API Gateway &amp; Middleware:</strong> Node.js (TypeScript) con Express o Fastify como proxy inverso y resolutor de contexto.</li>
+<li><strong>Frontend B2B (Admin &amp; TPV):</strong> React / Vite con Tailwind CSS y lector de cámara HTML5 (<code>html5-qrcode</code>).</li>
+<li><strong>QA Automation &amp; E2E Testing:</strong> Playwright (con soporte BDD <code>@cucumber/cucumber</code> o TypeScript nativo).</li>
+<li><strong>Mocking de Pagos (PSP / Escrow):</strong> Servicio ligero Express para simular webhooks de Stripe/MercadoPago.</li></ul>
+<hr class="section-rule"/>
+<h2 id="3-plan-de-trabajo-por-sprints-3">3. Plan de Trabajo por Sprints</h2>
+<h3 id="sprint-6-infraestructura-docker-gateway-multi-tenant-y-mock-escrow-4">Sprint 6: Infraestructura Docker, Gateway Multi-Tenant y Mock Escrow</h3>
+<ul><li><strong>Tarea 3.1:</strong> Crear el archivo <code>docker-compose.yml</code> para levantar PostgreSQL 15, Redis 7 y las variables de entorno de red compartida para que los tres integrantes prueben localmente con un comando (<code>docker compose up</code>).</li>
+<li><strong>Tarea 3.2 (TASK-007):</strong> Implementar el <strong>Middleware de Resolución Multi-Tenant</strong>:</li>
+<li>Extraer el subdominio desde <code>req.headers.host</code> (ej: <code>eventos.smcta.local</code>).</li>
+<li>Si no viene por host, admitir cabecera personalizada <code>x-tenant-id</code> (útil para apps móviles y desarrollo local).</li>
+<li>Consultar en BD o caché de Redis la existencia del tenant.</li>
+<li>Inyectar el objeto <code>tenant</code> en la petición (<code>req.tenant</code>) o retornar HTTP 404 (<code>TENANT_NOT_FOUND</code>).</li>
+<li>Reenviar las peticiones al Backend Core (Rol 1) enriquecidas con la cabecera <code>x-tenant-id</code>.</li>
+<li><strong>Tarea 3.3 (TASK-002):</strong> Construir el <strong>Simulador de Pasarela de Pagos y Custodia (PSP Mock)</strong>:</li>
+<li>Endpoints para simular pagos exitosos y fallidos con disparo de webhooks a <code>/api/v1/checkout/primary</code>.</li></ul>
+<h3 id="sprint-7-portal-de-administracion-b2b-para-clientes-comerciales-us-05-5">Sprint 7: Portal de Administración B2B para Clientes Comerciales (US-05)</h3>
+<ul><li><strong>Tarea 3.4 (US-05):</strong> Desarrollar la aplicación web <strong>Tenant Admin Portal</strong>:</li>
+<li>Panel de control autenticado para administradores de comercio.</li>
+<li>Formulario de configuración de parámetros de negocio:</li>
+<li>Comisiones: Take-Rate Vendedor (1% a 10%), Take-Rate Comprador (0% a 10%).</li>
+<li>Bandas de Precio: Piso Price Collar (10% a 90%), Techo Price Collar (100% a 500%).</li>
+<li>Límites: Máximo de reventas diarias por usuario (1 a 20), Cierre de ventana en horas previas (1 a 72h).</li>
+<li>Personalizador de Marca en Vivo: Selectores de color primario, secundario y subida de logotipo con previsualización en tiempo real.</li>
+<li>Endpoint <code>PUT /api/v1/admin/tenant/config</code> para persistir cambios en la tabla <code>tenants</code>.</li></ul>
+<h3 id="sprint-8-aplicacion-de-terminal-de-punto-de-venta-tpv-y-webhook-de-liberacion-us-06-6">Sprint 8: Aplicación de Terminal de Punto de Venta (TPV) y Webhook de Liberación (US-06)</h3>
+<ul><li><strong>Tarea 3.5 (US-06 / TASK-008):</strong> Desarrollar la aplicación web <strong>Terminal TPV (Scanner de Canje)</strong>:</li>
+<li>Vista optimizada para operadores de mostrador o dependientes de tienda.</li>
+<li>Acceso a la cámara del dispositivo para escanear el código QR del cliente.</li>
+<li>Envío del token extraído a <code>POST /api/v1/tpv/validate-qr</code>.</li>
+<li>Feedback visual/sonoro: Pantalla verde con sonido de confirmación si el canje es válido, o pantalla roja con motivo de rechazo (cupón vencido, token expirado &gt;30s, o cupón en venta P2P).</li>
+<li><strong>Tarea 3.6 (TASK-008):</strong> Integrar el Webhook de Liberación de Escrow:</li>
+<li>Al confirmarse el canje en el TPV, invocar el webhook que transfiere los fondos retenidos en Escrow hacia la cuenta bancaria del comercio.</li></ul>
+<h3 id="sprint-9-suite-de-automatizacion-qa-e2e-y-validacion-del-checklist-7">Sprint 9: Suite de Automatización QA E2E y Validación del Checklist</h3>
+<ul><li><strong>Tarea 3.7:</strong> Implementar la suite de pruebas E2E automatizadas con Playwright cubriendo todos los criterios del <strong>QA Checklist.xlsx</strong>:</li>
+<li><strong>Prueba QA-01 (TASK-004):</strong> Intentar publicar una orden con precio fuera de banda (ej. $250 sobre nominal $100 con techo 200%). Comprobar recepción de código <strong>HTTP 422</strong>.</li>
+<li><strong>Prueba QA-02 (TASK-005):</strong> Ejecutar 20 peticiones concurrentes de compra sobre una misma orden P2P abierta. Comprobar que exactamente 1 sea aprobada y 19 sean rechazadas sin duplicidad de cupones ni inconsistencias.</li>
+<li><strong>Prueba QA-03 (TASK-006):</strong> Verificar que tras un ciclo completo (Compra Primaria -&gt; Reventa P2P con Plusvalía -&gt; Canje TPV), los asientos de <code>escrow_ledgers</code> sumen exactamente las comisiones del comercio, de SMCTA Core y la liberación al comercio.</li>
+<li><strong>Prueba QA-04 (TASK-007):</strong> Peticiones con subdominios <code>festival.smcta.local</code> y <code>hotel.smcta.local</code> deben resolver tenants completamente aislados sin fuga de datos entre sí.</li>
+<li><strong>Tarea 3.8:</strong> Configurar pipeline de GitHub Actions que ejecute automáticamente la suite E2E en cada Pull Request.</li></ul>
+<hr class="section-rule"/>
+<h2 id="4-prompt-maestro-para-iniciar-con-tu-ia-asistente-8">4. Prompt Maestro para Iniciar con tu IA Asistente</h2>
+<p>Copia y pega el siguiente prompt en tu IA (Claude, ChatGPT, Cursor, etc.):</p>
+<div class="code-block"><div class="code-lang">TEXT</div><pre><code><span class="code-line"><span class="ln"> 1</span>Actúa como Ingeniero Principal de Integración, Infraestructura Multi-Tenant y Líder de QA Automation. Tu responsabilidad es coordinar el ecosistema de la plataforma SMCTA (Sistema de Mercado Comportamental y Trading de Activos), desarrollando el API Gateway con resolución de subdominios, el Portal Admin B2B, la aplicación de TPV para canje físico de cupones y la suite de pruebas automatizadas E2E.</span>
+<span class="code-line"><span class="ln"> 2</span> </span>
+<span class="code-line"><span class="ln"> 3</span>CONTEXTO Y REGLAS OBLIGATORIAS:</span>
+<span class="code-line"><span class="ln"> 4</span>1. Revisa los contratos y diagramas en '00_Protocolo_de_Alineacion_y_Contratos_Compartidos.md' y '03_Fase_Arquitectura_y_Diseño_de_Software/01_Especificacion_de_Arquitectura_Tecnica_y_Diagrama_C4.md'.</span>
+<span class="code-line"><span class="ln"> 5</span>2. El middleware de resolución Multi-Tenant debe seguir la especificación de '03_Fase_Arquitectura_y_Diseño_de_Software/03_Estrategia_Multitenancy_y_Parametrizacion.md'.</span>
+<span class="code-line"><span class="ln"> 6</span>3. Desarrolla el Portal Admin B2B (US-05) y la app TPV de canje con lector de cámara QR (US-06).</span>
+<span class="code-line"><span class="ln"> 7</span>4. La suite de automatización en Playwright debe validar obligatoriamente los 4 criterios de '05_Fase_Gestion_de_Proyecto_y_Roadmap/QA Checklist.xlsx':</span>
+<span class="code-line"><span class="ln"> 8</span>   - TASK-004: HTTP 422 si precio viola Price Collar.</span>
+<span class="code-line"><span class="ln"> 9</span>   - TASK-005: Aislamiento atómico en compras P2P concurrentes.</span>
+<span class="code-line"><span class="ln">10</span>   - TASK-006: Auditoría y cálculo de precisión decimal en escrow_ledgers.</span>
+<span class="code-line"><span class="ln">11</span>   - TASK-007: Resolución de tenant_id en tiempo de ejecución vía subdominio o cabecera x-tenant-id.</span>
+<span class="code-line"><span class="ln">12</span> </span>
+<span class="code-line"><span class="ln">13</span>OBJETIVO INICIAL:</span>
+<span class="code-line"><span class="ln">14</span>Comencemos por el Sprint 6. Genera el archivo 'docker-compose.yml' (PostgreSQL 15, Redis 7, Gateway Express), el middleware de contexto Multi-Tenant con resolución por subdominio y el simulador de pasarela de pagos/escrow mock con webhooks. Proporciona código completo, modular y listo para ejecutar.</span></code></pre></div>
+  </main>
+</body>
+</html>

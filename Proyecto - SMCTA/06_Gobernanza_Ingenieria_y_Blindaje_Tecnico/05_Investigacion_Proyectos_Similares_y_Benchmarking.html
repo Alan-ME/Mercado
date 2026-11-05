@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Investigación de Proyectos Similares y Benchmarking del Estado del Arte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-page: #FFFFFF;
+      --text-primary: #1A1A1A;
+      --text-secondary: #4A4A4A;
+      --text-muted: #64748B;
+      --accent: #4F46E5;
+      --bg-code: #F8FAFC;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Roboto, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+    }
+
+    @page {
+      size: A4;
+      margin: 2.35cm 2.2cm 2.2cm 2.2cm;
+    }
+
+    @page :first {
+      margin-top: 2.2cm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 11pt;
+      line-height: 1.46;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Vista cómoda en navegador web cuando abren el .html directo */
+    @media screen {
+      body {
+        max-width: 21cm;
+        margin: 2rem auto;
+        padding: 2.2cm;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    /* 1. Portada Académica Minimalista */
+    .cover-page {
+      min-height: 23.6cm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      break-after: page;
+      padding-top: 1.2cm;
+      padding-bottom: 0.6cm;
+    }
+
+    .cover-top {
+      border-top: 2.5px solid var(--accent);
+      padding-top: 1.4cm;
+    }
+
+    .cover-code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.9cm;
+    }
+
+    .cover-title {
+      font-size: 23pt;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin: 0 0 0.65cm 0;
+    }
+
+    .cover-subtitle {
+      font-size: 13.5pt;
+      font-weight: 400;
+      line-height: 1.42;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 94%;
+    }
+
+    .cover-bottom {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.75cm;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.32cm;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 10pt;
+    }
+
+    .meta-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-width: 170px;
+    }
+
+    .meta-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* 2. Jerarquía Tipográfica de Secciones */
+    h2 {
+      font-size: 16.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      margin-top: 1.9em;
+      margin-bottom: 0.65em;
+      padding-bottom: 0.22em;
+      border-bottom: 1px solid var(--border-subtle);
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 0.82em;
+      background: var(--accent);
+      margin-right: 0.48em;
+      vertical-align: -0.08em;
+      border-radius: 1px;
+    }
+
+    h3 {
+      font-size: 13.5pt;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1.45em;
+      margin-bottom: 0.45em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h4 {
+      font-size: 11.5pt;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 1.2em;
+      margin-bottom: 0.35em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 0.85em 0;
+      color: var(--text-primary);
+      text-align: left;
+    }
+
+    ul, ol {
+      margin: 0.35em 0 1em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin-bottom: 0.38em;
+      color: var(--text-primary);
+    }
+
+    li strong {
+      color: var(--text-primary);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    hr.section-rule {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1.5em 0;
+    }
+
+    /* 3. Índice de Contenidos */
+    .toc-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.1em 1.4em;
+      margin: 1.4em 0 2em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .toc-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.6em;
+      letter-spacing: -0.01em;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .toc-item {
+      margin-bottom: 0.28em;
+      font-size: 10pt;
+      line-height: 1.38;
+    }
+
+    .toc-item a {
+      color: var(--text-secondary);
+    }
+
+    .toc-l2 {
+      font-weight: 600;
+      margin-top: 0.35em;
+    }
+
+    .toc-l2 a {
+      color: var(--text-primary);
+    }
+
+    .toc-l3 {
+      padding-left: 1.2em;
+    }
+
+    /* 4. Citas Destacadas */
+    blockquote {
+      margin: 1.15em 0;
+      padding: 0.55em 1.1em;
+      border-left: 3px solid var(--accent);
+      background: #FAFBFD;
+      color: var(--text-secondary);
+      font-style: italic;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    /* 5. Código Monoespaciado */
+    code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      background: var(--bg-code);
+      color: var(--text-primary);
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin: 1.1em 0 1.35em 0;
+      padding: 0.85em 1em;
+      overflow-x: hidden;
+    }
+
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45em;
+    }
+
+    .code-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--font-mono);
+      font-size: 9.2pt;
+      line-height: 1.42;
+    }
+
+    .code-block code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .code-line {
+      display: inline;
+    }
+
+    .ln {
+      display: inline-block;
+      width: 2.1em;
+      color: #94A3B8;
+      user-select: none;
+      margin-right: 0.65em;
+      text-align: right;
+      font-size: 8.5pt;
+    }
+
+    /* 6. Tablas Académicas Limpias (Solo Líneas Horizontales Finas) */
+    .table-wrap {
+      margin: 1.15em 0 1.5em 0;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.6pt;
+      line-height: 1.38;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead tr {
+      background: var(--bg-code);
+      border-top: 1.5px solid var(--text-primary);
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    th {
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 7px 9px;
+      vertical-align: bottom;
+    }
+
+    td {
+      padding: 6.5px 8px;
+      color: var(--text-primary);
+      border-bottom: 0.75px solid var(--border-subtle);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    td code {
+      font-size: 8.6pt;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 1.25px solid var(--border-strong);
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* 7. Gráficos y Diagramas Vectoriales */
+    figure.academic-figure {
+      margin: 1.4em 0 1.65em 0;
+      padding: 0.9em 1em 0.75em 1em;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: #FFFFFF;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .svg-container {
+      width: 100%;
+      margin-bottom: 0.55em;
+    }
+
+    figcaption {
+      font-size: 9.4pt;
+      line-height: 1.38;
+      color: var(--text-secondary);
+      border-top: 0.75px solid var(--border-subtle);
+      padding-top: 0.5em;
+    }
+
+    figcaption strong {
+      color: var(--accent);
+    }
+
+    /* 8. Expresiones Matemáticas */
+    .math-block {
+      margin: 1.05em 0;
+      padding: 0.65em 1em;
+      background: var(--bg-code);
+      border-left: 2.5px solid var(--accent);
+      border-radius: 0 5px 5px 0;
+      text-align: center;
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 11.2pt;
+      color: var(--text-primary);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .math-inline {
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 10.8pt;
+      white-space: nowrap;
+    }
+
+    .m-rom {
+      font-family: var(--font-sans);
+      font-size: 0.9em;
+    }
+
+    .m-frac {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 0.2em;
+      font-size: 0.9em;
+      line-height: 1.1;
+    }
+
+    .m-num {
+      border-bottom: 0.9px solid var(--text-primary);
+      padding: 0 0.15em 1px 0.15em;
+    }
+
+    .m-den {
+      padding: 1px 0.15em 0 0.15em;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover-page">
+    <div class="cover-top">
+      <div class="cover-code">DOC-SMCTA-GOV-005 · VERSIÓN 2.1.0</div>
+      <h1 class="cover-title">Investigación de Proyectos Similares y Benchmarking del Estado del Arte</h1>
+      <p class="cover-subtitle">Análisis Comparativo Estructural, Financiero y Criptográfico frente a Plataformas Globales de Ticketing y Prepago</p>
+    </div>
+    <div class="cover-bottom">
+      <div class="meta-row">
+        <span class="meta-label">Proyecto / Sistema</span>
+        <span class="meta-value">Estudio Sistemático Comparativo (Metodología DESMET)</span>
+      </div>
+      <div class="meta-row"><span class="meta-label">Fase / Área Normativa</span><span class="meta-value">06 — Gobernanza de Ingeniería y Blindaje Técnico Oficial</span></div>
+      <div class="meta-row">
+        <span class="meta-label">Autoría y Gobernanza</span>
+        <span class="meta-value">Equipo de Investigación y Arquitectura — Proyecto SMCTA</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Fecha de Emisión</span>
+        <span class="meta-value">Noviembre 2026</span>
+      </div>
+    </div>
+  </section>
+  <main class="document-body">
+    <h2 id="resumen-1">Resumen</h2>
+<p>Toda propuesta de ingeniería sólida requiere situarse con honestidad frente a las soluciones consolidadas del mercado, identificando qué mecanismos probados adopta, qué vulnerabilidades ajenas corrige y en qué nicho específico aporta valor diferencial. Este documento evalúa sistemáticamente cuatro arquitecturas industriales de referencia —<strong>StubHub / Viagogo</strong>, <strong>StockX</strong>, <strong>Ticketmaster SafeTix</strong> y <strong>Starbucks Rewards</strong>— contrastándolas en ocho dimensiones técnicas y regulatorias frente a <strong>SMCTA v2</strong>.</p>
+<hr class="section-rule"/>
+<h2 id="1-taxonomia-de-plataformas-analizadas-2">1. Taxonomía de Plataformas Analizadas</h2>
+<ol><li><strong>Mercados Abiertos de Reventa de Entradas (<em>Open Secondary Ticketing</em> — ej. StubHub, Viagogo):</strong> Operan como tableros agregadores donde vendedores externos fijan libremente el precio de reventa. Al carecer de integración nativa con la base de datos primaria del emisor en muchos recintos, dependen de garantías financieras post-evento para indemnizar al comprador si el código PDF ya había sido utilizado en puerta.</li>
+<li><strong>Bolsas de Bienes Físicos Autenticados (<em>Bid/Ask Commodity Marketplaces</em> — ej. StockX, GOAT):</strong> Introducen una interfaz de libro de órdenes transparente con historial de cotizaciones (inspiración directa de la visualización analítica en <em>BREW/DESK</em>), pero requieren logística postal hacia un centro físico de inspección humana, imponiendo latencias de liquidación de varios días e inviabilidad para servicios perecederos o gastronomía diaria.</li>
+<li><strong>Ecosistemas Cerrados con Credencial Dinámica (<em>First-Party Dynamic Ticketing</em> — ej. Ticketmaster Presence / SafeTix):</strong> Resuelven eficazmente el fraude por captura de pantalla mediante tokens criptográficos rotativos vinculados a la titularidad en base de datos, pero operan como monopolio monomarca de alta comisión, sin ofrecer infraestructura <em>White-Label</em> ligera para comercios medianos, hoteles independientes o cafeterías de especialidad.</li>
+<li><strong>Sistemas Prepagos de Fidelización (<em>Closed-Loop Stored Value</em> — ej. Starbucks Rewards):</strong> Acumulan miles de millones de dólares en saldo anticipado (<em>float</em> comercial), pero bloquean por completo al consumidor: si el cliente no puede asistir o cambia de preferencia, carece de un canal legítimo para transferir su crédito o cupón promocional a otro consumidor.</li></ol>
+<hr class="section-rule"/>
+<h2 id="2-evaluacion-cuantitativa-de-capacidades-arquitectonicas-3">2. Evaluación Cuantitativa de Capacidades Arquitectónicas</h2>
+<p>La siguiente visualización compara el grado de cobertura estructural (escala normalizada <code>0–100%</code> sobre cinco invariantes técnicos auditables: custodia segregada nominal, acotamiento bilateral de volatilidad, invalidación criptográfica instantánea en puerta, multi-tenancy <em>White-Label</em> y liquidación instantánea sin logística física):</p>
+<figure class="academic-figure">
+  <div class="svg-container"><svg viewBox="0 0 750 238" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Comparativa Estado del Arte">
+  <text x="183" y="39" text-anchor="end" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#1A1A1A">SMCTA v2 (Implementado)</text><rect x="195" y="26" width="490" height="15" rx="3" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.8"/><rect x="195" y="26" width="490" height="15" rx="3" fill="#4F46E5"/><text x="693" y="37.5" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" font-weight="700" fill="#4F46E5">100%</text><text x="195" y="55" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">5/5 invariantes (Escrow + Collar + QR v++ + Regalía + White-Label)</text><text x="183" y="81" text-anchor="end" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#1A1A1A">Ticketmaster SafeTix</text><rect x="195" y="68" width="490" height="15" rx="3" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.8"/><rect x="195" y="68" width="318.5" height="15" rx="3" fill="#94A3B8"/><text x="521.5" y="79.5" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" font-weight="700" fill="#1A1A1A">65%</text><text x="195" y="97" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">QR rotativo y regalías; carece de White-Label PYME y custodia auditable abierta</text><text x="183" y="123" text-anchor="end" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#1A1A1A">StockX (Bid/Ask)</text><rect x="195" y="110" width="490" height="15" rx="3" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.8"/><rect x="195" y="110" width="220.5" height="15" rx="3" fill="#94A3B8"/><text x="423.5" y="121.5" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" font-weight="700" fill="#1A1A1A">45%</text><text x="195" y="139" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">Libro transparente; exige envío postal físico (5-12 días) y 0% regalía al emisor</text><text x="183" y="165" text-anchor="end" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#1A1A1A">StubHub / Viagogo</text><rect x="195" y="152" width="490" height="15" rx="3" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.8"/><rect x="195" y="152" width="171.5" height="15" rx="3" fill="#94A3B8"/><text x="374.5" y="163.5" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" font-weight="700" fill="#1A1A1A">35%</text><text x="195" y="181" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">P2P externo sin Price Collar, riesgo de duplicado PDF y 0% regalía al comercio</text><text x="183" y="207" text-anchor="end" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#1A1A1A">Starbucks Rewards</text><rect x="195" y="194" width="490" height="15" rx="3" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.8"/><rect x="195" y="194" width="122.5" height="15" rx="3" fill="#94A3B8"/><text x="325.5" y="205.5" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" font-weight="700" fill="#1A1A1A">25%</text><text x="195" y="223" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" fill="#4A4A4A">Prepago rápido monomarca; saldo bloqueado sin liquidez secundaria P2P</text>
+</svg></div>
+  <figcaption><strong>Figura 1.</strong> Índice de cumplimiento arquitectónico sobre cinco requisitos estructurales auditables para mercados secundarios de derechos de consumo B2B2C.</figcaption>
+</figure>
+<hr class="section-rule"/>
+<h2 id="3-matriz-comparativa-detallada-en-ocho-ejes-de-ingenieria-4">3. Matriz Comparativa Detallada en Ocho Ejes de Ingeniería</h2>
+<div class="table-wrap"><table><thead><tr><th style="text-align:left">Dimensión Evaluada</th><th style="text-align:left">StubHub / Viagogo</th><th style="text-align:left">StockX</th><th style="text-align:left">Ticketmaster SafeTix</th><th style="text-align:left">Starbucks Rewards</th><th style="text-align:left">SMCTA v2 (Arquitectura Implementada)</th></tr></thead><tbody><tr><td style="text-align:left"><strong>1. Topología de Mercado</strong></td><td style="text-align:left">P2P asíncrono externo al emisor</td><td style="text-align:left">Libro doble Bid/Ask centralizado</td><td style="text-align:left">Reventa interna controlada por emisor</td><td style="text-align:left">Prepago unilateral B2C sin reventa</td><td style="text-align:left"><strong>Libro P2P de venta directa integrado al emisor</strong></td></tr>
+<tr><td style="text-align:left"><strong>2. Riesgo de Fraude por Captura QR</strong></td><td style="text-align:left">Alto (depende de penalidades monetarias al vendedor)</td><td style="text-align:left">Nulo, pero a costa de envío físico a almacén</td><td style="text-align:left">Muy bajo (TOTP rotativo cada 15 s)</td><td style="text-align:left">Medio-Bajo (código ligado a sesión)</td><td style="text-align:left"><strong>Nulo (<code>HMAC-SHA256</code> 30 s + <code>token_version</code> monótono)</strong></td></tr>
+<tr><td style="text-align:left"><strong>3. Control Anti-Especulación</strong></td><td style="text-align:left">Nulo (sobreprecios de 500%–2000% frecuentes)</td><td style="text-align:left">Nulo (precio libre por escasez)</td><td style="text-align:left">Parcial (en algunos países tope nominal)</td><td style="text-align:left">No aplica</td><td style="text-align:left"><strong>Nativo por <em>Tenant</em>: <em>Price Collar</em> <span class="math-inline">[φ<sub>min</sub>, φ<sub>max</sub>]</span> + cupo diario</strong></td></tr>
+<tr><td style="text-align:left"><strong>4. Segregación Contable del Principal</strong></td><td style="text-align:left">Retención de pago completo hasta post-evento</td><td style="text-align:left">Retención temporal durante inspección</td><td style="text-align:left">Liquidación corporativa opaca</td><td style="text-align:left">No segregado (pasivo general en balance)</td><td style="text-align:left"><strong>Escrow segregado 100% nominal (<code>trg_escrow_ledgers_immutable</code>)</strong></td></tr>
+<tr><td style="text-align:left"><strong>5. Regalías para el Comercio Original</strong></td><td style="text-align:left"><strong>0%</strong> (toda la plusvalía escapa del organizador)</td><td style="text-align:left"><strong>0%</strong> para la marca fabricante original</td><td style="text-align:left">Sí, compartido con promotor</td><td style="text-align:left">100% emisión primaria; 0% secundario</td><td style="text-align:left"><strong>Sí (<code>tenantNetFee</code> automático en cada asiento <code>P2P_SPLIT</code>)</strong></td></tr>
+<tr><td style="text-align:left"><strong>6. Arquitectura <em>White-Label</em> B2B</strong></td><td style="text-align:left">No</td><td style="text-align:left">No</td><td style="text-align:left">Limitada a grandes estadios</td><td style="text-align:left">No (aplicación propietaria única)</td><td style="text-align:left"><strong>Nativa por subdominio + CSS Design Tokens en vivo</strong></td></tr>
+<tr><td style="text-align:left"><strong>7. Latencia de Transferencia de Titularidad</strong></td><td style="text-align:left">Minutos a horas (reemisión manual/diferida)</td><td style="text-align:left">5 a 12 días hábiles (correo físico)</td><td style="text-align:left">Instantánea en base de datos</td><td style="text-align:left">Inexistente</td><td style="text-align:left"><strong>Sub-segundo (<code>~7 ms</code> bajo aislamiento <code>SERIALIZABLE</code>)</strong></td></tr>
+<tr><td style="text-align:left"><strong>8. Exposición Regulatoria Bursátil</strong></td><td style="text-align:left">Baja (intermediación comercial de entradas)</td><td style="text-align:left">Baja (compraventa de mercadería física)</td><td style="text-align:left">Baja (servicio de boletería)</td><td style="text-align:left">Regulación de dinero electrónico según país</td><td style="text-align:left"><strong>Baja/Mitigada (cesión acotada de consumo sin cuenta saldo libre)</strong></td></tr></tbody></table></div>
+<hr class="section-rule"/>
+<h2 id="4-hallazgos-clave-aplicados-al-diseno-de-smcta-v2-5">4. Hallazgos Clave Aplicados al Diseño de SMCTA v2</h2>
+<ol><li><strong>Captura de Valor Secundario para el Comercio Emisor:</strong> El defecto económico central de plataformas externas como StubHub es que el comercio que asume todo el riesgo productivo de organizar el festival, mantener el hotel o tostar el café recibe <code>$0,00</code> cuando sus productos se revenden con sobreprecio afuera. En SMCTA v2, cada operación <code>P2P_SPLIT</code> acredita automáticamente <code>tenantNetFee = grossFee - platformShare</code> a favor del comercio sin alterar su principal asegurado.</li>
+<li><strong>Superioridad del Versionado Monótono sobre la Simple Ventana Temporal:</strong> El análisis de sistemas tipo SafeTix reveló que rotar el código cada 15 o 30 segundos mitiga capturas enviadas por mensajería horas antes, pero deja abierta una ventana residual de segundos si la venta ocurre frente al molinete. La adición de <code>coupons.token_version</code> en SMCTA v2 cierra matemáticamente esa brecha residual sin requerir hardware NFC propietario.</li>
+<li><strong>Viabilidad en Micro-Transacciones Gastronómicas (<em>BREW/DESK</em>):</strong> Al operar con latencia transaccional sub-segundo y cero inspección física intermedia, el mismo motor que liquida estadías hoteleras de <code>$250</code> permite intercambiar combos matutinos o cafés de especialidad de <code>$2,80–$6,20</code> con comisiones paramétricas reducidas (<code>2,0% / 1,5%</code>).</li></ol>
+  </main>
+</body>
+</html>

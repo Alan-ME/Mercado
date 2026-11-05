@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registro Oficial de Decisiones de Arquitectura (ADR-001 a ADR-006)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-page: #FFFFFF;
+      --text-primary: #1A1A1A;
+      --text-secondary: #4A4A4A;
+      --text-muted: #64748B;
+      --accent: #4F46E5;
+      --bg-code: #F8FAFC;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Roboto, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+    }
+
+    @page {
+      size: A4;
+      margin: 2.35cm 2.2cm 2.2cm 2.2cm;
+    }
+
+    @page :first {
+      margin-top: 2.2cm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 11pt;
+      line-height: 1.46;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Vista cómoda en navegador web cuando abren el .html directo */
+    @media screen {
+      body {
+        max-width: 21cm;
+        margin: 2rem auto;
+        padding: 2.2cm;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    /* 1. Portada Académica Minimalista */
+    .cover-page {
+      min-height: 23.6cm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      break-after: page;
+      padding-top: 1.2cm;
+      padding-bottom: 0.6cm;
+    }
+
+    .cover-top {
+      border-top: 2.5px solid var(--accent);
+      padding-top: 1.4cm;
+    }
+
+    .cover-code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.9cm;
+    }
+
+    .cover-title {
+      font-size: 23pt;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin: 0 0 0.65cm 0;
+    }
+
+    .cover-subtitle {
+      font-size: 13.5pt;
+      font-weight: 400;
+      line-height: 1.42;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 94%;
+    }
+
+    .cover-bottom {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.75cm;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.32cm;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 10pt;
+    }
+
+    .meta-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-width: 170px;
+    }
+
+    .meta-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* 2. Jerarquía Tipográfica de Secciones */
+    h2 {
+      font-size: 16.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      margin-top: 1.9em;
+      margin-bottom: 0.65em;
+      padding-bottom: 0.22em;
+      border-bottom: 1px solid var(--border-subtle);
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 0.82em;
+      background: var(--accent);
+      margin-right: 0.48em;
+      vertical-align: -0.08em;
+      border-radius: 1px;
+    }
+
+    h3 {
+      font-size: 13.5pt;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1.45em;
+      margin-bottom: 0.45em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h4 {
+      font-size: 11.5pt;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 1.2em;
+      margin-bottom: 0.35em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 0.85em 0;
+      color: var(--text-primary);
+      text-align: left;
+    }
+
+    ul, ol {
+      margin: 0.35em 0 1em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin-bottom: 0.38em;
+      color: var(--text-primary);
+    }
+
+    li strong {
+      color: var(--text-primary);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    hr.section-rule {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1.5em 0;
+    }
+
+    /* 3. Índice de Contenidos */
+    .toc-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.1em 1.4em;
+      margin: 1.4em 0 2em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .toc-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.6em;
+      letter-spacing: -0.01em;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .toc-item {
+      margin-bottom: 0.28em;
+      font-size: 10pt;
+      line-height: 1.38;
+    }
+
+    .toc-item a {
+      color: var(--text-secondary);
+    }
+
+    .toc-l2 {
+      font-weight: 600;
+      margin-top: 0.35em;
+    }
+
+    .toc-l2 a {
+      color: var(--text-primary);
+    }
+
+    .toc-l3 {
+      padding-left: 1.2em;
+    }
+
+    /* 4. Citas Destacadas */
+    blockquote {
+      margin: 1.15em 0;
+      padding: 0.55em 1.1em;
+      border-left: 3px solid var(--accent);
+      background: #FAFBFD;
+      color: var(--text-secondary);
+      font-style: italic;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    /* 5. Código Monoespaciado */
+    code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      background: var(--bg-code);
+      color: var(--text-primary);
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin: 1.1em 0 1.35em 0;
+      padding: 0.85em 1em;
+      overflow-x: hidden;
+    }
+
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45em;
+    }
+
+    .code-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--font-mono);
+      font-size: 9.2pt;
+      line-height: 1.42;
+    }
+
+    .code-block code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .code-line {
+      display: inline;
+    }
+
+    .ln {
+      display: inline-block;
+      width: 2.1em;
+      color: #94A3B8;
+      user-select: none;
+      margin-right: 0.65em;
+      text-align: right;
+      font-size: 8.5pt;
+    }
+
+    /* 6. Tablas Académicas Limpias (Solo Líneas Horizontales Finas) */
+    .table-wrap {
+      margin: 1.15em 0 1.5em 0;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.6pt;
+      line-height: 1.38;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead tr {
+      background: var(--bg-code);
+      border-top: 1.5px solid var(--text-primary);
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    th {
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 7px 9px;
+      vertical-align: bottom;
+    }
+
+    td {
+      padding: 6.5px 8px;
+      color: var(--text-primary);
+      border-bottom: 0.75px solid var(--border-subtle);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    td code {
+      font-size: 8.6pt;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 1.25px solid var(--border-strong);
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* 7. Gráficos y Diagramas Vectoriales */
+    figure.academic-figure {
+      margin: 1.4em 0 1.65em 0;
+      padding: 0.9em 1em 0.75em 1em;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: #FFFFFF;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .svg-container {
+      width: 100%;
+      margin-bottom: 0.55em;
+    }
+
+    figcaption {
+      font-size: 9.4pt;
+      line-height: 1.38;
+      color: var(--text-secondary);
+      border-top: 0.75px solid var(--border-subtle);
+      padding-top: 0.5em;
+    }
+
+    figcaption strong {
+      color: var(--accent);
+    }
+
+    /* 8. Expresiones Matemáticas */
+    .math-block {
+      margin: 1.05em 0;
+      padding: 0.65em 1em;
+      background: var(--bg-code);
+      border-left: 2.5px solid var(--accent);
+      border-radius: 0 5px 5px 0;
+      text-align: center;
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 11.2pt;
+      color: var(--text-primary);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .math-inline {
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 10.8pt;
+      white-space: nowrap;
+    }
+
+    .m-rom {
+      font-family: var(--font-sans);
+      font-size: 0.9em;
+    }
+
+    .m-frac {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 0.2em;
+      font-size: 0.9em;
+      line-height: 1.1;
+    }
+
+    .m-num {
+      border-bottom: 0.9px solid var(--text-primary);
+      padding: 0 0.15em 1px 0.15em;
+    }
+
+    .m-den {
+      padding: 1px 0.15em 0 0.15em;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover-page">
+    <div class="cover-top">
+      <div class="cover-code">DOC-SMCTA-GOV-001 · VERSIÓN 2.1.0</div>
+      <h1 class="cover-title">Registro Oficial de Decisiones de Arquitectura (ADR-001 a ADR-006)</h1>
+      <p class="cover-subtitle">Constancia Normativa bajo Estándar ISO/IEC/IEEE 42010 y Formato M. Nygard para Gobernanza del Equipo</p>
+    </div>
+    <div class="cover-bottom">
+      <div class="meta-row">
+        <span class="meta-label">Proyecto / Sistema</span>
+        <span class="meta-value">Comité Técnico de Arquitectura y Control de Decisiones</span>
+      </div>
+      <div class="meta-row"><span class="meta-label">Fase / Área Normativa</span><span class="meta-value">06 — Gobernanza de Ingeniería y Blindaje Técnico Oficial</span></div>
+      <div class="meta-row">
+        <span class="meta-label">Autoría y Gobernanza</span>
+        <span class="meta-value">Equipo de Ingeniería y Arquitectura — Proyecto SMCTA</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Fecha de Emisión</span>
+        <span class="meta-value">Noviembre 2026</span>
+      </div>
+    </div>
+  </section>
+  <main class="document-body">
+    <h2 id="resumen-1">Resumen</h2>
+<p>Este documento consolida el registro inmutable de las seis decisiones arquitectónicas estructurales (<em>Architecture Decision Records</em>) que gobiernan el diseño, la tecnología y los mecanismos de seguridad del sistema <strong>SMCTA v2</strong>, acompañado de su matriz maestra de estado (<em>Decision Log</em>). Su propósito institucional es preservar la memoria técnica del equipo, evitar la reapertura cíclica de debates ya resueltos con evidencia empírica y establecer límites vinculantes para futuras extensiones del monorepo.</p>
+<hr class="section-rule"/>
+<nav class="toc-box" aria-label="Índice de Contenidos">
+      <div class="toc-title">Índice General de Contenidos</div>
+      <ol class="toc-list"><li class="toc-item toc-l2"><a href="#resumen-1">Resumen</a></li>
+<li class="toc-item toc-l2"><a href="#matriz-maestra-de-decisiones-decision-log-2">Matriz Maestra de Decisiones (<em>Decision Log</em>)</a></li>
+<li class="toc-item toc-l2"><a href="#adr-001-transicion-de-market-maker-directo-v1-a-mercado-p2p-con-custodia-escrow-segregada-v2-3">ADR-001: Transición de Market Maker Directo (v1) a Mercado P2P con Custodia Escrow Segregada (v2)</a></li>
+<li class="toc-item toc-l2"><a href="#adr-002-adopcion-de-monorepo-typescript-estricto-y-decimal-js-frente-a-go-o-rust-4">ADR-002: Adopción de Monorepo TypeScript Estricto y <code>decimal.js</code> frente a Go o Rust</a></li>
+<li class="toc-item toc-l2"><a href="#adr-003-persistencia-hexagonal-dual-pglite-wasm-y-postgresql-15-serializable-5">ADR-003: Persistencia Hexagonal Dual (<code>PGlite</code> WASM y PostgreSQL 15 <code>SERIALIZABLE</code>)</a></li>
+<li class="toc-item toc-l2"><a href="#adr-004-concurrencia-de-triple-capa-liberacion-lua-en-redis-y-libro-mayor-append-only-6">ADR-004: Concurrencia de Triple Capa, Liberación Lua en Redis y Libro Mayor Append-Only</a></li>
+<li class="toc-item toc-l2"><a href="#adr-005-protocolo-de-redencion-fisica-mediante-qr-dinamico-hmac-sha256-y-token-version-7">ADR-005: Protocolo de Redención Física mediante QR Dinámico <code>HMAC-SHA256</code> y <code>token_version</code></a></li>
+<li class="toc-item toc-l2"><a href="#adr-006-migracion-de-maquetas-brew-desk-desde-dart-flutter-vers-hacia-react-white-label-smcta-web-8">ADR-006: Migración de Maquetas <code>BREW/DESK</code> desde Dart/Flutter (<code>vers/</code>) hacia React White-Label (<code>@smcta/web</code>)</a></li></ol>
+    </nav>
+<h2 id="matriz-maestra-de-decisiones-decision-log-2">Matriz Maestra de Decisiones (<em>Decision Log</em>)</h2>
+<div class="table-wrap"><table><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">Título de la Decisión</th><th style="text-align:center">Estado</th><th style="text-align:center">Fecha</th><th style="text-align:left">Subsistemas Afectados</th><th style="text-align:left">Verificación Asociada</th></tr></thead><tbody><tr><td style="text-align:left"><strong>ADR-001</strong></td><td style="text-align:left">Transición de <em>Market Maker</em> v1 a Mercado P2P con Custodia <em>Escrow</em> Segregada</td><td style="text-align:center"><strong>Aceptado</strong></td><td style="text-align:center">2026-09-20</td><td style="text-align:left">Dominio, Legal, Ledger</td><td style="text-align:left"><code>QA-03</code>, <code>escrowService.ts</code></td></tr>
+<tr><td style="text-align:left"><strong>ADR-002</strong></td><td style="text-align:left">Monorepo Unificado en TypeScript Estricto + <code>decimal.js</code> frente a Go / Rust</td><td style="text-align:center"><strong>Aceptado</strong></td><td style="text-align:center">2026-10-05</td><td style="text-align:left"><code>@smcta/shared</code>, <code>backend</code>, <code>web</code></td><td style="text-align:left"><code>CC &lt;= 5</code>, <code>MI = 87,08</code></td></tr>
+<tr><td style="text-align:left"><strong>ADR-003</strong></td><td style="text-align:left">Persistencia Hexagonal Dual (<code>PGlite</code> WASM + PostgreSQL 15 <code>SERIALIZABLE</code>)</td><td style="text-align:center"><strong>Aceptado</strong></td><td style="text-align:center">2026-10-18</td><td style="text-align:left"><code>db/database.ts</code>, <code>pglite.ts</code>, <code>pg.ts</code></td><td style="text-align:left"><code>40/40</code> Vitest, <code>8/8</code> E2E</td></tr>
+<tr><td style="text-align:left"><strong>ADR-004</strong></td><td style="text-align:left">Defensa de Concurrencia en Triple Capa y Libro Mayor <em>Append-Only</em></td><td style="text-align:center"><strong>Aceptado</strong></td><td style="text-align:center">2026-10-28</td><td style="text-align:left"><code>lockManager.ts</code>, <code>schema.sql</code></td><td style="text-align:left"><code>QA-02</code> (50 compradores), <code>SQLSTATE 28000</code></td></tr>
+<tr><td style="text-align:left"><strong>ADR-005</strong></td><td style="text-align:left">Protocolo QR Dinámico <code>HMAC-SHA256</code> con <code>QrSecret</code> Opaco y <code>token_version</code></td><td style="text-align:center"><strong>Aceptado</strong></td><td style="text-align:center">2026-10-28</td><td style="text-align:left"><code>qrSecret.ts</code>, <code>qrToken.ts</code>, <code>tpvService.ts</code></td><td style="text-align:left"><code>qrToken.test.ts</code>, <code>QA-04</code></td></tr>
+<tr><td style="text-align:left"><strong>ADR-006</strong></td><td style="text-align:left">Consolidación de Maquetas <code>BREW/DESK</code> desde Dart/Flutter (<code>vers/</code>) hacia React</td><td style="text-align:center"><strong>Aceptado</strong></td><td style="text-align:center">2026-11-03</td><td style="text-align:left"><code>@smcta/web</code>, <code>seed.ts</code>, <code>vers/</code></td><td style="text-align:left"><code>build:ui</code>, Tenant <code>cafeteria</code></td></tr></tbody></table></div>
+<hr class="section-rule"/>
+<h2 id="adr-001-transicion-de-market-maker-directo-v1-a-mercado-p2p-con-custodia-escrow-segregada-v2-3">ADR-001: Transición de Market Maker Directo (v1) a Mercado P2P con Custodia Escrow Segregada (v2)</h2>
+<ul><li><strong>Estado:</strong> Aceptado y Vigente (Reemplaza diseño conceptual v1).</li>
+<li><strong>Contexto y Problema:</strong> El borrador original proponía que la plataforma recomprara instantáneamente cupones no consumidos utilizando su propia tesorería. Ello exponía al operador a corridas de liquidez ante eventos cancelados o caídas abruptas de demanda, además de configurar un riesgo severo de encuadramiento regulatorio como intermediación financiera no autorizada o emisión de derivados sin prospecto aprobado.</li>
+<li><strong>Alternativas Evaluadas:</strong></li></ul>
+<ol><li><em>Mantener recompra directa con encaje fraccionario (v1):</em> Descartado por insolvencia matemática ante retiros correlacionados (&gt; 30% de la emisión).</li>
+<li><em>Prohibir cualquier transferencia secundaria (modelo prepago cerrado):</em> Descartado por anular la propuesta de valor central del proyecto.</li>
+<li><em>Mercado secundario exclusivamente P2P con custodia Escrow segregada al 100% nominal y bandas Price Collar (v2):</em> Seleccionado.</li></ol>
+<ul><li><strong>Decisión:</strong> SMCTA opera exclusivamente como proveedor tecnológico SaaS <em>White-Label</em> de emparejamiento entre pares. El 100% del valor nominal <span class="math-inline">P<sub><span class="m-rom">nom</span></sub></span> pagado en la emisión primaria permanece bloqueado en cuenta de garantía y solo se libera al comercio tras validación física en TPV (<code>REDEEM_RELEASE</code>) o al usuario tras expiración reglamentaria (<code>REFUND</code>). La formación de precios secundarios queda confinada al intervalo <span class="math-inline">[φ<sub>min</sub>, φ<sub>max</sub>]</span> fijado por el comercio.</li>
+<li><strong>Consecuencias:</strong></li>
+<li><em>Positivas:</em> Riesgo de balance propio exactamente igual a cero; aislamiento total del capital comercial frente a plusvalías o descuentos secundarios; ingresos predecibles vía <em>take-rates</em> porcentuales.</li>
+<li><em>Negativas / Compromisos:</em> La liquidez secundaria deja de ser instantánea contra la casa y pasa a depender de la existencia de un comprador par dentro de la ventana habilitada antes del cierre del mercado (<code>closure_hours_before_event</code>).</li></ul>
+<hr class="section-rule"/>
+<h2 id="adr-002-adopcion-de-monorepo-typescript-estricto-y-decimal-js-frente-a-go-o-rust-4">ADR-002: Adopción de Monorepo TypeScript Estricto y <code>decimal.js</code> frente a Go o Rust</h2>
+<ul><li><strong>Estado:</strong> Aceptado y Vigente.</li>
+<li><strong>Contexto y Problema:</strong> El equipo debía seleccionar el lenguaje del backend transaccional evaluando tres candidatos principales: TypeScript (Node.js 20 + Fastify 5), Go y Rust, considerando que el frontend <em>White-Label</em> y la suite E2E se implementarían en TypeScript/React/Playwright por un equipo distribuido en tres roles.</li>
+<li><strong>Factores Técnicos Evaluados:</strong></li></ul>
+<ol><li><em>Naturaleza de la carga:</em> El sistema está dominado por latencia de E/S en red y disco (<code>PostgreSQL SERIALIZABLE</code> + <code>Redis</code>), donde el tiempo en CPU del lenguaje representa menos del 2% del tiempo de respuesta total (<code>~7 ms</code> por operación bajo estrés).</li>
+<li><em>Simetría matemática cliente-servidor:</em> La previsualización instantánea de comisiones y bandas en el <em>slider</em> de publicación P2P debe arrojar al centésimo exacto el mismo resultado que la validación transaccional del servidor.</li>
+<li><em>Expresividad estructural y control de complejidad:</em> Se requerían interfaces limpias para Puertos y Adaptadores, tipado nulo estricto y verificación automatizada de complejidad ciclomática <span class="math-inline">CC ≤ 5</span>.</li></ol>
+<ul><li><strong>Decisión:</strong> Adoptar <strong>TypeScript 5.7</strong> con configuración máxima de rigor (<code>strict</code>, <code>noUncheckedIndexedAccess</code>, <code>exactOptionalPropertyTypes</code>) en un monorepo de <em>NPM Workspaces</em>, centralizando la aritmética decimal de base 10 (<code>decimal.js</code> con redondeo bancario <code>ROUND_HALF_EVEN</code>) y los tipos de dominio en <code>@smcta/shared</code>.</li></ul>
+<figure class="academic-figure">
+  <div class="svg-container"><svg viewBox="0 0 760 350" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Arquitectura Hexagonal SMCTA v2">
+  <defs>
+    <marker id="arrow-indigo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#4F46E5"/>
+    </marker>
+    <marker id="arrow-dark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#4A4A4A"/>
+    </marker>
+  </defs>
+
+  <!-- Anillo exterior: Adaptadores -->
+  <rect x="8" y="8" width="744" height="334" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="24" y="29" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="600" fill="#64748B" letter-spacing="0.06em"> FRONTERA DE INFRAESTRUCTURA Y ADAPTADORES (ACOPLAMIENTO EXTERNO HACIA ADENTRO)</text>
+
+  <!-- Columna Izquierda: Driving Adapters -->
+  <rect x="24" y="48" width="186" height="82" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="36" y="68" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">@smcta/web (React 19)</text>
+  <text x="36" y="85" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">SPA White-Label + BREW/DESK</text>
+  <text x="36" y="101" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">Design Tokens CSS · EventSource</text>
+  <text x="36" y="117" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#4F46E5">I = 1.00 | D = 0.36</text>
+
+  <rect x="24" y="146" width="186" height="82" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="36" y="166" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">routes/* + plugins/*</text>
+  <text x="36" y="183" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">Fastify 5 REST · Stream SSE</text>
+  <text x="36" y="199" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">tenantResolver · Zod Schemas</text>
+  <text x="36" y="215" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#4F46E5">I = 1.00 | D = 0.06</text>
+
+  <rect x="24" y="244" width="186" height="78" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="36" y="264" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">@smcta/e2e (Playwright)</text>
+  <text x="36" y="281" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">QA-01..QA-04 · 50 Buyers Stress</text>
+  <text x="36" y="297" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">Verificación Caja Negra HTTP</text>
+  <text x="36" y="312" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#64748B">8/8 specs (4.3 s)</text>
+
+  <!-- Centro: Casos de Uso y Núcleo de Dominio -->
+  <rect x="246" y="48" width="268" height="274" rx="8" fill="#EEF2FF" stroke="#4F46E5" stroke-width="1.2"/>
+  <text x="380" y="69" text-anchor="middle" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#4F46E5" letter-spacing="0.05em">HEXÁGONO DE APLICACIÓN Y DOMINIO</text>
+
+  <rect x="264" y="84" width="232" height="72" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="278" y="103" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">services/* (Casos de Uso)</text>
+  <text x="278" y="120" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">checkout · p2p · escrow · tpv · wallet</text>
+  <text x="278" y="136" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#4F46E5">I = 0.71 | A = 0.42 | D = 0.13</text>
+
+  <rect x="264" y="168" width="232" height="58" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="278" y="187" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">backend/domain/*</text>
+  <text x="278" y="203" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">QrSecret opaco · HMAC-SHA256 + version</text>
+  <text x="278" y="218" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#4F46E5">I = 0.33 | D = 0.44</text>
+
+  <rect x="264" y="238" width="232" height="70" rx="6" fill="#FFFFFF" stroke="#4F46E5" stroke-width="1.4"/>
+  <text x="278" y="257" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="700" fill="#4F46E5">@smcta/shared (Núcleo Puro)</text>
+  <text x="278" y="274" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#1A1A1A">money (Decimal) · pricing · stateMachine</text>
+  <text x="278" y="290" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" font-weight="600" fill="#1A1A1A">Ce = 0 | I = 0.00 | MI = 89.40</text>
+
+  <!-- Columna Derecha: Driven Adapters -->
+  <rect x="550" y="48" width="186" height="86" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="562" y="68" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">db/* + repositories/*</text>
+  <text x="562" y="85" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">Puerto Database / TxClient</text>
+  <text x="562" y="101" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">PgDatabase (SERIALIZABLE)</text>
+  <text x="562" y="117" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">PGliteDatabase (WASM FIFO)</text>
+
+  <rect x="550" y="148" width="186" height="84" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="562" y="168" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">infra/lockManager.ts</text>
+  <text x="562" y="185" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">Puerto LockManager (TTL + Owner)</text>
+  <text x="562" y="201" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">RedisLockManager (Script Lua)</text>
+  <text x="562" y="217" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">InMemoryLockManager (Eviction)</text>
+
+  <rect x="550" y="246" width="186" height="76" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="562" y="266" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" fill="#1A1A1A">infra/eventHub.ts</text>
+  <text x="562" y="283" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">Bus Reactivo Post-COMMIT</text>
+  <text x="562" y="299" font-family="'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#4A4A4A">Persistencia en user_events</text>
+  <text x="562" y="314" font-family="'JetBrains Mono', 'Cascadia Mono', Consolas, monospace" font-size="9.5" fill="#4F46E5">I = 0.50 | D = 0.17</text>
+
+  <!-- Flechas de inversión de dependencia -->
+  <line x1="210" y1="88" x2="258" y2="262" stroke="#4F46E5" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrow-indigo)"/>
+  <line x1="210" y1="175" x2="258" y2="122" stroke="#4F46E5" stroke-width="1.3" marker-end="url(#arrow-indigo)"/>
+  <line x1="210" y1="268" x2="210" y2="232" stroke="#4A4A4A" stroke-width="1.1" marker-end="url(#arrow-dark)"/>
+  <line x1="380" y1="156" x2="380" y2="165" stroke="#4F46E5" stroke-width="1.2" marker-end="url(#arrow-indigo)"/>
+  <line x1="380" y1="226" x2="380" y2="235" stroke="#4F46E5" stroke-width="1.2" marker-end="url(#arrow-indigo)"/>
+  <line x1="550" y1="92" x2="500" y2="112" stroke="#4F46E5" stroke-width="1.2" marker-end="url(#arrow-indigo)"/>
+  <line x1="550" y1="190" x2="500" y2="130" stroke="#4F46E5" stroke-width="1.2" marker-end="url(#arrow-indigo)"/>
+  <line x1="550" y1="280" x2="500" y2="274" stroke="#4F46E5" stroke-width="1.2" marker-end="url(#arrow-indigo)"/>
+</svg></div>
+  <figcaption><strong>Figura 1.</strong> Topología de Arquitectura Hexagonal y dirección estricta de dependencias del monorepo SMCTA v2. Todas las flechas convergen hacia las abstracciones internas y el núcleo puro <code>@smcta/shared</code> (<em>C<sub>e</sub></em> = 0, <em>I</em> = 0,00).</figcaption>
+</figure>
+<ul><li><strong>Consecuencias:</strong></li>
+<li><em>Positivas:</em> Cero divergencia de contratos DTO ni de redondeo financiero entre UI y API; velocidad superior de integración entre los Roles 1, 2 y 3; cumplimiento del 100% en complejidad ciclomática (<span class="math-inline">CC ≤ 5</span> verificado por AST sobre 593 funciones) y acoplamiento saludable (<span class="math-inline">D ≤ 0,59 < 0,70</span>).</li>
+<li><em>Negativas / Mitigación:</em> Debido a que el tipo primitivo <code>number</code> de JavaScript es coma flotante binaria IEEE 754, queda prohibido operar sumas o porcentajes monetarios fuera de las funciones exportadas por <code>@smcta/shared/src/money.ts</code>.</li></ul>
+<hr class="section-rule"/>
+<h2 id="adr-003-persistencia-hexagonal-dual-pglite-wasm-y-postgresql-15-serializable-5">ADR-003: Persistencia Hexagonal Dual (<code>PGlite</code> WASM y PostgreSQL 15 <code>SERIALIZABLE</code>)</h2>
+<ul><li><strong>Estado:</strong> Aceptado y Vigente.</li>
+<li><strong>Contexto y Problema:</strong> Requerir una instancia Docker externa de PostgreSQL para correr pruebas unitarias o levantar demostraciones locales generaba fricción ambiental entre máquinas de distintos integrantes, mientras que sustituir PostgreSQL por SQLite en pruebas impedía verificar disparadores PL/pgSQL, tipos <code>ENUM</code> nativos e índices parciales reales.</li>
+<li><strong>Decisión:</strong> Definir en <code>apps/backend/src/db/database.ts</code> el puerto abstracto <code>Database</code> (<code>query</code>, <code>withTransaction</code>) e implementar dos adaptadores intercambiables por configuración (<code>DATABASE_URL</code>):</li></ul>
+<ol><li><code>PgDatabase</code> (<code>pg.ts</code>): Adaptador productivo sobre <code>pg.Pool</code> que ejecuta cada unidad de trabajo bajo <code>BEGIN ISOLATION LEVEL SERIALIZABLE</code>.</li>
+<li><code>PGliteDatabase</code> (<code>pglite.ts</code>): Adaptador embebido sobre <code>@electric-sql/pglite</code> (motor PostgreSQL real compilado a WebAssembly) que ejecuta exactamente el mismo archivo <code>schema.sql</code> sin dependencias externas, serializando el acceso concurrente a su conexión única mediante una cola FIFO de promesas (<code>mutexChain</code>).</li></ol>
+<ul><li><strong>Consecuencias:</strong> Paridad semántica del 100% en dialecto SQL, restricciones <code>CHECK</code>, índices únicos parciales y triggers entre desarrollo, integración continua y producción (<code>npm run dev</code> y <code>npm test</code> funcionan sin configuración manual).</li></ul>
+<hr class="section-rule"/>
+<h2 id="adr-004-concurrencia-de-triple-capa-liberacion-lua-en-redis-y-libro-mayor-append-only-6">ADR-004: Concurrencia de Triple Capa, Liberación Lua en Redis y Libro Mayor Append-Only</h2>
+<ul><li><strong>Estado:</strong> Aceptado y Vigente.</li>
+<li><strong>Contexto y Problema:</strong> En eventos de alta convocatoria, decenas de compradores presionan simultáneamente el botón de compra sobre la misma oferta secundaria. Un bloqueo ingenuo en memoria falla al escalar horizontalmente a múltiples réplicas del backend, un <code>DEL</code> directo en Redis puede borrar el candado de un tercero si el primer proceso sufrió una pausa, y una tabla contable ordinaria admite alteraciones accidentales vía <code>UPDATE</code>.</li>
+<li><strong>Decisión:</strong> Implementar defensa en profundidad mediante tres capas ortogonales:</li></ul>
+<ol><li><strong>Puerto <code>LockManager</code> con token de propietario:</strong> <code>RedisLockManager</code> adquiere <code>SET key owner PX ttl NX</code> y ejecuta liberación condicional mediante script Lua (<code>if redis.call(&quot;get&quot;, KEYS[1]) == ARGV[1] then return redis.call(&quot;del&quot;, KEYS[1])</code>). <code>InMemoryLockManager</code> replica idéntica semántica de propietario con purga perezosa por TTL.</li>
+<li><strong>Transacción <code>SERIALIZABLE</code> + <code>SELECT ... FOR UPDATE</code>:</strong> Verificación pesimista de estado dentro del motor relacional.</li>
+<li><strong>Invariantes físicos en <code>schema.sql</code>:</strong> Índices parciales <code>uq_orders_open_coupon</code>, <code>uq_ledger_checkout_once</code>, <code>uq_ledger_terminal_once</code> y trigger <code>trg_escrow_ledgers_immutable</code> (<code>SQLSTATE 28000</code>).</li></ol>
+<ul><li><strong>Consecuencias:</strong> Verificación determinista en <code>QA-02</code> (<code>50</code> peticiones paralelas resueltas en <code>358 ms</code>: <code>1</code> éxito <code>HTTP 200</code>, <code>49</code> rechazos limpios <code>423/409</code>, <code>0</code> inconsistencias).</li></ul>
+<hr class="section-rule"/>
+<h2 id="adr-005-protocolo-de-redencion-fisica-mediante-qr-dinamico-hmac-sha256-y-token-version-7">ADR-005: Protocolo de Redención Física mediante QR Dinámico <code>HMAC-SHA256</code> y <code>token_version</code></h2>
+<ul><li><strong>Estado:</strong> Aceptado y Vigente.</li>
+<li><strong>Contexto y Problema:</strong> Un código QR estático es vulnerable a duplicación fotográfica; un código puramente temporal (solo ventana de 30 s) sigue siendo vulnerable si el vendedor captura la imagen en <span class="math-inline">t = 0<span class="m-rom"> s</span></span>, vende el cupón en <span class="math-inline">t = 5<span class="m-rom"> s</span></span> y atraviesa el molinete en <span class="math-inline">t = 12<span class="m-rom"> s</span></span> antes de que venza el intervalo temporal.</li>
+<li><strong>Decisión:</strong></li></ul>
+<ol><li>Firmar cada token con <code>HMAC-SHA256</code> empleando el secreto exclusivo del <em>tenant</em> encapsulado en la clase opaca <code>QrSecret</code> (protegida contra serialización accidental en logs o JSON) y comparar firmas con <code>crypto.timingSafeEqual</code>.</li>
+<li>Incluir dentro del payload firmado el contador monótono <code>coupons.token_version</code>, incrementado atómicamente en cada publicación, cancelación, compraventa P2P y canje.</li></ol>
+<ul><li><strong>Consecuencias:</strong> Cualquier cambio de estado o titularidad invalida en <code>0 ms</code> todas las capturas o tokens emitidos previamente, aun cuando su ventana temporal de 30 segundos no haya expirado (<code>409 QR_STALE_TOKEN</code>).</li></ul>
+<hr class="section-rule"/>
+<h2 id="adr-006-migracion-de-maquetas-brew-desk-desde-dart-flutter-vers-hacia-react-white-label-smcta-web-8">ADR-006: Migración de Maquetas <code>BREW/DESK</code> desde Dart/Flutter (<code>vers/</code>) hacia React White-Label (<code>@smcta/web</code>)</h2>
+<ul><li><strong>Estado:</strong> Aceptado y Vigente.</li>
+<li><strong>Contexto y Problema:</strong> El equipo contaba con un prototipo visual de alta fidelidad en Dart/Flutter ubicado en <code>vers/</code> para el caso de uso de cafetería de especialidad (<em>BREW/DESK Specialty Coffee</em>), mientras que la arquitectura funcional multi-tenant conectada al backend operaba en React 19 (<code>apps/web</code>). Sostener dos pilas tecnológicas de UI duplicaba el mantenimiento y dejaba el diseño gastronómico desconectado de la contabilidad real.</li>
+<li><strong>Decisión:</strong> Congelar y archivar <code>vers/</code> como especificación visual de referencia histórica, migrar fielmente la totalidad de sus vistas y componentes (portada oscura de barra, promociones cromáticas, modal de ficha técnica con curva temporal <code>24h / 7d / 30d</code>, catálogo filtrable <code>CartaPage</code>, carrito lateral conectado a <code>POST /api/v1/checkout/primary</code> y panel maestro-detalle <code>SettingsPage</code>) hacia <code>@smcta/web</code>, e incorporar el <em>tenant</em> semilla <code>cafeteria</code>.</li>
+<li><strong>Consecuencias:</strong> Unificación del 100% del frontend bajo un solo árbol de componentes tipados en React/TypeScript, conservando tanto la capacidad camaleónica <em>White-Label</em> para hoteles/festivales como la identidad visual exacta diseñada por el equipo para <em>BREW/DESK</em>.</li></ul>
+  </main>
+</body>
+</html>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hoja de Ruta - Rol 2: Ingeniero de Frontend White-Label, Billetera Digital y UX/UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-page: #FFFFFF;
+      --text-primary: #1A1A1A;
+      --text-secondary: #4A4A4A;
+      --text-muted: #64748B;
+      --accent: #4F46E5;
+      --bg-code: #F8FAFC;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Roboto, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+    }
+
+    @page {
+      size: A4;
+      margin: 2.35cm 2.2cm 2.2cm 2.2cm;
+    }
+
+    @page :first {
+      margin-top: 2.2cm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 11pt;
+      line-height: 1.46;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Vista cómoda en navegador web cuando abren el .html directo */
+    @media screen {
+      body {
+        max-width: 21cm;
+        margin: 2rem auto;
+        padding: 2.2cm;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    /* 1. Portada Académica Minimalista */
+    .cover-page {
+      min-height: 23.6cm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      break-after: page;
+      padding-top: 1.2cm;
+      padding-bottom: 0.6cm;
+    }
+
+    .cover-top {
+      border-top: 2.5px solid var(--accent);
+      padding-top: 1.4cm;
+    }
+
+    .cover-code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.9cm;
+    }
+
+    .cover-title {
+      font-size: 23pt;
+      font-weight: 700;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin: 0 0 0.65cm 0;
+    }
+
+    .cover-subtitle {
+      font-size: 13.5pt;
+      font-weight: 400;
+      line-height: 1.42;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 94%;
+    }
+
+    .cover-bottom {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.75cm;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.32cm;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 10pt;
+    }
+
+    .meta-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-width: 170px;
+    }
+
+    .meta-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* 2. Jerarquía Tipográfica de Secciones */
+    h2 {
+      font-size: 16.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      margin-top: 1.9em;
+      margin-bottom: 0.65em;
+      padding-bottom: 0.22em;
+      border-bottom: 1px solid var(--border-subtle);
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 0.82em;
+      background: var(--accent);
+      margin-right: 0.48em;
+      vertical-align: -0.08em;
+      border-radius: 1px;
+    }
+
+    h3 {
+      font-size: 13.5pt;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 1.45em;
+      margin-bottom: 0.45em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h4 {
+      font-size: 11.5pt;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 1.2em;
+      margin-bottom: 0.35em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 0.85em 0;
+      color: var(--text-primary);
+      text-align: left;
+    }
+
+    ul, ol {
+      margin: 0.35em 0 1em 0;
+      padding-left: 1.45em;
+    }
+
+    li {
+      margin-bottom: 0.38em;
+      color: var(--text-primary);
+    }
+
+    li strong {
+      color: var(--text-primary);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    hr.section-rule {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1.5em 0;
+    }
+
+    /* 3. Índice de Contenidos */
+    .toc-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.1em 1.4em;
+      margin: 1.4em 0 2em 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .toc-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.6em;
+      letter-spacing: -0.01em;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .toc-item {
+      margin-bottom: 0.28em;
+      font-size: 10pt;
+      line-height: 1.38;
+    }
+
+    .toc-item a {
+      color: var(--text-secondary);
+    }
+
+    .toc-l2 {
+      font-weight: 600;
+      margin-top: 0.35em;
+    }
+
+    .toc-l2 a {
+      color: var(--text-primary);
+    }
+
+    .toc-l3 {
+      padding-left: 1.2em;
+    }
+
+    /* 4. Citas Destacadas */
+    blockquote {
+      margin: 1.15em 0;
+      padding: 0.55em 1.1em;
+      border-left: 3px solid var(--accent);
+      background: #FAFBFD;
+      color: var(--text-secondary);
+      font-style: italic;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    /* 5. Código Monoespaciado */
+    code {
+      font-family: var(--font-mono);
+      font-size: 9.5pt;
+      background: var(--bg-code);
+      color: var(--text-primary);
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin: 1.1em 0 1.35em 0;
+      padding: 0.85em 1em;
+      overflow-x: hidden;
+    }
+
+    .code-lang {
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45em;
+    }
+
+    .code-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--font-mono);
+      font-size: 9.2pt;
+      line-height: 1.42;
+    }
+
+    .code-block code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .code-line {
+      display: inline;
+    }
+
+    .ln {
+      display: inline-block;
+      width: 2.1em;
+      color: #94A3B8;
+      user-select: none;
+      margin-right: 0.65em;
+      text-align: right;
+      font-size: 8.5pt;
+    }
+
+    /* 6. Tablas Académicas Limpias (Solo Líneas Horizontales Finas) */
+    .table-wrap {
+      margin: 1.15em 0 1.5em 0;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.6pt;
+      line-height: 1.38;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead tr {
+      background: var(--bg-code);
+      border-top: 1.5px solid var(--text-primary);
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    th {
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 7px 9px;
+      vertical-align: bottom;
+    }
+
+    td {
+      padding: 6.5px 8px;
+      color: var(--text-primary);
+      border-bottom: 0.75px solid var(--border-subtle);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    td code {
+      font-size: 8.6pt;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 1.25px solid var(--border-strong);
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* 7. Gráficos y Diagramas Vectoriales */
+    figure.academic-figure {
+      margin: 1.4em 0 1.65em 0;
+      padding: 0.9em 1em 0.75em 1em;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: #FFFFFF;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .svg-container {
+      width: 100%;
+      margin-bottom: 0.55em;
+    }
+
+    figcaption {
+      font-size: 9.4pt;
+      line-height: 1.38;
+      color: var(--text-secondary);
+      border-top: 0.75px solid var(--border-subtle);
+      padding-top: 0.5em;
+    }
+
+    figcaption strong {
+      color: var(--accent);
+    }
+
+    /* 8. Expresiones Matemáticas */
+    .math-block {
+      margin: 1.05em 0;
+      padding: 0.65em 1em;
+      background: var(--bg-code);
+      border-left: 2.5px solid var(--accent);
+      border-radius: 0 5px 5px 0;
+      text-align: center;
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 11.2pt;
+      color: var(--text-primary);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .math-inline {
+      font-family: 'Cambria Math', 'Times New Roman', Georgia, serif;
+      font-size: 10.8pt;
+      white-space: nowrap;
+    }
+
+    .m-rom {
+      font-family: var(--font-sans);
+      font-size: 0.9em;
+    }
+
+    .m-frac {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 0.2em;
+      font-size: 0.9em;
+      line-height: 1.1;
+    }
+
+    .m-num {
+      border-bottom: 0.9px solid var(--text-primary);
+      padding: 0 0.15em 1px 0.15em;
+    }
+
+    .m-den {
+      padding: 1px 0.15em 0 0.15em;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover-page">
+    <div class="cover-top">
+      <div class="cover-code">DOCUMENTACIÓN TÉCNICA OFICIAL · VERSIÓN 2.0.0</div>
+      <h1 class="cover-title">Hoja de Ruta - Rol 2: Ingeniero de Frontend White-Label, Billetera Digital y UX/UI</h1>
+      <p class="cover-subtitle">Desarrollar una interfaz web/mobile moderna, reactiva y personalizable por Tenant en tiempo real, implementando la rotación de QR dinámico para canje y el control interactivo de bandas de precio P2P.</p>
+    </div>
+    <div class="cover-bottom">
+      <div class="meta-row">
+        <span class="meta-label">Proyecto / Sistema</span>
+        <span class="meta-value">Sistema de Mercado Comportamental y Trading de Activos (SMCTA v2)</span>
+      </div>
+      <div class="meta-row"><span class="meta-label">Fase / Área Normativa</span><span class="meta-value">Experiencia de Usuario, Billetera Digital, Marketplace P2P y Sistema de Diseño Dinámico</span></div>
+      <div class="meta-row">
+        <span class="meta-label">Autoría y Gobernanza</span>
+        <span class="meta-value">Equipo de Ingeniería de Software — Proyecto SMCTA</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Fecha de Emisión</span>
+        <span class="meta-value">Noviembre 2026</span>
+      </div>
+    </div>
+  </section>
+  <main class="document-body">
+    <hr class="section-rule"/>
+<h2 id="1-documentacion-base-de-contexto-lectura-obligatoria-para-tu-ia-1">1. Documentación Base de Contexto (Lectura Obligatoria para tu IA)</h2>
+<p>Proporciona a tu IA asistente los siguientes documentos ubicados en el repositorio:</p>
+<ol><li><code>05_Fase_Gestion_de_Proyecto_y_Roadmap/Hojas_de_Ruta_Distribuidas/00_Protocolo_de_Alineacion_y_Contratos_Compartidos.md</code> (Estructura de DTOs, tokens y endpoints).</li>
+<li><code>04_Fase_Diseno_UX_UI_y_Flujos_de_Usuario/01_Especificacion_de_Flujos_UX_(Consumidor_vs_Trader).md</code> (Wireframes, arquitectura de información y patrones UX).</li>
+<li><code>04_Fase_Diseno_UX_UI_y_Flujos_de_Usuario/02_Guia_de_Componentes_UI_WhiteLabel.md</code> (Tokens de diseño, variables CSS y widgets core).</li>
+<li><code>02_Fase_Especificacion_de_Requisitos_y_Negocio/04_Historias_de_Usuario_y_Criterios_de_Aceptacion.md</code> (US-01 a US-04 con escenarios Gherkin).</li>
+<li><code>02_Fase_Especificacion_de_Requisitos_y_Negocio/01_Documento_de_Vision_y_Alcance_Actualizado_(P2P).md</code> (Perfiles Consumidor Pragmático vs. Estratega).</li></ol>
+<hr class="section-rule"/>
+<h2 id="2-stack-tecnologico-recomendado-2">2. Stack Tecnológico Recomendado</h2>
+<ul><li><strong>Framework:</strong> React 18+ o Next.js 14+ (App Router) con TypeScript estricto.</li>
+<li><strong>Estilos &amp; Tematización:</strong> Tailwind CSS configurado con variables CSS personalizadas (<code>--smcta-brand-primary</code>, <code>--smcta-brand-accent</code>, etc.) para permitir el cambio de marca sin recompilar la app.</li>
+<li><strong>Gestión de Estado &amp; Caché:</strong> TanStack Query (React Query) para sincronización con el servidor.</li>
+<li><strong>Desacoplamiento (Mocking):</strong> <code>Mock Service Worker</code> (MSW) para simular inmediatamente los endpoints de Rol 1 y no bloquearte.</li>
+<li><strong>Componentes Criptográficos / QR:</strong> <code>qrcode.react</code> o <code>react-qr-code</code>.</li>
+<li><strong>Iconos:</strong> <code>lucide-react</code>.</li>
+<li><strong>Testing:</strong> Vitest + React Testing Library.</li></ul>
+<hr class="section-rule"/>
+<h2 id="3-plan-de-trabajo-por-sprints-3">3. Plan de Trabajo por Sprints</h2>
+<h3 id="sprint-6-arquitectura-de-temas-checkout-primario-y-billetera-digital-4">Sprint 6: Arquitectura de Temas, Checkout Primario y Billetera Digital</h3>
+<ul><li><strong>Tarea 2.1:</strong> Configurar la infraestructura del Design System Multi-Tenant:</li>
+<li>Crear el proveedor de contexto <code>TenantThemeProvider</code> que cargue la configuración de marca (<code>GET /api/v1/tenant/config</code> o mock inicial) e inyecte dinámicamente las CSS Variables en <code>:root</code>.</li>
+<li><strong>Tarea 2.2 (US-01):</strong> Desarrollar la pantalla y modal de <strong>Checkout Primario</strong>:</li>
+<li>Selector de producto, resumen de compra con valor nominal ($100.00), visualización de sello de garantía &quot;Custodia en Escrow Segregada&quot; y confirmación de pago.</li>
+<li><strong>Tarea 2.3 (US-02 / TASK-003):</strong> Construir la vista de <strong>Billetera Digital (Wallet View)</strong>:</li>
+<li>Listado de tarjetas de cupones con indicador de estado visual (<code>EN_WALLET</code>, <code>PUBLICADO_P2P</code>, <code>CANJEADO</code>).</li>
+<li>Botón interactivo &quot;Generar QR de Canje&quot;.</li>
+<li>Modal de canje a pantalla completa: cuenta regresiva visual circular de 30 segundos, rotación automática del token criptográfico y llamada para aumentar el brillo de la pantalla.</li>
+<li>Bloqueo UX: Si el cupón está en <code>PUBLICADO_P2P</code>, ocultar el QR y mostrar advertencia con botón para &quot;Cancelar oferta P2P&quot;.</li></ul>
+<h3 id="sprint-7-marketplace-p2p-y-slider-de-control-de-banda-de-precios-5">Sprint 7: Marketplace P2P y Slider de Control de Banda de Precios</h3>
+<ul><li><strong>Tarea 2.4 (US-03 / TASK-004):</strong> Modal de <strong>Publicación en Mercado Secundario P2P</strong>:</li>
+<li>Implementar el componente <strong>Price Collar Slider</strong>: un control deslizante restringido estrictamente entre <span class="math-inline">[P<sub>min</sub>, P<sub>max</sub>]</span> (calculado según los porcentajes del tenant, ej. $50.00 a $200.00).</li>
+<li>Cálculo en tiempo real en la UI del desglose financiero antes de enviar la orden:</li>
+<li>Precio de venta propuesto (<span class="math-inline">P<sub>asking</sub></span>)</li>
+<li>Comisión deducida al vendedor (3.5% = $X.XX)</li>
+<li><strong>Total neto que recibirá el vendedor</strong> ($X.XX)</li>
+<li>Precio final con recargo que verá el comprador (2.5% = $X.XX)</li>
+<li><strong>Tarea 2.5 (US-04):</strong> Vista del <strong>Libro de Órdenes P2P (Marketplace)</strong>:</li>
+<li>Lista de ofertas filtradas por producto.</li>
+<li>Tarjetas de oferta con badges visuales de oportunidad (si el precio está bajo el nominal, badge verde de descuento).</li>
+<li>Botón de compra instantánea con confirmación de split de comisiones.</li>
+<li>Manejo elegante de errores concurrentes: si la orden ya fue tomada por otro usuario (HTTP 423), mostrar toast animado: <em>&quot;Esta orden acaba de ser tomada por otro usuario&quot;</em>.</li></ul>
+<h3 id="sprint-8-pulido-ux-estados-de-error-y-modo-movil-pwa-6">Sprint 8: Pulido UX, Estados de Error y Modo Móvil PWA</h3>
+<ul><li><strong>Tarea 2.6:</strong> Implementar transiciones suaves y microanimaciones (framer-motion o Tailwind transitions) para el cambio de estados del cupón.</li>
+<li><strong>Tarea 2.7:</strong> Implementar prevención visual de capturas de pantalla (marcas de agua translúcidas con el ID del usuario y timestamp).</li>
+<li><strong>Tarea 2.8:</strong> Pantalla de historial de transacciones con filtros: Compras primarias, Reventas P2P exitosas y Canjes en tienda.</li></ul>
+<h3 id="sprint-9-integracion-de-api-real-y-pruebas-de-usabilidad-7">Sprint 9: Integración de API Real y Pruebas de Usabilidad</h3>
+<ul><li><strong>Tarea 2.9:</strong> Sustituir la capa de MSW por el cliente HTTP real apuntando al Gateway / Backend Core.</li>
+<li><strong>Tarea 2.10:</strong> Pruebas de verificación de todos los escenarios BDD de las Historias de Usuario (US-01 a US-04).</li></ul>
+<hr class="section-rule"/>
+<h2 id="4-prompt-maestro-para-iniciar-con-tu-ia-asistente-8">4. Prompt Maestro para Iniciar con tu IA Asistente</h2>
+<p>Copia y pega el siguiente prompt en tu IA (Claude, ChatGPT, Cursor, etc.):</p>
+<div class="code-block"><div class="code-lang">TEXT</div><pre><code><span class="code-line"><span class="ln"> 1</span>Actúa como Lead Frontend Developer y Especialista en Sistemas de Diseño UI/UX White-Label. Tu responsabilidad es crear la aplicación web para los usuarios finales de la plataforma SMCTA (Sistema de Mercado Comportamental y Trading de Activos).</span>
+<span class="code-line"><span class="ln"> 2</span> </span>
+<span class="code-line"><span class="ln"> 3</span>CONTEXTO Y REGLAS OBLIGATORIAS:</span>
+<span class="code-line"><span class="ln"> 4</span>1. Revisa los contratos de '00_Protocolo_de_Alineacion_y_Contratos_Compartidos.md'. Todas las llamadas a endpoints deben respetar estrictamente los tipos e interfaces allí definidos.</span>
+<span class="code-line"><span class="ln"> 5</span>2. Lee la guía de tokens y componentes de '04_Fase_Diseno_UX_UI_y_Flujos_de_Usuario/02_Guia_de_Componentes_UI_WhiteLabel.md' y los wireframes de '04_Fase_Diseno_UX_UI_y_Flujos_de_Usuario/01_Especificacion_de_Flujos_UX_(Consumidor_vs_Trader).md'.</span>
+<span class="code-line"><span class="ln"> 6</span>3. Para trabajar de inmediato sin esperar al Backend, configura 'msw' (Mock Service Worker) simulando las respuestas de los endpoints.</span>
+<span class="code-line"><span class="ln"> 7</span>4. El sistema debe permitir cambiar de colores y logos en tiempo de ejecución mediante CSS Variables (:root) según la configuración del Tenant.</span>
+<span class="code-line"><span class="ln"> 8</span>5. Desarrolla el componente 'PriceCollarSlider' que impida físicamente al usuario ingresar un valor fuera de [P_min, P_max] y calcule en vivo el desglose de comisiones (take-rates de vendedor y comprador).</span>
+<span class="code-line"><span class="ln"> 9</span>6. En la vista de billetera, el código QR debe rotar cada 30 segundos con una barra de progreso visual.</span>
+<span class="code-line"><span class="ln">10</span> </span>
+<span class="code-line"><span class="ln">11</span>OBJETIVO INICIAL:</span>
+<span class="code-line"><span class="ln">12</span>Comencemos por el Sprint 6. Inicializa el proyecto con React/Next.js y Tailwind CSS, crea la arquitectura de tematización dinámica con CSS Variables y el componente de la Billetera Digital con el QR rotativo dinámico de 30 segundos y mocks de cupones. Proporciona código limpio, tipado y visualmente prémium.</span></code></pre></div>
+  </main>
+</body>
+</html>
