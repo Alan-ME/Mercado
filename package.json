@@ -24,7 +24,8 @@
     "test": "npm run build:shared && npm run test --workspace @smcta/backend",
     "test:coverage": "npm run build:shared && npm run test:coverage --workspace @smcta/backend",
     "test:e2e": "npm run test --workspace @smcta/e2e",
-    "seed": "npm run seed --workspace @smcta/backend"
+    "seed": "npm run seed --workspace @smcta/backend",
+    "docs:pdf": "node scripts/build-academic-docs.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

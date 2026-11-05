@@ -57,9 +57,9 @@ En proyectos desarrollados por equipos distribuidos, los cambios de rumbo no doc
 1. **Preservación Histórica sin Deuda de Compilación (`f4153fa`):** El directorio `vers/` quedó archivado explícitamente como respaldo documental de diseño original (maquetas en `vers/diseños/` y código Dart de referencia), fuera del *pipeline* productivo de *NPM Workspaces*.
 2. **Portabilidad Fiel de Vistas y Activos a `@smcta/web` (`9acebda`, `4766f27`):**
    - Incorporación de activos gráficos optimizados en `apps/web/public/images/carta/` y modelado tipado del menú en `apps/web/src/data/coffeeCatalog.ts`.
-   - Construcción de `Storefront.tsx` fiel a la maqueta *BREW/DESK* cuando el recinto activo es `cafeteria` (manteniendo intacta la adaptabilidad camaleónica *White-Label* para `festival`, `hotel` y `cafe`).
+   - Construcción de `Storefront.tsx` fiel a la maqueta *BREW/DESK* cuando el recinto activo es `cafeteria` (manteniendo intacta la adaptabilidad camaleónica *White-Label* para `festival`, `hotel` y `sneakers`).
    - Implementación de `CartaPage.tsx` (búsqueda instantánea + filtros por categoría), `ProductDetailModal.tsx` (curva SVG suavizada con selectores `24h / 7d / 30d` y estadísticas semanales), `CartDrawer.tsx` + `cart.tsx` (conectados directamente al checkout real con custodia *Escrow*) y `SettingsPage.tsx` (panel maestro-detalle completo de dos columnas para Cuenta, Seguridad, Privacidad, Apariencia y Recursos).
-3. **Semilla Oficial de Base de Datos:** Registro automático del cuarto *Tenant* `cafeteria` (*BREW/DESK Specialty Coffee*, collar `70%–135%`, comisiones `2,0% / 1,5%`) en `apps/backend/src/db/seed.ts` y actualización de `dbIntegrity.test.ts`.
+3. **Semilla Oficial de Base de Datos:** Registro automático del cuarto *Tenant* `cafeteria` (*BREW/DESK Specialty Coffee*, collar `70%–150%`, comisiones `2,5% / 1,5%`) en `apps/backend/src/db/seed.ts` y actualización de `dbIntegrity.test.ts`.
 
 ### 3. Verificación de Calidad Post-Cambio
 - **Complejidad Ciclomática:** `npm run lint:complexity` aprobado con **0 errores** ($CC \le 5$ estricto en los nuevos componentes `SettingsPage.tsx`, `CartDrawer.tsx`, `ProductDetailModal.tsx`, `CartaPage.tsx` y `cart.tsx`).

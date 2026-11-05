@@ -237,5 +237,5 @@ CREATE TABLE IF NOT EXISTS user_events (
 | :--- | :--- | :--- |
 | Motor de Persistencia | `@electric-sql/pglite` v0.2.17 (PostgreSQL compilado a WASM) | PostgreSQL 15.4+ sobre contenedor dedicado / RDS |
 | Nivel de Aislamiento Transaccional | `SERIALIZABLE` sobre conexión única con cola FIFO (`mutexChain`) | `BEGIN ISOLATION LEVEL SERIALIZABLE` sobre pool `pg.Pool` (`max: 20`) |
-| Semilla Multi-Tenant (`seed.ts`) | 4 *Tenants* preconfigurados (`festival`, `hotel`, `cafe`, `cafeteria`) | Provisionamiento idempotente mediante migración controlada |
+| Semilla Multi-Tenant (`seed.ts`) | 4 *Tenants* preconfigurados (`cafeteria`, `festival`, `hotel`, `sneakers`) | Provisionamiento idempotente mediante migración controlada |
 | Autenticación de Tokens QR | `HMAC-SHA256` con `qr_secret` aislado por fila en `tenants` | `HMAC-SHA256` con rotación de secretos en gestor KMS/Vault |

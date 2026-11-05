@@ -22,7 +22,7 @@ Todos los cambios relevantes de arquitectura, lógica de dominio, interfaz *Whit
 ### Added
 - **Monorepo Unificado en TypeScript Estricto (`7218327`, `ae7f0f4`):** Consolidación en workspaces locales `@smcta/shared`, `@smcta/backend`, `@smcta/web` y `@smcta/e2e` bajo Node.js 20+.
 - **Aritmética Financiera Exacta y Motor Price Collar (`@smcta/shared`):** Implementación de `money.ts` (`decimal.js` con redondeo bancario `ROUND_HALF_EVEN`), `pricing.ts` (`validatePriceCollar`, `calculateCommissionBreakdown` con `platformShare`) y autómata determinista `stateMachine.ts`.
-- **Canal Reactivo en Tiempo Real (`0b1f251`):** Sustitución de *polling* HTTP por `EventHub` con *Server-Sent Events* (`/api/v1/activity/stream`), despacho estricto post-`COMMIT` y reconciliación contra `user_events`.
+- **Canal Reactivo en Tiempo Real (`0b1f251`):** Sustitución de *polling* HTTP por `EventHub` con *Server-Sent Events* (`/api/v1/notifications/stream`), despacho estricto post-`COMMIT` y reconciliación contra `user_events`.
 - **Pipeline Determinista de Calidad (`c12228b`):** Regla obligatoria ESLint `complexity <= 5` (`0` violaciones sobre 593 funciones), cobertura `v8 >= 80%` (`92.54%` sentencias reales), configuración SonarCloud y suite Playwright E2E (`QA-01..QA-04`).
 
 ### Fixed

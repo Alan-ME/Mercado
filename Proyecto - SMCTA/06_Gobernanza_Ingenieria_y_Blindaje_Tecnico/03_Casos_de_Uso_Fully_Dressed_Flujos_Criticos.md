@@ -43,7 +43,7 @@ Todos los casos de uso operan gobernados por el autómata determinista implement
 4. El sistema inserta el registro inicial del cupón en `coupons` y ejecuta la transición formal `EMITIDO -> EN_WALLET` verificada por `assertTransition`.
 5. El sistema inserta en `escrow_ledgers` el asiento `transaction_type = 'CHECKOUT'` con `amount_in_escrow = +nominalPrice`, protegido por el índice único parcial `uq_ledger_checkout_once`.
 6. El sistema registra el evento `PRIMARY_PURCHASE` en `user_events` y confirma la transacción (`COMMIT`).
-7. Una vez confirmado el `COMMIT`, el servicio publica el delta en `EventHub` (canal SSE `/api/v1/activity/stream`) y responde `HTTP 201 Created` con el `CouponDTO`.
+7. Una vez confirmado el `COMMIT`, el servicio publica el delta en `EventHub` (canal SSE `/api/v1/notifications/stream`) y responde `HTTP 201 Created` con el `CouponDTO`.
 
 ### Extensiones y Flujos Alternativos (`UC-01`)
 - **2a. Subdominio inexistente o no registrado:** `tenantResolver` aborta antes de tocar servicios de dominio y devuelve `HTTP 404 Not Found` (`TENANT_NOT_FOUND`).

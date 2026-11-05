@@ -23,6 +23,7 @@ npm run lint:complexity # Verifica complejidad ciclomática estricta (CC <= 5 po
 npm test                # Suite unitaria y de integración con Vitest
 npm run test:coverage   # Cobertura v8 (>= 80%) + reporte LCOV para SonarCloud
 npm run test:e2e        # Suite E2E con Playwright validando QA-01..QA-04
+npm run docs:pdf        # Compila los 22 documentos académicos/oficiales a HTML + PDF A4
 docker compose up --build # Despliegue completo con PostgreSQL 15 + Redis 7 + App
 ```
 
@@ -41,8 +42,10 @@ Sacamos del medio los microservicios duplicados que habían quedado a mitad de c
 ├─ apps/web/              SPA React + Vite + Tailwind con tematización White-Label en vivo,
 │                         Tienda, Billetera con QR rotativo, Mercado P2P, Historial, Admin y TPV.
 ├─ e2e/                   Pruebas de extremo a extremo en Playwright (QA-01..QA-04).
-└─ Proyecto - SMCTA/      Entregables académicos originales (Fases 01 a 05: Visión, SRS, C4,
-                          UX/UI, QA Checklist y Gestión).
+├─ vers/                  Archivo histórico del prototipo visual original en Dart/Flutter.
+└─ Proyecto - SMCTA/      Documentación oficial completa en Markdown, HTML y PDF académico
+                          (Fases 01 a 05 + Fase 06 de Gobernanza, ADRs, Glosario, Casos de Uso
+                          Fully Dressed, Change Requests, Benchmarking y Bitácora Forense).
 ```
 
 Para pasar del modo embebido a PostgreSQL 15 y Redis 7 en red no hay que tocar ni una línea de dominio: alcanza con definir `DATABASE_URL` y `REDIS_URL` (fijate `.env.example` o `docker-compose.yml`).
@@ -78,7 +81,7 @@ La lógica de custodia y reventa secundaria tiene varias trampas clásicas donde
 
 ## Tenants precargados y endpoints principales
 
-Al iniciar sobre una base vacía se siembran tres comercios aislados para probar en la interfaz o pasando la cabecera `x-tenant-id`: `festival` (Ana, Beto, Caro), `hotel` (Diego, Emma) y `sneakers` (Fabio, Gina). La documentación interactiva OpenAPI queda expuesta en `http://localhost:8080/api/docs`.
+Al iniciar sobre una base vacía se siembran cuatro comercios aislados para probar directo desde la interfaz o pasando la cabecera `x-tenant-subdomain`: `cafeteria` (*BREW/DESK Specialty Coffee*, vista por defecto), `festival` (Ana, Beto, Caro), `hotel` (Diego, Emma) y `sneakers` (Fabio, Gina). La documentación interactiva OpenAPI queda expuesta en `http://localhost:8080/api/docs`.
 
 ```text
 GET  /api/v1/tenant/config
