@@ -145,31 +145,29 @@ Todos los casos de uso operan gobernados por el autómata determinista implement
 
 ---
 
-## UC-05: Permuta de Productos y Rescate de Ítem Descontinuado con Incentivo en el Item Changer (Estilo KeyDrop)
+## UC-05: Rescate de Producto Descontinuado en el Item Changer y Canje de Combos en la Gold Area con Créditos Desbloqueados en TPV (Estilo KeyDrop)
 
 | Atributo Normativo | Especificación Formal |
 | :--- | :--- |
-| **Identificador y Endpoint** | `UC-05` — `POST /api/v1/changer/swap` (`changerService.swapProducts`) |
-| **Actor Primario** | Consumidor titular de uno o más cupones vigentes o de un producto dado de baja (`DISCONTINUED`) |
-| **Stakeholders e Intereses** | **Consumidor:** Reemplazar al instante un producto que ya no desea —o que fue descontinuado por el comercio— por otro producto equivalente del catálogo activo (ej. cambiar un café descontinuado por un alfajor), recibiendo una bonificación justa si la baja fue decisión del local y conservando el vuelto en su Saldo de Créditos de Barra. **Comercio (*Tenant*):** Evitar reembolsos en efectivo que drenan la caja operativa, fidelizar al cliente afectado por faltantes de stock y rotar mercadería activa. |
-| **Precondiciones** | 1. Los cupones entregados en el panel izquierdo pertenecen a `userId`, corresponden al *Tenant* activo y están en estado `EN_WALLET`. 2. Los productos seleccionados en el panel derecho existen y se encuentran activos (`isDiscontinued = false`). 3. El poder de canje total (cupones entregados + bonus por descontinuación + créditos de barra aportados) cubre el valor nominal de los productos solicitados. |
-| **Garantía Mínima (En Fallo)** | Transacción revertida (`ROLLBACK`); los cupones originales permanecen intactos en `EN_WALLET`, no se emiten cupones nuevos y el saldo `users.balance` no sufre alteración. |
-| **Garantía de Éxito (Postcondición)** | Los cupones entregados transicionan a estado terminal de reemplazo (`CANJEADO` por permuta con `token_version + 1`); se emiten los nuevos cupones de los productos elegidos en estado `EN_WALLET`; se actualiza atómicamente `users.balance` con el saldo residual de Créditos de Barra ($\Delta C \ge 0$) y se asienta el movimiento en `escrow_ledgers`. |
+| **Identificador y Endpoints** | `UC-05` — `POST /api/v1/changer/swap` (Item Changer) y `POST /api/v1/changer/gold-redeem` (Gold Area) |
+| **Actor Primario** | Consumidor titular de un cupón descontinuado (`DISCONTINUED`) o de Créditos Gold desbloqueados (`credits_balance`) |
+| **Stakeholders e Intereses** | **Consumidor:** (a) Si su producto fue retirado del tablero, cambiarlo en el *Item Changer* por un producto equivalente activo (ej. un alfajor) recibiendo un incentivo en Créditos Gold; (b) Desbloquear los Créditos Gold ganados en sus trades P2P cuando su contraparte canjea el cupón en TPV y usarlos en la *Gold Area* para llevarse combos exclusivos. **Comercio (*Tenant*):** Cero devolución de efectivo por bajas de stock y garantía absoluta contra el farmeo de puntos (*wash-trading*), ya que los créditos de trade solo nacen cuando el producto se consume físicamente en barra. |
+| **Precondiciones** | 1. Para *Item Changer*: el cupón de entrada pertenece a `userId`, está en `EN_WALLET` y su producto fue marcado como descontinuado (`isDiscontinued = true`). 2. Para *Gold Area*: el usuario posee `creditsBalance >= comboCostGold` (créditos ya desbloqueados tras el canje físico en TPV o por incentivo del *Changer*). |
+| **Garantía Mínima (En Fallo)** | Transacción revertida (`ROLLBACK`); ni los cupones en billetera ni el saldo `users.balance` (`credits_balance`) sufren alteración. |
+| **Garantía de Éxito (Postcondición)** | En *Item Changer*: el cupón descontinuado queda redimido por reemplazo (`token_version + 1`), se emite el nuevo cupón equivalente en `EN_WALLET` y se acredita el incentivo en `credits_balance`. En *Gold Area*: se debita `comboCostGold` de `credits_balance` y se emite el cupón del Combo Gold en `EN_WALLET`. |
 
-### Escenario Principal de Éxito (`UC-05`)
-1. El Consumidor abre la vista de doble columna **Item Changer** (inspirada en KeyDrop Skin Changer): en el panel izquierdo selecciona los cupones de su billetera que desea entregar (ej. un *Espresso Origen Colombia* marcado como `DESCONTINUADO`) y en el panel derecho filtra el catálogo activo y selecciona el producto que desea recibir (ej. un *Alfajor Artesanal* o *Mokaccino*).
-2. El panel central muestra en tiempo real la balanza de equivalencia en Créditos de Barra:
-   - Si el cupón entregado corresponde a un producto **descontinuado**, aplica automáticamente el incentivo parametrizado por el *Tenant* ($\beta_{\text{disc}}$, ej. $+15\%$):
-     $$V_{\text{entrada}} = \text{round}_2\left(P_{\text{nom}} \cdot \left(1 + \frac{\beta_{\text{disc}}}{100}\right)\right)$$
-   - Si el cupón entregado corresponde a un producto **activo** (cambio voluntario de preferencia), aplica la valuación estándar descontando el *spread* de recambio del local ($\tau_{\text{swap}}$).
-3. El Consumidor confirma la operación presionando **"Intercambiar Productos"**.
-4. El servicio adquiere los candados en `LockManager` para todos los `couponId` de entrada en orden lexicográfico estricto (prevención de *deadlocks*) e inicia una transacción `SERIALIZABLE`.
-5. Bloquea las filas de los cupones de entrada y del usuario en `users` (`SELECT ... FOR UPDATE`), verificando titularidad, estado `EN_WALLET` y disponibilidad de saldo de créditos si la operación requiere aporte adicional.
-6. Verifica que el poder de canje total $V_{\text{total}} = \sum V_{\text{entrada}} + C_{\text{aportados}}$ sea mayor o igual al costo nominal de los productos de salida $\sum P_{\text{nom}}(\text{salida})$.
-7. Invalida los cupones entregados incrementando `token_version + 1`, emite los nuevos cupones correspondientes a los productos elegidos en el panel derecho y acredita el vuelto remanente $\Delta C = V_{\text{total}} - \sum P_{\text{nom}}(\text{salida})$ en el saldo de Créditos de Barra del usuario (`users.balance`).
-8. Registra la trazabilidad en `escrow_ledgers` y `user_events`, ejecuta `COMMIT`, publica la notificación en vivo vía SSE y responde `HTTP 200 OK` con los nuevos cupones y el nuevo saldo de créditos.
+### Escenario Principal de Éxito (`UC-05A` — Reemplazo de Producto Descontinuado en el Item Changer)
+1. El Consumidor abre el **Item Changer** (interfaz de dos paneles estilo KeyDrop Skin Changer): a la izquierda selecciona su cupón de un producto retirado del tablero (ej. *Espresso Origen Colombia* descontinuado) y a la derecha elige del catálogo activo un producto equivalente (ej. un *Alfajor Artesanal* o *Mokaccino*).
+2. El panel central calcula el valor reconocido aplicando el **Incentivo por Descontinuación ($\beta_{\text{disc}}$, ej. $+15\%$)** y muestra los **Créditos Gold de compensación** que se sumarán a su cuenta:
+   $$V_{\text{rescate}} = \text{round}_2\left(P_{\text{nom}} \cdot \left(1 + \frac{\beta_{\text{disc}}}{100}\right)\right)$$
+3. Al confirmar **"Intercambiar en Changer"**, el backend abre una transacción `SERIALIZABLE` bajo candado `LockManager`, quema el cupón descontinuado (`token_version + 1`), emite el nuevo cupón del producto equivalente en `EN_WALLET` y acredita directamente en `users.balance` los Créditos Gold de incentivo y remanente.
+
+### Escenario Principal de Éxito (`UC-05B` — Desbloqueo de Créditos en TPV y Canje de Combos en Gold Area)
+1. Cuando dos usuarios realizan un trueque libre P2P de productos distintos en `UC-03` (ej. un *Café* de `$10,00` por una *Empanada* de `$1,00`), el sistema registra `pending_reward_credits` en estado **Pendiente** sobre el cupón transferido.
+2. Recién cuando el receptor acude al local y escanea el QR en `UC-04` (`POST /api/v1/tpv/validate-qr`), `tpvService` verifica que el cupón tenga créditos pendientes sin reclamar (`reward_claimed = false`), los transfiere atómicamente al saldo disponible `credits_balance` del usuario que entregó el producto y envía una alerta SSE en vivo.
+3. Con sus Créditos Gold disponibles, el usuario ingresa a la **Gold Area** (tarjetas de combos con precios como `480 G`, `680 G`, `1200 G` estilo KeyDrop), selecciona un combo promocional y ejecuta el canje, debitándose los créditos y recibiendo el nuevo cupón en su billetera.
 
 ### Extensiones y Flujos Alternativos (`UC-05`)
-- **5a. Alguno de los cupones de entrada está publicado en una oferta P2P abierta:** Rechazo `HTTP 409 Conflict` (`COUPON_NOT_IN_WALLET`); el usuario debe cancelar primero su publicación P2P o ejecutar el retiro previo.
-- **6a. El valor de los productos elegidos a la derecha supera el poder de canje de los cupones entregados más el saldo de créditos disponible:** Rechazo `HTTP 422 Unprocessable Entity` (`INSUFFICIENT_SWAP_VALUE`) detallando los créditos faltantes exactos.
-- **6b. El usuario intenta elegir en el panel derecho un producto que también se encuentra descontinuado:** Rechazo `HTTP 422 Unprocessable Entity` (`TARGET_PRODUCT_DISCONTINUED`).
+- **1a. Intento de usar Créditos Gold que aún están en estado `Pendiente` (el otro usuario todavía no canjeó el cupón en la barra):** Rechazo `HTTP 422 Unprocessable Entity` (`INSUFFICIENT_UNLOCKED_CREDITS`) indicando cuántos créditos siguen pendientes de canje físico en TPV.
+- **2a. Intento de farmear créditos pasándose el mismo cupón múltiples veces antes del TPV:** Como `reward_claimed` se marca en `true` en el primer y único canje físico en TPV, el cupón solo destraba recompensa una vez en toda su existencia.
+- **3a. Selección en el panel derecho de un producto que también fue descontinuado:** Rechazo `HTTP 422 Unprocessable Entity` (`TARGET_PRODUCT_DISCONTINUED`).

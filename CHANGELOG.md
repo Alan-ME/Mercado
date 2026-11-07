@@ -7,9 +7,10 @@ Todos los cambios relevantes de arquitectura, lógica de dominio, interfaz *Whit
 ## [2.2.0] — 2026-11-06
 
 ### Added
-- **Especificación Formal del Giro a Trading P2P de Productos, Créditos de Circuito Cerrado e *Item Changer* (`CR-003` y `ADR-007`):** Documentación normativa transversal en `Proyecto - SMCTA/Documentos MD/` y `Documentos PDF/` que formaliza:
-  1. **Permuta P2P de Productos entre Usuarios (Estilo Steam Trade):** Intercambio de cupones de distintos productos (ej. combo salado por café) compensando asimetrías de precio mediante **Créditos de Barra (`users.balance`)** de circuito cerrado sin retiro bancario.
-  2. **Intercambiador de Equivalencias (*Item Changer* Estilo KeyDrop) e Incentivo por Descontinuación (`RN-08`, `UC-05`):** Reemplazo instantáneo de productos dados de baja (`DISCONTINUED`) reconociendo un bonus porcentual parametrizable ($\beta_{\text{disc}} = +15\%$) para elegir productos equivalentes activos y acreditar el sobrante en créditos internos.
+- **Especificación Formal del Giro a Trading P2P Libre de Productos, *Item Changer* de Descontinuados y *Gold Area* con Créditos Desbloqueables al Canje en TPV (`CR-003` y `ADR-007`):** Documentación normativa transversal en `Proyecto - SMCTA/Documentos MD/` y `Documentos PDF/` que formaliza:
+  1. **Trueque P2P Libre de Producto por Producto (Estilo Steam Trade):** Intercambio directo entre usuarios (ej. cambiar un café de `$10,00` por una empanada de `$1,00`) sin dinero ni créditos obligatorios en el cruce.
+  2. **Créditos Gold con Desbloqueo Diferido al Canje en TPV (Anti-Farmeo, `RN-07`):** Cada trade P2P de productos distintos genera Créditos Gold en estado *Pendiente* que **solo se desbloquean cuando el otro usuario canjea físicamente el cupón en el TPV del local (`CANJEADO`)**, bloqueando cualquier intento de farmeo repetitivo entre cuentas.
+  3. **Item Changer para Productos Descontinuados y Gold Area de Combos (`RN-08`, `UC-05`, Estilo KeyDrop):** Si un producto se retira del tablero, el usuario lo cambia en el *Item Changer* por un equivalente activo (ej. un alfajor) recibiendo un incentivo en Créditos Gold, y utiliza sus Créditos Gold desbloqueados en la **Gold Area** (`480 G`, `680 G`, `1200 G`) para canjear combos y promociones exclusivas.
 
 ---
 
