@@ -246,3 +246,4 @@ export function spendUnlockedGold(costGold: number): boolean {
   saveEconomyState(st);
   return true;
 }
+

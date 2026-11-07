@@ -6,7 +6,7 @@ import { Badge, type Tone } from '../ui/kit';
 const STATE_META: Record<CouponState, { tone: Tone; label: string }> = {
   [CouponState.EMITIDO]: { tone: 'info', label: 'Emitido' },
   [CouponState.EN_WALLET]: { tone: 'up', label: 'En billetera' },
-  [CouponState.PUBLICADO_P2P]: { tone: 'warn', label: 'Publicado P2P' },
+  [CouponState.PUBLICADO_P2P]: { tone: 'warn', label: 'En trueque P2P' },
   [CouponState.CANJEADO]: { tone: 'neutral', label: 'Canjeado' },
   [CouponState.VENCIDO]: { tone: 'down', label: 'Vencido' },
 };

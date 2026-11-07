@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Ban, CheckCircle2, Coins, QrCode, RefreshCw, Tag, Wallet } from 'lucide-react';
+import { Ban, CheckCircle2, Coins, Lock, QrCode, RefreshCw, Tag, Wallet } from 'lucide-react';
 import { CouponState, type P2POrderDTO } from '@smcta/shared';
+import {
+  computeTradeRewardGold,
+  findCatalogVisual,
+  getPendingGoldTotal,
+  loadEconomyState,
+} from '../state/goldEconomy';
 import { useSession } from '../state/session';
 import { useToast } from '../ui/toast';
 import { api, ApiError, type WalletCoupon } from '../api/client';
 import { StatusPill } from '../components/StatusPill';
 import { QrCanje } from '../components/QrCanje';
-import { AssetArt, assetMeta } from '../ui/AssetArt';
-import { Button, Card, EmptyState, PageHeader, money } from '../ui/kit';
+import { Button, Card, EmptyState, PageHeader } from '../ui/kit';
 import { KpiCard } from '../ui/KpiCard';
 
 function CouponAction({
@@ -29,13 +34,13 @@ function CouponAction({
   if (coupon.state === CouponState.PUBLICADO_P2P) {
     return (
       <Button variant="warn" className="w-full" onClick={() => onCancel(coupon.couponId)}>
-        <Ban size={15} /> En venta P2P — Cancelar oferta
+        <Ban size={15} /> En trueque P2P — Cancelar oferta
       </Button>
     );
   }
   return (
     <div className="rounded-ctl border border-line bg-raised py-2 text-center text-xs font-medium text-muted">
-      Posición cerrada
+      Canjeado / Cerrado
     </div>
   );
 }
@@ -43,14 +48,25 @@ function CouponAction({
 function WalletKpis({ coupons }: { coupons: WalletCoupon[] }) {
   const ready = coupons.filter((c) => c.state === CouponState.EN_WALLET);
   const listed = coupons.filter((c) => c.state === CouponState.PUBLICADO_P2P);
-  const liveNominal = [...ready, ...listed].reduce((acc, c) => acc + c.nominalPrice, 0);
+  const economy = loadEconomyState();
+  const pendingGold = getPendingGoldTotal();
 
   return (
     <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <KpiCard label="Total en portafolio" value={coupons.length} icon={Wallet} tone="primary" />
       <KpiCard label="Listos para canje" value={ready.length} icon={CheckCircle2} tone="up" />
-      <KpiCard label="Ofertados en P2P" value={listed.length} icon={Tag} tone="warn" />
-      <KpiCard label="Nominal activo" value={money(liveNominal)} icon={Coins} tone="accent" />
+      <KpiCard label="En trueque P2P" value={listed.length} icon={Tag} tone="warn" />
+      <KpiCard
+        label="Créditos Gold disponibles"
+        value={`${economy.unlockedGold} G`}
+        icon={Coins}
+        tone="accent"
+      />
+      <KpiCard
+        label="Gold pendiente (TPV)"
+        value={`${pendingGold} G`}
+        icon={Lock}
+        tone="primary"
+      />
     </div>
   );
 }
@@ -65,24 +81,46 @@ function CouponGrid({
   onCancel: (couponId: string) => void;
 }) {
   if (coupons.length === 0) {
-    return <EmptyState>No tenés cupones en tu portafolio. Adquirí uno en Tienda o en el Mercado P2P.</EmptyState>;
+    return (
+      <EmptyState>
+        No tenés productos en tu billetera. Comprá en la Carta, intercambiá en el P2P o canjeá un
+        combo en Gold Area.
+      </EmptyState>
+    );
   }
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {coupons.map((c) => {
-        const { category } = assetMeta(c.productName);
+        const vis = findCatalogVisual(c.productName);
+        const rewardGold = computeTradeRewardGold(c.productName);
         return (
           <Card key={c.couponId} interactive className="flex flex-col p-4">
-            <AssetArt productName={c.productName} compact />
+            <div
+              className={`flex h-36 w-full items-center justify-center rounded-xl bg-gradient-to-br ${vis.glowGradient} p-3`}
+            >
+              <img
+                src={vis.image}
+                alt={c.productName}
+                className="h-28 max-w-full object-contain drop-shadow-xl"
+              />
+            </div>
             <div className="mt-3 flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-brand-accent">{category}</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-brand-accent">
+                {vis.category}
+              </span>
               <StatusPill state={c.state} />
             </div>
-            <h3 className="mt-1.5 line-clamp-1 font-semibold text-fg">{c.productName}</h3>
-            <div className="mt-2 flex items-baseline justify-between border-t border-line pt-2.5">
+            <h3 className="mt-1.5 line-clamp-1 font-extrabold uppercase text-fg">
+              {c.productName}
+            </h3>
+            <div className="mt-2 flex items-center justify-between border-t border-line pt-2.5">
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Valor nominal</div>
-                <div className="text-xl font-bold tabular-nums text-fg">{money(c.nominalPrice)}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                  Bonus si lo tradeás
+                </div>
+                <div className="inline-flex items-center gap-1 text-sm font-black text-amber-400">
+                  <Coins size={13} /> +{rewardGold} G (al canje TPV)
+                </div>
               </div>
               <div className="text-right text-[11px] text-muted">
                 Vence {new Date(c.expirationDate).toLocaleDateString()}
@@ -134,7 +172,10 @@ export function WalletPage() {
     if (!tenant || !user) return;
     setLoading(true);
     try {
-      const [c, o] = await Promise.all([api.getWallet(tenant, user.userId), api.listOrders(tenant)]);
+      const [c, o] = await Promise.all([
+        api.getWallet(tenant, user.userId),
+        api.listOrders(tenant),
+      ]);
       setCoupons(c);
       setOrders(o);
     } finally {
@@ -149,7 +190,7 @@ export function WalletPage() {
   const performCancel = async (tenantKey: string, orderId: string, sellerId: string) => {
     try {
       await api.cancelOrder(tenantKey, orderId, sellerId);
-      toast.push('success', 'Publicación cancelada. El cupón volvió a tu billetera.');
+      toast.push('success', 'Trueque cancelado. El producto volvió a tu billetera.');
       await load();
     } catch (e) {
       toast.push('error', e instanceof ApiError ? e.message : 'No se pudo cancelar.');
@@ -160,7 +201,7 @@ export function WalletPage() {
     if (!tenant || !user) return;
     const order = orders.find((o) => o.couponId === couponId && o.sellerId === user.userId);
     if (!order) {
-      toast.push('error', 'No se encontró la orden a cancelar.');
+      toast.push('error', 'No se encontró la oferta de trueque a cancelar.');
       return;
     }
     await performCancel(tenant, order.orderId, user.userId);
@@ -172,8 +213,8 @@ export function WalletPage() {
   return (
     <div>
       <PageHeader
-        title="Billetera digital"
-        subtitle={`Portafolio custodiado de ${ownerLabel}`}
+        title="Billetera de productos & Créditos Gold"
+        subtitle={`Inventario custodiado de ${ownerLabel} — generá tu QR dinámico para canjear en barra`}
         icon={Wallet}
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>

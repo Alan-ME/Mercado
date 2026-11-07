@@ -260,8 +260,8 @@ function ClubBanner() {
             ¿Querés sumarte al club de la barra?
           </h3>
           <p className="mt-1 text-xs text-muted leading-relaxed">
-            Creá tu cuenta y guardá tus favoritos. Te avisamos cuando bajan de precio o entra una
-            nueva partida.
+            Intercambiá productos mano a mano en el P2P, sumá Créditos Gold cuando se canjean en
+            barra y desbloqueá combos exclusivos en el Gold Area.
           </p>
         </div>
 

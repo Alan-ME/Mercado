@@ -1,32 +1,45 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Ban, History, QrCode, RefreshCw, ShoppingCart, Tag, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  Ban,
+  History,
+  QrCode,
+  RefreshCw,
+  ShoppingCart,
+  Tag,
+} from 'lucide-react';
 import { useSession } from '../state/session';
 import { api, type ActivityEvent, type ActivityType } from '../api/client';
 import { Button, Card, EmptyState, IconChip, PageHeader, money, type Tone } from '../ui/kit';
 
 const FILTERS: { key: ActivityType | 'ALL'; label: string }[] = [
   { key: 'ALL', label: 'Todo' },
-  { key: 'PRIMARY_PURCHASE', label: 'Compras primarias' },
-  { key: 'P2P_SALE', label: 'Ventas P2P' },
-  { key: 'P2P_BUY', label: 'Compras P2P' },
-  { key: 'REDEEM', label: 'Canjes' },
+  { key: 'PRIMARY_PURCHASE', label: 'Compras en carta' },
+  { key: 'P2P_SALE', label: 'Trueques entregados' },
+  { key: 'P2P_BUY', label: 'Trueques recibidos' },
+  { key: 'REDEEM', label: 'Canjes en TPV' },
 ];
 
 interface EventMeta {
   icon: typeof Tag;
   tone: Tone;
-  sign: '' | '+' | '-';
-  amountClass: string;
+  badgeText?: string;
 }
 
 const META: Record<ActivityType, EventMeta> = {
-  PRIMARY_PURCHASE: { icon: ShoppingCart, tone: 'primary', sign: '-', amountClass: 'text-down' },
-  P2P_LISTED: { icon: Tag, tone: 'info', sign: '', amountClass: 'text-muted' },
-  P2P_SALE: { icon: TrendingUp, tone: 'up', sign: '+', amountClass: 'text-up' },
-  P2P_BUY: { icon: TrendingDown, tone: 'down', sign: '-', amountClass: 'text-down' },
-  REDEEM: { icon: QrCode, tone: 'accent', sign: '', amountClass: 'text-fg' },
-  P2P_CANCELLED: { icon: Ban, tone: 'warn', sign: '', amountClass: 'text-warn' },
+  PRIMARY_PURCHASE: { icon: ShoppingCart, tone: 'primary' },
+  P2P_LISTED: { icon: Tag, tone: 'info', badgeText: 'Oferta Trueque P2P' },
+  P2P_SALE: { icon: ArrowRightLeft, tone: 'up', badgeText: '+Gold al canje TPV' },
+  P2P_BUY: { icon: ArrowRightLeft, tone: 'accent', badgeText: 'Producto x Producto' },
+  REDEEM: { icon: QrCode, tone: 'up', badgeText: 'QR Canjeado en Barra' },
+  P2P_CANCELLED: { icon: Ban, tone: 'warn', badgeText: 'Trueque Cancelado' },
 };
+
+function renderEventRight(e: ActivityEvent): string {
+  const m = META[e.type];
+  if (m.badgeText) return m.badgeText;
+  return e.amount > 0 ? money(e.amount) : '';
+}
 
 function FilterChips({
   active,
@@ -64,17 +77,20 @@ function EventFeed({ events }: { events: ActivityEvent[] }) {
     <Card className="divide-y divide-line overflow-hidden">
       {events.map((e) => {
         const m = META[e.type];
+        const rightText = renderEventRight(e);
         return (
-          <div key={e.eventId} className="flex items-center gap-3.5 px-4 py-3.5 transition hover:bg-raised/50">
+          <div
+            key={e.eventId}
+            className="flex items-center gap-3.5 px-4 py-3.5 transition hover:bg-raised/50"
+          >
             <IconChip icon={m.icon} tone={m.tone} size={16} />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-fg">{e.title}</div>
               <div className="text-xs text-muted">{new Date(e.createdAt).toLocaleString()}</div>
             </div>
-            {e.amount > 0 && (
-              <div className={`text-sm font-bold tabular-nums ${m.amountClass}`}>
-                {m.sign}
-                {money(e.amount)}
+            {rightText && (
+              <div className="rounded-md bg-raised px-2.5 py-1 text-xs font-bold text-brand-accent">
+                {rightText}
               </div>
             )}
           </div>
@@ -84,7 +100,6 @@ function EventFeed({ events }: { events: ActivityEvent[] }) {
   );
 }
 
-// Historial unificado de operaciones del usuario actual, filtrado en el backend por tipo de evento.
 export function HistoryPage() {
   const { tenant, user } = useSession();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
@@ -106,17 +121,17 @@ export function HistoryPage() {
     void load();
   }, [load]);
 
-  const inflows = events
-    .filter((e) => e.type === 'P2P_SALE' || e.type === 'REDEEM')
-    .reduce((acc, e) => acc + e.amount, 0);
+  const swapsCount = events.filter(
+    (e) => e.type === 'P2P_SALE' || e.type === 'P2P_BUY' || e.type === 'REDEEM',
+  ).length;
   const ownerName = user ? user.displayName : '—';
   const spin = loading ? 'animate-spin' : '';
 
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader
-        title="Historial de operaciones"
-        subtitle={`Bitácora auditable de ${ownerName}`}
+        title="Historial de trueques y canjes"
+        subtitle={`Bitácora de productos e intercambios de ${ownerName}`}
         icon={History}
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
@@ -129,8 +144,8 @@ export function HistoryPage() {
       <EventFeed events={events} />
 
       <Card className="mt-4 flex items-center justify-between px-4 py-3 text-sm">
-        <span className="text-muted">Volumen liquidado (ventas P2P + canjes en esta vista)</span>
-        <span className="font-bold tabular-nums text-up">{money(inflows)}</span>
+        <span className="text-muted">Total de trueques P2P y canjes físicos registrados</span>
+        <span className="font-bold tabular-nums text-up">{swapsCount} operaciones</span>
       </Card>
     </div>
   );
