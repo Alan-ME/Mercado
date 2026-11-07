@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, Info, type LucideIcon } from 'lucide-react';
 
 type ToastKind = 'success' | 'error' | 'info';
@@ -9,9 +9,14 @@ interface Toast {
   message: string;
 }
 
-const ToastContext = createContext<{
+interface ToastApi {
   push: (kind: ToastKind, message: string) => void;
-} | null>(null);
+  success: (msg: string) => void;
+  error: (msg: string) => void;
+  info: (msg: string) => void;
+}
+
+const ToastContext = createContext<ToastApi | null>(null);
 
 const TOAST_STYLE: Record<ToastKind, { icon: LucideIcon; accent: string }> = {
   success: { icon: CheckCircle2, accent: 'border-l-up text-up' },
@@ -45,8 +50,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000);
   }, []);
 
+  // Memoizamos la API del toast para que useToast() devuelva siempre la misma referencia.
+  // Antes devolvía un objeto literal nuevo en cada render y si alguien lo metía en las deps de un
+  // useCallback/useEffect (como pasaba en AuditPage) disparaba un loop infinito de requests hasta
+  // reventar los sockets de Chrome con net::ERR_INSUFFICIENT_RESOURCES.
+  const api = useMemo<ToastApi>(
+    () => ({
+      push,
+      success: (msg: string) => push('success', msg),
+      error: (msg: string) => push('error', msg),
+      info: (msg: string) => push('info', msg),
+    }),
+    [push],
+  );
+
   return (
-    <ToastContext.Provider value={{ push }}>
+    <ToastContext.Provider value={api}>
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map((t) => (
@@ -57,13 +76,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useToast() {
+export function useToast(): ToastApi {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast debe usarse dentro de ToastProvider');
-  return {
-    push: ctx.push,
-    success: (msg: string) => ctx.push('success', msg),
-    error: (msg: string) => ctx.push('error', msg),
-    info: (msg: string) => ctx.push('info', msg),
-  };
+  return ctx;
 }

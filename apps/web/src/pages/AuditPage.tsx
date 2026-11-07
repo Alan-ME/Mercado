@@ -123,18 +123,21 @@ export function AuditPage() {
   const toast = useToast();
   const [audit, setAudit] = useState<Audit | null>(null);
   const [loading, setLoading] = useState(false);
+  const tenantId = config?.tenantId;
 
+  // Dependemos solo de primitivos (tenant, tenantId) y toast memoizado para no recrear load
+  // cuando cambia el estado local de AuditPage.
   const load = useCallback(async () => {
-    if (!tenant || !config) return;
+    if (!tenant || !tenantId) return;
     setLoading(true);
     try {
-      setAudit(await api.audit(tenant, config.tenantId));
+      setAudit(await api.audit(tenant, tenantId));
     } catch (e) {
       toast.push('error', e instanceof ApiError ? e.message : 'Error de auditoría.');
     } finally {
       setLoading(false);
     }
-  }, [tenant, config, toast]);
+  }, [tenant, tenantId, toast]);
 
   useEffect(() => {
     void load();
