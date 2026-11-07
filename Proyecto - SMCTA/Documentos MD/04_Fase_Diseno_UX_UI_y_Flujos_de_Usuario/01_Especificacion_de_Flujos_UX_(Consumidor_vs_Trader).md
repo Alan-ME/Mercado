@@ -18,8 +18,8 @@ La interfaz de usuario White-Label se desacopla en dos vistas principales de int
 
 | Modulo de Navegacion | Perfil Principal | Pantallas y Micro-Interacciones Clave |
 | --- | --- | --- |
-| Modo Tienda Primaria (E-Commerce Storefront) | Consumidor Pragmatico | Ficha de Producto con Selector "Compra Directa" vs. "Reserva Especulativa P2P".Checkout de Emision Primaria con confirmacion de deposito en custodia Escrow.Billetera Digital (*Wallet*) con tarjeta de cupón y codigo QR dinamico. |
-| Modo Mercado Secundario (P2P Hub) | Consumidor Estratega (Trader) | Libro de Ordenes P2P (*Order Book*) con listado de ofertas activas y filtros.Formulario de Publicacion P2P con validacion visual de Banda de Precios (*Price Collar*).Calculadora de Comisiones en vivo (desglose de Fee Vendedor/Comprador).Historial de Transacciones P2P y Balance Acumulado. |
+| Modo Tienda Primaria (E-Commerce Storefront) | Consumidor Pragmatico | Ficha de Producto con **Gráfico de Demanda y Actividad P2P (`1D / 1S / 1M`)**, cupones ofrecidos/buscados, trueques frecuentes y precio fijo de carta. Checkout de Emisión Primaria con depósito en custodia Escrow. Billetera Digital (*Wallet*) con QR dinámico y contador de Créditos Gold Disponibles y Pendientes. |
+| Modo Mercado Secundario (P2P Hub + Item Changer + Gold Area) | Consumidor Estratega (Trader) | **Tablero de Permuta P2P Libre (Sin Precios Monetarios)**: muestra exclusivamente el Producto Ofrecido $\leftrightarrow$ Producto Buscado (foto, nombre y categoría) y el bonus de **Créditos Gold (`+G`)** desbloqueable al canjear en TPV. **Item Changer (Doble Columna)** para productos descontinuados con incentivo $\beta_{\text{disc}} = +15\%$. **Gold Area** para canjear Créditos Gold desbloqueados por combos y promociones. |
 
 ## 2. Estructura y Marcadores de Diagramas UX (Wireframes & User Journeys)
 
@@ -53,14 +53,18 @@ Detalla la experiencia de publicacion en el libro de ordenes P2P, alertas de var
 - Patron de Seguridad UX: Al presionar el boton, la pantalla incrementa el brillo al 100%, deshabilita capturas de pantalla (*screenshot prevention*) y despliega un QR dinamico que rota un token criptografico cada 30 segundos.
 - Estado Bloqueado P2P: Si el cupón esta publicado en el mercado secundario, la tarjeta reemplaza el boton de QR por una etiqueta informativa: Cupón en Venta P2P ($140.00) - Cancelar Orden para Canjear.
 
-### 3.2. Pantalla B: Formulario de Publicacion P2P (Marketplace Modal)
+### 3.2. Pantalla B: Modal de Ficha de Producto (`ProductDetailModal`) y Tablero de Permuta P2P Sin Precios
 
-- Control de Rango (Price Collar Slider): Barra deslizante que limita la entrada de precio exclusivamente dentro del rango $[P_{min}, P_{max}]$ configurado por el comercio (ej. entre $50.00 y $200.00).
-- Desglose Transparente de Comisiones:
-
-- Precio de Venta Ingresado: $150.00
-- Comisión por Servicio Vendedor (3.5%): -$5.25
-- Monto Neto a Recibir: $144.75
+- **Gráfico de Demanda y Popularidad en lugar de Fluctuación de Precio (`ProductDetailModal.tsx`):** Dado que en el modelo v2.2 el precio de carta es fijo y el mercado secundario opera por trueque de productos sin dinero, el gráfico curvo (`1D / 1S / 1M`) representa el **volumen de pedidos y actividad de trueques P2P** (sin signos monetarios en el eje vertical). La ficha técnica lateral informa:
+  - **Pedidos y trades hoy:** ej. `178` (`+18% DEMANDA HOY`).
+  - **Ofrecidos en P2P:** cantidad de cupones disponibles para trueque inmediato.
+  - **Lo buscan en P2P:** cantidad de usuarios interesados en recibir este ítem.
+  - **Se cambia mucho por:** productos más frecuentes en permutas mano a mano (ej. `Combo Medialuna · Affogato`).
+  - **Recompensa al tradear:** ej. `+55 G (al canje TPV)`.
+- **Regla UX de Omisión de Precios en el Intercambio P2P:** En la vista de intercambio P2P entre usuarios **no se muestran precios en dólares/moneda** sobre los cupones; se visualiza únicamente la tarjeta visual del producto que se entrega, el producto que se recibe y la recompensa de **Créditos Gold (`+G`)** que se desbloqueará cuando el receptor escanee el QR en la barra. Esto elimina el freno psicológico de comparar precios nominales distintos y centra la decisión en el deseo real de consumo gastronómico.
+- **Pantalla C — Item Changer (Productos Descontinuados) y Gold Area (Combos por Créditos):**
+  - **Item Changer (Doble Columna estilo KeyDrop):** Exclusivo para cupones cuyo producto fue marcado como `DISCONTINUED`. El panel izquierdo recibe el ítem retirado y el panel derecho permite filtrar y elegir un producto activo equivalente aplicando el incentivo por descontinuación ($\beta_{\text{disc}} = +15\%$).
+  - **Gold Area:** Grilla de tarjetas promocionales y combos especiales con su costo expresado en **Créditos Gold (`480 G`, `680 G`, `1200 G`)**, canjeables únicamente con créditos ya desbloqueados tras el consumo físico en el TPV.
 
 ## 4. Registro de Pruebas de Usabilidad e Itinerarios UX
 

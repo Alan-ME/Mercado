@@ -36,7 +36,7 @@ export function CartaPage() {
       <div>
         <h1 className="text-3xl font-black text-fg tracking-tight">La carta</h1>
         <p className="mt-1 text-sm text-muted">
-          Carta viva — los precios y la disponibilidad se ajustan con la demanda en tiempo real.
+          Carta oficial de barra — comprá tu cupón o mirá qué productos son los más buscados hoy para intercambiar en el P2P.
         </p>
       </div>
 
@@ -74,10 +74,10 @@ export function CartaPage() {
             onChange={(e) => setSortBy(e.target.value)}
             className="rounded-xl border border-line bg-canvas py-1.5 px-3 text-xs font-semibold text-fg outline-none focus:border-brand-primary"
           >
-            <option value="trending">Más subieron hoy</option>
+            <option value="trending">Más buscados hoy</option>
             <option value="volume">Más pedidos</option>
-            <option value="price-asc">Precio: menor a mayor</option>
-            <option value="price-desc">Precio: mayor a menor</option>
+            <option value="price-asc">Precio en carta: menor a mayor</option>
+            <option value="price-desc">Precio en carta: mayor a menor</option>
           </select>
         </div>
       </div>

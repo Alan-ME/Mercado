@@ -81,6 +81,7 @@ En proyectos desarrollados por equipos distribuidos, los cambios de rumbo no doc
 
 1. **Pilar 1 — Trading P2P Libre de Producto por Producto entre Usuarios (Estilo Steam Trade Offers):**
    - El titular de un cupón vigente en `EN_WALLET` publica su oferta en el tablero P2P indicando qué producto tiene (`offeredProduct`) y qué producto del catálogo busca recibir a cambio (`requestedProduct`).
+   - **Interfaz de Intercambio sin Precios Monetarios + Gráfico de Demanda:** En la pantalla de intercambio P2P **no se muestran precios en moneda**, sino únicamente el producto ofrecido, el producto buscado y los Créditos Gold (`+G`) de recompensa, eliminando la fricción psicológica de comparar valores nominales distintos. Asimismo, el gráfico del modal de detalle de producto (`ProductDetailModal.tsx`) deja de mostrar fluctuaciones de precio en dólares y pasa a graficar la **Demanda y Actividad de Pedidos y Trueques P2P (`1D / 1S / 1M`)** junto con los trueques más frecuentes.
    - El comercio es libre entre usuarios: no se exige igualdad de precios nominales ni pago de dinero o créditos entre las partes para perfeccionar el trueque.
    - Al aceptar la oferta otro usuario que posee un cupón `EN_WALLET` del producto buscado, el backend ejecuta dentro de una transacción `SERIALIZABLE` el cruce atómico de propietarios (`owner_id` de ambos cupones se intercambia) e incrementa `token_version + 1` en ambos activos para invalidar cualquier captura previa de QR.
 

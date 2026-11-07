@@ -9,12 +9,19 @@ export interface CoffeeProduct {
   image: string;
   description: string;
   price: number;
+  // En v2.2 el precio de carta es fijo; lo que se mide es la demanda real de barra + trueques P2P
   change24h: number;
   changeWeek: number;
-  minWeek: number;
-  maxWeek: number;
   ordersToday: number;
-  history: number[];
+  p2pOpenOffers: number;
+  p2pWantedBy: number;
+  topSwaps: string;
+  tradeRewardGold: number;
+  demandByRange: {
+    '1D': number[];
+    '1S': number[];
+    '1M': number[];
+  };
   badge?: string;
   badgeColor?: string;
   extractionNotes?: string;
@@ -33,12 +40,18 @@ export const COFFEE_PRODUCTS: CoffeeProduct[] = [
     glowGradient: 'from-amber-500/35 via-amber-600/15 to-transparent',
     image: '/images/carta/1.png',
     price: 4.9,
-    change24h: 3.2,
-    changeWeek: 7.5,
-    minWeek: 4.4,
-    maxWeek: 4.95,
+    change24h: 14,
+    changeWeek: 22,
     ordersToday: 185,
-    history: [4.45, 4.55, 4.7, 4.65, 4.8, 4.85, 4.9],
+    p2pOpenOffers: 8,
+    p2pWantedBy: 24,
+    topSwaps: 'Matcha Latte · Sándwich + Latte',
+    tradeRewardGold: 50,
+    demandByRange: {
+      '1D': [18, 34, 62, 95, 130, 162, 185],
+      '1S': [135, 148, 160, 154, 171, 179, 185],
+      '1M': [110, 125, 142, 158, 165, 174, 185],
+    },
     description:
       'Pack express de mañanas intensas. Doble espresso de origen colombiano con medialuna de manteca recién horneada.',
     extractionNotes: 'Doble shot · Medialuna hojaldrada manteca pura',
@@ -55,12 +68,18 @@ export const COFFEE_PRODUCTS: CoffeeProduct[] = [
     glowGradient: 'from-purple-600/35 via-fuchsia-600/15 to-transparent',
     image: '/images/carta/2.png',
     price: 4.2,
-    change24h: -1.1,
-    changeWeek: 2.4,
-    minWeek: 4.1,
-    maxWeek: 4.4,
+    change24h: 11,
+    changeWeek: 19,
     ordersToday: 210,
-    history: [4.35, 4.28, 4.22, 4.15, 4.18, 4.25, 4.2],
+    p2pOpenOffers: 5,
+    p2pWantedBy: 31,
+    topSwaps: 'Mokaccino · Combo Medialuna',
+    tradeRewardGold: 45,
+    demandByRange: {
+      '1D': [12, 28, 74, 128, 166, 194, 210],
+      '1S': [165, 172, 184, 179, 195, 202, 210],
+      '1M': [140, 152, 168, 175, 188, 198, 210],
+    },
     description:
       'Sándwich caliente del día acompañado por un latte vainilla. Se sirve hasta las 15h en la barra.',
     extractionNotes: 'Pan brioche tostado · Latte vainilla natural 220ml',
@@ -77,12 +96,18 @@ export const COFFEE_PRODUCTS: CoffeeProduct[] = [
     glowGradient: 'from-teal-500/35 via-emerald-600/15 to-transparent',
     image: '/images/carta/3.png',
     price: 4.9,
-    change24h: 5.7,
-    changeWeek: 12.4,
-    minWeek: 4.3,
-    maxWeek: 4.95,
+    change24h: 24,
+    changeWeek: 35,
     ordersToday: 289,
-    history: [4.3, 4.45, 4.5, 4.7, 4.65, 4.85, 4.9],
+    p2pOpenOffers: 11,
+    p2pWantedBy: 42,
+    topSwaps: 'Affogato · Matcha Latte',
+    tradeRewardGold: 50,
+    demandByRange: {
+      '1D': [30, 68, 115, 164, 215, 258, 289],
+      '1S': [210, 228, 240, 252, 265, 278, 289],
+      '1M': [175, 194, 218, 235, 250, 271, 289],
+    },
     description:
       'Nuestro barista eligió el mokaccino: espresso, chocolate belga y leche cremosa. Se agota rápido, calculá.',
     extractionNotes: 'Espresso single · Chocolate 70% belga · Leche texturizada',
@@ -97,18 +122,24 @@ export const COFFEE_PRODUCTS: CoffeeProduct[] = [
     glowGradient: 'from-rose-600/35 via-red-600/15 to-transparent',
     image: '/images/carta/4.png',
     price: 6.2,
-    change24h: 7.3,
-    changeWeek: 11.2,
-    minWeek: 5.7,
-    maxWeek: 6.3,
+    change24h: 19,
+    changeWeek: 28,
     ordersToday: 142,
-    history: [5.75, 5.88, 6.0, 5.95, 6.1, 6.18, 6.2],
+    p2pOpenOffers: 4,
+    p2pWantedBy: 27,
+    topSwaps: 'Mokaccino · Espresso Colombia',
+    tradeRewardGold: 65,
+    demandByRange: {
+      '1D': [10, 22, 45, 72, 98, 124, 142],
+      '1S': [98, 106, 115, 112, 126, 135, 142],
+      '1M': [82, 94, 105, 114, 122, 133, 142],
+    },
     description: 'Bocha de crema ahogada en espresso caliente recién tirado.',
     extractionNotes: 'Helado artesanal crema americana · Espresso doppio',
   },
   {
     id: 'p-mokaccino-carta',
-    name: 'MOKACCINO',
+    name: 'MOKACCINO CLÁSICO',
     symbol: 'MOK-CLS',
     category: 'Con leche',
     categoryTag: 'CON LECHE',
@@ -116,12 +147,18 @@ export const COFFEE_PRODUCTS: CoffeeProduct[] = [
     glowGradient: 'from-amber-600/35 via-orange-600/15 to-transparent',
     image: '/images/carta/5.png',
     price: 4.9,
-    change24h: 4.1,
-    changeWeek: 8.8,
-    minWeek: 4.5,
-    maxWeek: 4.95,
+    change24h: 16,
+    changeWeek: 21,
     ordersToday: 240,
-    history: [4.55, 4.65, 4.7, 4.68, 4.82, 4.88, 4.9],
+    p2pOpenOffers: 9,
+    p2pWantedBy: 29,
+    topSwaps: 'Sándwich + Latte · Matcha Latte',
+    tradeRewardGold: 50,
+    demandByRange: {
+      '1D': [25, 58, 96, 138, 182, 214, 240],
+      '1S': [182, 195, 208, 204, 221, 232, 240],
+      '1M': [150, 168, 185, 198, 212, 228, 240],
+    },
     description: 'Mezcla de espresso, chocolate belga y leche cremosa.',
     extractionNotes: 'Chocolate amargo derretido al vapor · 180ml',
   },
@@ -135,12 +172,18 @@ export const COFFEE_PRODUCTS: CoffeeProduct[] = [
     glowGradient: 'from-emerald-500/35 via-green-600/15 to-transparent',
     image: '/images/carta/6.png',
     price: 5.1,
-    change24h: 2.0,
-    changeWeek: 5.1,
-    minWeek: 4.8,
-    maxWeek: 5.2,
+    change24h: 18,
+    changeWeek: 26,
     ordersToday: 178,
-    history: [4.85, 4.92, 5.0, 4.98, 5.05, 5.1],
+    p2pOpenOffers: 6,
+    p2pWantedBy: 19,
+    topSwaps: 'Combo Medialuna · Affogato',
+    tradeRewardGold: 55,
+    demandByRange: {
+      '1D': [22, 48, 79, 108, 136, 159, 178],
+      '1S': [124, 138, 152, 146, 164, 178],
+      '1M': [95, 112, 128, 141, 155, 168, 178],
+    },
     description: 'Té matcha ceremonial japonés con leche espumada.',
     extractionNotes: 'Grado ceremonial Uji Japón · Leche de avena o entera',
   },
@@ -154,12 +197,18 @@ export const COFFEE_PRODUCTS: CoffeeProduct[] = [
     glowGradient: 'from-teal-600/35 via-cyan-600/15 to-transparent',
     image: '/images/carta/7.png',
     price: 2.8,
-    change24h: 2.4,
-    changeWeek: 8.1,
-    minWeek: 2.55,
-    maxWeek: 2.83,
+    change24h: 15,
+    changeWeek: 29,
     ordersToday: 342,
-    history: [2.58, 2.64, 2.7, 2.68, 2.74, 2.78, 2.8],
+    p2pOpenOffers: 14,
+    p2pWantedBy: 38,
+    topSwaps: 'Medialuna · Alfajor · Mokaccino',
+    tradeRewardGold: 30,
+    demandByRange: {
+      '1D': [45, 92, 148, 205, 260, 308, 342],
+      '1S': [250, 268, 285, 279, 304, 325, 342],
+      '1M': [210, 232, 255, 278, 296, 318, 342],
+    },
     description: 'Notas a chocolate amargo y frutos rojos. Cuerpo sedoso.',
     extractionNotes: 'Doble shot · 18g café · extracción 26 segundos',
   },

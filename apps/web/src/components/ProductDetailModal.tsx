@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Check, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Check, Flame } from 'lucide-react';
 import type { CoffeeProduct } from '../data/coffeeCatalog';
 import { Card, money } from '../ui/kit';
 import { useCart } from '../state/cart';
@@ -60,6 +60,10 @@ function ChartCard({
   timeframe: Timeframe;
   onSelectTimeframe: (t: Timeframe) => void;
 }) {
+  const series = product.demandByRange[timeframe];
+  const minVal = Math.min(...series);
+  const maxVal = Math.max(...series);
+
   return (
     <Card className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -72,17 +76,19 @@ function ChartCard({
 
         <div className="text-right">
           <div className="text-2xl font-black text-fg tabular-nums sm:text-3xl">
-            {money(product.price)}
+            {product.ordersToday} <span className="text-xs font-bold uppercase text-muted">pedidos/trades</span>
           </div>
           <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-up/15 px-2 py-0.5 text-xs font-bold text-up">
-            <TrendingUp size={13} />
-            <span>+{product.change24h}% HOY</span>
+            <Flame size={13} />
+            <span>+{product.change24h}% DEMANDA HOY</span>
           </div>
         </div>
       </div>
 
       <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
-        <span className="text-xs font-semibold text-muted">Historial de cotización</span>
+        <span className="text-xs font-semibold text-muted">
+          Actividad de pedidos y trueques P2P (sin cotización monetaria en P2P)
+        </span>
         <div className="flex rounded-lg border border-line bg-canvas p-0.5 text-xs">
           {(['1D', '1S', '1M'] as const).map((t) => (
             <button
@@ -99,7 +105,7 @@ function ChartCard({
       </div>
 
       <div className="mt-4">
-        <NeonTradingChart history={product.history} min={product.minWeek} max={product.maxWeek} />
+        <NeonDemandChart history={series} min={minVal} max={maxVal} />
       </div>
     </Card>
   );
@@ -130,25 +136,26 @@ function FichaCard({
 
         <div className="divide-y divide-line/60 text-xs">
           <FichaRow label="Categoría" value={product.category} />
-          <FichaRow label="Pedidos hoy" value={product.ordersToday.toString()} />
+          <FichaRow label="Pedidos y trades hoy" value={`${product.ordersToday}`} />
           <FichaRow
-            label="Cambio hoy"
+            label="Demanda hoy"
             value={`+${product.change24h}%`}
             valueClass="text-up font-bold"
           />
+          <FichaRow label="Ofrecidos en P2P" value={`${product.p2pOpenOffers} cupones`} />
+          <FichaRow label="Lo buscan en P2P" value={`${product.p2pWantedBy} personas`} />
+          <FichaRow label="Se cambia mucho por" value={product.topSwaps} />
           <FichaRow
-            label="Cambio semanal"
-            value={`+${product.changeWeek}%`}
-            valueClass="text-up font-bold"
+            label="Recompensa al tradear"
+            value={`+${product.tradeRewardGold} G (al canje TPV)`}
+            valueClass="text-brand-accent font-extrabold"
           />
-          <FichaRow label="Mínimo semanal" value={money(product.minWeek)} />
-          <FichaRow label="Máximo semanal" value={money(product.maxWeek)} />
         </div>
       </div>
 
       <div className="mt-8 border-t border-line pt-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-xs text-muted">precio actual:</span>
+          <span className="text-xs text-muted">precio en carta:</span>
           <span className="text-2xl font-black text-fg tabular-nums">
             {money(product.price)}
           </span>
@@ -182,14 +189,15 @@ function FichaRow({
   valueClass?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-3">
-      <span className="text-muted">{label}:</span>
-      <span className={`tabular-nums ${valueClass}`}>{value}</span>
+    <div className="flex items-center justify-between gap-2 py-2.5">
+      <span className="text-muted shrink-0">{label}:</span>
+      <span className={`tabular-nums text-right ${valueClass}`}>{value}</span>
     </div>
   );
 }
 
-function NeonTradingChart({
+// Arma la curva SVG de volumen de demanda (pedidos + trueques) sin signos de dólar en el eje Y
+function NeonDemandChart({
   history,
   min,
   max,
@@ -198,13 +206,13 @@ function NeonTradingChart({
   min: number;
   max: number;
 }) {
-  const range = max - min || 1;
+  const span = Math.max(1, max - min);
   const w = 600;
   const h = 260;
 
   const points = history.map((val, i) => {
     const x = (i / (history.length - 1)) * (w - 60) + 50;
-    const norm = (val - min) / range;
+    const norm = (val - min) / span;
     const y = h - 30 - norm * (h - 60);
     return { x, y };
   });
@@ -219,11 +227,11 @@ function NeonTradingChart({
   const areaD = `${pathD} L ${points[points.length - 1]!.x} ${h - 20} L ${points[0]!.x} ${h - 20} Z`;
 
   const ticks = [
-    max,
-    max - range * 0.25,
-    max - range * 0.5,
-    max - range * 0.75,
-    min,
+    Math.round(max),
+    Math.round(max - span * 0.25),
+    Math.round(max - span * 0.5),
+    Math.round(max - span * 0.75),
+    Math.round(min),
   ];
 
   return (
@@ -255,7 +263,7 @@ function NeonTradingChart({
                 textAnchor="end"
                 className="fill-muted text-[10px] tabular-nums"
               >
-                ${t.toFixed(2)}
+                {t}
               </text>
             </g>
           );
