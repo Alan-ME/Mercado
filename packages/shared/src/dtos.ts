@@ -79,6 +79,9 @@ export interface P2POrderDTO {
   couponId: string;
   sellerId: string;
   askingPrice: number;
+  productName?: string;
+  requestedProductName?: string;
+  rewardCreditsOffered?: number;
   side: OrderSide;
   status: OrderStatus;
   createdAt: string;
@@ -112,6 +115,7 @@ export interface PublishOrderRequest {
 
 export interface BuyOrderRequest {
   buyerId: string;
+  buyerCouponId?: string;
 }
 
 export interface ValidateQrRequest {

@@ -13,7 +13,10 @@ const publishSchema = z.object({
   askingPrice: z.number().positive(),
   requestedProductName: z.string().optional(),
 });
-const buySchema = z.object({ buyerId: z.string().min(1) });
+const buySchema = z.object({
+  buyerId: z.string().min(1),
+  buyerCouponId: z.string().uuid().optional(),
+});
 const cancelSchema = z.object({ sellerId: z.string().min(1) });
 const orderParams = z.object({ id: z.string().uuid() });
 
@@ -35,11 +38,11 @@ export function registerP2PRoutes(app: FastifyInstance): void {
     return listOpenOrders(request.server.ctx, request.tenant);
   });
 
-  // Ejecuta el match atómico: liquida comisiones, reasigna titular y rota tokenVersion.
+  // Ejecuta el match atómico: permuta ambos cupones (si es trueque de productos), reasigna titulares y rota tokenVersion.
   app.post('/p2p/orders/:id/buy', async (request) => {
     const { id } = orderParams.parse(request.params);
-    const { buyerId } = buySchema.parse(request.body);
-    return buyOrder(request.server.ctx, request.tenant, id, buyerId);
+    const { buyerId, buyerCouponId } = buySchema.parse(request.body);
+    return buyOrder(request.server.ctx, request.tenant, id, buyerId, buyerCouponId);
   });
 
   // Cancela la publicación, liberando el cupón y devolviéndolo al estado EN_WALLET.

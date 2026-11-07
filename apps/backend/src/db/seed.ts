@@ -37,12 +37,12 @@ const TENANTS: SeedTenant[] = [
     font: 'Inter, sans-serif',
     users: ['Barista Martin', 'Camila (Habitual)', 'Lucas (Trader)'],
     coupons: [
-      { product: 'Combo Espresso + Medialuna', nominal: 4.9, ownerIndex: 1, daysToExpire: 7 },
-      { product: 'Sándwich + Latte', nominal: 4.2, ownerIndex: 1, daysToExpire: 7 },
-      { product: 'Mokaccino Tostado Especial', nominal: 4.9, ownerIndex: 2, daysToExpire: 5 },
-      { product: 'Espresso Origen Colombia', nominal: 2.8, ownerIndex: 0, daysToExpire: 10 },
-      { product: 'Affogato de Vainilla', nominal: 6.2, ownerIndex: 0, daysToExpire: 10 },
-      { product: 'Matcha Latte Ceremonial', nominal: 5.1, ownerIndex: 2, daysToExpire: 10 },
+      { product: 'COMBO ESPRESSO + MEDIALUNA', nominal: 4.9, ownerIndex: 1, daysToExpire: 7 },
+      { product: 'SÁNDWICH + LATTE', nominal: 4.2, ownerIndex: 1, daysToExpire: 7 },
+      { product: 'MOKACCINO', nominal: 4.9, ownerIndex: 2, daysToExpire: 5 },
+      { product: 'ESPRESSO ORIGEN COLOMBIA', nominal: 2.8, ownerIndex: 0, daysToExpire: 10 },
+      { product: 'AFFOGATO', nominal: 6.2, ownerIndex: 0, daysToExpire: 10 },
+      { product: 'MATCHA LATTE', nominal: 5.1, ownerIndex: 2, daysToExpire: 10 },
     ],
   },
   {

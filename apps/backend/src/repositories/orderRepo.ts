@@ -40,7 +40,8 @@ export async function findOpenOrdersByTenant(
   const { rows } = await db.query<OrderWithNominalRow>(
     `SELECT o.order_id, o.tenant_id, o.coupon_id, o.seller_id, o.asking_price,
             o.requested_product_name, o.reward_credits_offered,
-            o.side, o.status, o.buyer_id, o.created_at, c.nominal_price
+            o.side, o.status, o.buyer_id, o.created_at,
+            c.nominal_price, c.product_name
      FROM p2p_orders o
      JOIN coupons c ON c.coupon_id = o.coupon_id
      WHERE o.tenant_id = $1 AND o.status = 'OPEN'

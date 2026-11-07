@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ArrowRightLeft,
   BookOpen,
+  CheckCircle2,
   Coins,
   Loader2,
   Lock,
@@ -9,6 +10,7 @@ import {
   Repeat,
   Sparkles,
   Tag,
+  XCircle,
 } from 'lucide-react';
 import { CouponState, type P2POrderDTO } from '@smcta/shared';
 import { COFFEE_PRODUCTS } from '../data/coffeeCatalog';
@@ -47,15 +49,46 @@ function pickDifferentProduct(productName: string): string {
   return alt ? alt.name : COFFEE_PRODUCTS[0]!.name;
 }
 
-function defaultSpecForOrder(order: P2POrderDTO, index: number): OrderTradeSpec {
-  const offered = COFFEE_PRODUCTS[index % COFFEE_PRODUCTS.length]!;
-  const requested = COFFEE_PRODUCTS[(index + 2) % COFFEE_PRODUCTS.length]!;
+function sameProductName(a: string, b: string): boolean {
+  const na = a.trim().toLowerCase();
+  const nb = b.trim().toLowerCase();
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+// Busca en la billetera del usuario actual si TIENE un cupón EN_WALLET del producto que pide la orden
+function findMatchingOwnedCoupon(
+  mine: WalletCoupon[],
+  requestedProduct: string,
+): WalletCoupon | undefined {
+  return mine.find((c) => sameProductName(c.productName, requestedProduct));
+}
+
+function buildFallbackSpec(order: P2POrderDTO, index: number): OrderTradeSpec {
+  const offered = order.productName || COFFEE_PRODUCTS[index % COFFEE_PRODUCTS.length]!.name;
+  const requested =
+    order.requestedProductName || COFFEE_PRODUCTS[(index + 2) % COFFEE_PRODUCTS.length]!.name;
   return {
     orderId: order.orderId,
-    offeredProduct: offered.name,
-    requestedProduct: requested.name,
-    rewardGold: offered.tradeRewardGold,
+    offeredProduct: offered,
+    requestedProduct: requested,
+    rewardGold: computeTradeRewardGold(offered),
   };
+}
+
+function resolveOrderSpec(
+  order: P2POrderDTO,
+  specs: Record<string, OrderTradeSpec>,
+  index: number,
+): OrderTradeSpec {
+  if (order.productName && order.requestedProductName) {
+    return {
+      orderId: order.orderId,
+      offeredProduct: order.productName,
+      requestedProduct: order.requestedProductName,
+      rewardGold: computeTradeRewardGold(order.productName),
+    };
+  }
+  return specs[order.orderId] ?? buildFallbackSpec(order, index);
 }
 
 function MarketKpis({
@@ -225,28 +258,63 @@ function SwapProposalForm({
   );
 }
 
+function SwapOwnershipBadge({
+  isMine,
+  hasRequiredCoupon,
+  requestedProduct,
+}: {
+  isMine: boolean;
+  hasRequiredCoupon: boolean;
+  requestedProduct: string;
+}) {
+  if (isMine) {
+    return <span className="text-[11px] font-semibold text-muted">Publicada por vos</span>;
+  }
+  if (hasRequiredCoupon) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-up">
+        <CheckCircle2 size={13} /> Tenés {requestedProduct} en tu billetera
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-down">
+      <XCircle size={13} /> Te falta tener {requestedProduct} en tu billetera
+    </span>
+  );
+}
+
+function swapActionLabel(isMine: boolean, hasRequired: boolean): string {
+  if (isMine) return 'Tu oferta publicada';
+  if (hasRequired) return 'Intercambiar mi producto';
+  return 'No tenés el producto pedido';
+}
+
 function SwapOrderRow({
   spec,
   isMine,
+  matchingCoupon,
   onSwap,
 }: {
   spec: OrderTradeSpec;
   isMine: boolean;
-  onSwap: () => void;
+  matchingCoupon: WalletCoupon | undefined;
+  onSwap: (buyerCouponId: string) => void;
 }) {
   const offeredVis = findCatalogVisual(spec.offeredProduct);
   const wantedVis = findCatalogVisual(spec.requestedProduct);
-  const label = isMine ? 'Tu oferta publicada' : 'Intercambiar producto';
+  const hasRequired = Boolean(matchingCoupon);
+  const label = swapActionLabel(isMine, hasRequired);
 
   return (
-    <Card interactive className="p-4">
+    <Card interactive className="p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2.5 rounded-xl border border-line bg-canvas px-3 py-2">
             <img src={offeredVis.image} alt={spec.offeredProduct} className="h-10 w-10 object-contain" />
             <div>
               <div className="text-[9px] font-bold uppercase tracking-wider text-muted">
-                Ofrece
+                Recibís
               </div>
               <div className="text-xs font-extrabold uppercase text-fg">{spec.offeredProduct}</div>
             </div>
@@ -258,7 +326,7 @@ function SwapOrderRow({
             <img src={wantedVis.image} alt={spec.requestedProduct} className="h-10 w-10 object-contain" />
             <div>
               <div className="text-[9px] font-bold uppercase tracking-wider text-brand-accent">
-                Busca a cambio
+                Tenés que entregar
               </div>
               <div className="text-xs font-extrabold uppercase text-fg">
                 {spec.requestedProduct}
@@ -271,10 +339,22 @@ function SwapOrderRow({
           <span className="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-black text-amber-400">
             <Coins size={13} /> +{spec.rewardGold} G (al canje TPV)
           </span>
-          <Button size="sm" onClick={onSwap} disabled={isMine}>
+          <Button
+            size="sm"
+            onClick={() => matchingCoupon && onSwap(matchingCoupon.couponId)}
+            disabled={isMine || !matchingCoupon}
+          >
             {label}
           </Button>
         </div>
+      </div>
+
+      <div className="border-t border-line/60 pt-2">
+        <SwapOwnershipBadge
+          isMine={isMine}
+          hasRequiredCoupon={hasRequired}
+          requestedProduct={spec.requestedProduct}
+        />
       </div>
     </Card>
   );
@@ -282,14 +362,16 @@ function SwapOrderRow({
 
 function SwapOrderBookList({
   orders,
+  mine,
   specs,
   currentUserId,
   onSwap,
 }: {
   orders: P2POrderDTO[];
+  mine: WalletCoupon[];
   specs: Record<string, OrderTradeSpec>;
   currentUserId: string | undefined;
-  onSwap: (order: P2POrderDTO) => void;
+  onSwap: (order: P2POrderDTO, buyerCouponId: string) => void;
 }) {
   if (orders.length === 0) {
     return (
@@ -303,13 +385,15 @@ function SwapOrderBookList({
   return (
     <div className="space-y-3">
       {orders.map((o, idx) => {
-        const spec = specs[o.orderId] ?? defaultSpecForOrder(o, idx);
+        const spec = resolveOrderSpec(o, specs, idx);
+        const matching = findMatchingOwnedCoupon(mine, spec.requestedProduct);
         return (
           <SwapOrderRow
             key={o.orderId}
             spec={spec}
             isMine={o.sellerId === currentUserId}
-            onSwap={() => onSwap(o)}
+            matchingCoupon={matching}
+            onSwap={(buyerCouponId) => onSwap(o, buyerCouponId)}
           />
         );
       })}
@@ -399,7 +483,7 @@ function ActiveMarketSection({
   onChangeWanted: (name: string) => void;
   onConfirmPublish: () => void;
   onCancelPublish: () => void;
-  onAcceptSwap: (o: P2POrderDTO) => void;
+  onAcceptSwap: (o: P2POrderDTO, buyerCouponId: string) => void;
   onReload: () => void;
 }) {
   if (tab === 'changer') {
@@ -443,9 +527,10 @@ function ActiveMarketSection({
       </div>
 
       <div className="lg:col-span-7">
-        <SectionTitle icon={BookOpen}>2 · Tablero de Trueques P2P (Producto por Producto)</SectionTitle>
+        <SectionTitle icon={BookOpen}>2 · Tablero de Trueques P2P (Exige tener el producto pedido)</SectionTitle>
         <SwapOrderBookList
           orders={orders}
+          mine={mine}
           specs={specs}
           currentUserId={userId}
           onSwap={onAcceptSwap}
@@ -497,11 +582,12 @@ export function Marketplace() {
         couponId: c.couponId,
         sellerId: uid,
         askingPrice: c.nominalPrice,
+        requestedProductName: wantedProduct,
       });
       registerPublishedSwap(created.orderId, c.couponId, c.productName, wantedProduct, uid);
       toast.push(
         'success',
-        `Trueque publicado: ${c.productName} ↔ ${wantedProduct}. Tus Créditos Gold se desbloquearán cuando se canjee en el TPV.`,
+        `Trueque publicado: entregás ${c.productName} y pedís ${wantedProduct}.`,
       );
       setSelected(null);
       await load();
@@ -519,25 +605,41 @@ export function Marketplace() {
 
   const handleSwapFailure = async (e: unknown) => {
     if (isConcurrencyConflict(e)) {
-      toast.push('error', 'Este trueque acaba de ser tomado por otro usuario.');
+      toast.push('error', 'Este trueque acaba de ser tomado o no tenés el producto requerido.');
       await load();
       return;
     }
     toast.push('error', errorMessage(e, 'No se pudo completar el intercambio.'));
   };
 
-  const acceptSwap = async (order: P2POrderDTO) => {
-    if (!tenant || !user) return;
+  const executeAcceptSwap = async (
+    t: string,
+    uid: string,
+    order: P2POrderDTO,
+    buyerCouponId: string,
+  ) => {
     try {
-      await api.buyOrder(tenant, order.orderId, user.userId);
+      await api.buyOrder(t, order.orderId, uid, buyerCouponId);
+      registerPublishedSwap(
+        order.orderId,
+        buyerCouponId,
+        order.requestedProductName || 'Producto',
+        order.productName || 'Producto',
+        uid,
+      );
       toast.push(
         'success',
-        '¡Intercambio realizado! El nuevo producto ya está en tu Billetera con su QR renovado.',
+        '¡Trueque mano a mano completado! Entregaste tu cupón y recibiste el nuevo producto en tu Billetera.',
       );
       await load();
     } catch (e) {
       await handleSwapFailure(e);
     }
+  };
+
+  const acceptSwap = async (order: P2POrderDTO, buyerCouponId: string) => {
+    if (!tenant || !user) return;
+    await executeAcceptSwap(tenant, user.userId, order, buyerCouponId);
   };
 
   const onSelectCoupon = (c: WalletCoupon) => {
@@ -551,7 +653,7 @@ export function Marketplace() {
     <div data-econ-version={econVersion}>
       <PageHeader
         title="Hub de Intercambio de Productos, Item Changer & Gold Area"
-        subtitle="Intercambiá productos mano a mano sin dinero, rescatá ítems descontinuados con +15% de incentivo y canjeá combos con tus Créditos Gold desbloqueados en TPV."
+        subtitle="Intercambiá productos mano a mano (entregando el producto que pide la otra parte), rescatá descontinuados y canjeá combos con tus Créditos Gold."
         icon={ArrowRightLeft}
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
@@ -591,7 +693,7 @@ export function Marketplace() {
         onChangeWanted={setWantedProduct}
         onConfirmPublish={() => void publishSwap()}
         onCancelPublish={() => setSelected(null)}
-        onAcceptSwap={(o) => void acceptSwap(o)}
+        onAcceptSwap={(o, buyerCouponId) => void acceptSwap(o, buyerCouponId)}
         onReload={() => void load()}
       />
     </div>

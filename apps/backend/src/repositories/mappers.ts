@@ -114,6 +114,7 @@ export interface OrderRow {
   coupon_id: string;
   seller_id: string;
   asking_price: string | number;
+  product_name?: string;
   requested_product_name?: string;
   reward_credits_offered?: string | number;
   side: OrderSide;
@@ -124,6 +125,7 @@ export interface OrderRow {
 
 export interface OrderWithNominalRow extends OrderRow {
   nominal_price: string | number;
+  product_name: string;
 }
 
 export function orderToDTO(
@@ -138,6 +140,9 @@ export function orderToDTO(
     couponId: r.coupon_id,
     sellerId: r.seller_id,
     askingPrice: toNum(r.asking_price),
+    productName: r.product_name ?? '',
+    requestedProductName: r.requested_product_name ?? '',
+    rewardCreditsOffered: toNum(r.reward_credits_offered ?? 0),
     side: r.side,
     status: r.status,
     createdAt: toIso(r.created_at),

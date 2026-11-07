@@ -19,6 +19,7 @@ import { type CouponRow, type OrderRow, type TenantRow, toNum, orderToDTO } from
 import {
   attachPendingTradeReward,
   findCouponById,
+  findCouponsByOwner,
   transferAndReissue,
   updateCouponState,
 } from '../repositories/couponRepo.js';
@@ -220,11 +221,93 @@ function assertPublishedCouponInTx(coupon: CouponRow | null): CouponRow {
   return coupon;
 }
 
+function sameProductName(a: string, b: string): boolean {
+  const na = a.trim().toLowerCase();
+  const nb = b.trim().toLowerCase();
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+function isBuyerWalletCoupon(c: CouponRow | undefined, buyerId: string): c is CouponRow {
+  if (!c) return false;
+  return c.current_owner_id === buyerId && c.state === CouponState.EN_WALLET;
+}
+
+function assertValidCounterCoupon(
+  candidate: CouponRow | undefined,
+  buyerId: string,
+  requestedName: string,
+): CouponRow {
+  if (!isBuyerWalletCoupon(candidate, buyerId)) {
+    throw new AppError(
+      ErrorCode.COUPON_NOT_IN_WALLET,
+      `Para aceptar este intercambio necesitás tener "${requestedName}" disponible en tu billetera.`,
+    );
+  }
+  if (requestedName && !sameProductName(candidate.product_name, requestedName)) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      `El cupón ofrecido ("${candidate.product_name}") no coincide con el producto solicitado ("${requestedName}").`,
+    );
+  }
+  return candidate;
+}
+
+function pickBuyerCandidate(
+  wallet: CouponRow[],
+  buyerCouponId: string | undefined,
+  reqName: string,
+): CouponRow | undefined {
+  if (buyerCouponId) {
+    return wallet.find((c) => c.coupon_id === buyerCouponId);
+  }
+  return wallet.find(
+    (c) => c.state === CouponState.EN_WALLET && sameProductName(c.product_name, reqName),
+  );
+}
+
+function goldRate(tenant: TenantRow): number {
+  return toNum(tenant.gold_rate_per_unit ?? 10);
+}
+
+// Si la orden exige un producto a cambio (o el comprador envía buyerCouponId), verifica que
+// el comprador REALMENTE tenga ese producto en su billetera y lo transfiere al vendedor en la misma TX.
+async function swapCounterCouponIfRequired(
+  tx: Queryable,
+  ctx: ServiceContext,
+  tenant: TenantRow,
+  order: OrderRow,
+  buyerId: string,
+  buyerCouponId: string | undefined,
+  nowMs: number,
+): Promise<void> {
+  const reqName = String(order.requested_product_name).trim();
+  if (!reqName && !buyerCouponId) return;
+
+  const wallet = await findCouponsByOwner(tx, tenant.tenant_id, buyerId);
+  const candidate = pickBuyerCandidate(wallet, buyerCouponId, reqName);
+  const counter = assertValidCounterCoupon(candidate, buyerId, reqName);
+
+  const nextVer = toNum(counter.token_version) + 1;
+  const { token } = generateQrToken({
+    couponId: counter.coupon_id,
+    tenantId: tenant.tenant_id,
+    ownerId: order.seller_id,
+    secret: tenant.qr_secret,
+    tokenVersion: nextVer,
+    ttlMs: ctx.config.qrTtlMs,
+    nowMs,
+  });
+  await transferAndReissue(tx, counter.coupon_id, order.seller_id, token);
+  const rewardGold = Math.round(toNum(counter.nominal_price) * goldRate(tenant));
+  await attachPendingTradeReward(tx, counter.coupon_id, buyerId, rewardGold);
+}
+
 export async function buyOrder(
   ctx: ServiceContext,
   tenant: TenantRow,
   orderId: string,
   buyerId: string,
+  buyerCouponId?: string,
 ): Promise<P2POrderDTO> {
   if (!buyerId) {
     throw new AppError(ErrorCode.VALIDATION_ERROR, 'buyerId es obligatorio.');
@@ -244,6 +327,9 @@ export async function buyOrder(
         const coupon = assertPublishedCouponInTx(await findCouponById(tx, tenant.tenant_id, order.coupon_id));
         const nowMs = ctx.clock.now();
         assertTradingWindowOpen(coupon, r.closureHours, nowMs);
+
+        // Valida y transfiere el cupón del comprador hacia el vendedor si es un trueque de productos
+        await swapCounterCouponIfRequired(tx, ctx, tenant, order, buyerId, buyerCouponId, nowMs);
 
         const nominal = toNum(coupon.nominal_price);
         const breakdown = computeCommission({

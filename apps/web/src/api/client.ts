@@ -122,13 +122,18 @@ export const api = {
 
   publishOrder: (
     tenant: string,
-    body: { couponId: string; sellerId: string; askingPrice: number },
+    body: {
+      couponId: string;
+      sellerId: string;
+      askingPrice: number;
+      requestedProductName?: string;
+    },
   ) => request<P2POrderDTO>('/api/v1/p2p/orders', { method: 'POST', body, tenant }),
 
-  buyOrder: (tenant: string, orderId: string, buyerId: string) =>
+  buyOrder: (tenant: string, orderId: string, buyerId: string, buyerCouponId?: string) =>
     request<P2POrderDTO>(`/api/v1/p2p/orders/${orderId}/buy`, {
       method: 'POST',
-      body: { buyerId },
+      body: { buyerId, buyerCouponId },
       tenant,
     }),
 

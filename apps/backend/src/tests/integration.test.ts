@@ -212,4 +212,73 @@ describe('QA-04: aislamiento multi-tenant', () => {
     });
     expect(res.statusCode).toBe(401);
   });
+
+  it('exige tener el producto solicitado en la billetera para aceptar un trueque P2P y permuta ambos cupones', async () => {
+    const [ana, beto, caro] = festival.userIds;
+
+    const cAna = await app.inject({
+      method: 'POST',
+      url: '/api/v1/checkout/primary',
+      headers: H('festival'),
+      payload: { nominalPrice: 100, buyerId: ana, productName: 'MATCHA LATTE' },
+    });
+    const anaCouponId = (cAna.json() as { couponId: string }).couponId;
+
+    const cBeto = await app.inject({
+      method: 'POST',
+      url: '/api/v1/checkout/primary',
+      headers: H('festival'),
+      payload: { nominalPrice: 100, buyerId: beto, productName: 'AFFOGATO' },
+    });
+    const betoCouponId = (cBeto.json() as { couponId: string }).couponId;
+
+    const pub = await app.inject({
+      method: 'POST',
+      url: '/api/v1/p2p/orders',
+      headers: H('festival'),
+      payload: {
+        couponId: anaCouponId,
+        sellerId: ana,
+        askingPrice: 100,
+        requestedProductName: 'AFFOGATO',
+      },
+    });
+    expect(pub.statusCode).toBe(201);
+    const orderId = (pub.json() as { orderId: string }).orderId;
+
+    // Caro NO tiene un AFFOGATO en su billetera -> debe rebotar con 409 COUPON_NOT_IN_WALLET
+    const failCaro = await app.inject({
+      method: 'POST',
+      url: `/api/v1/p2p/orders/${orderId}/buy`,
+      headers: H('festival'),
+      payload: { buyerId: caro },
+    });
+    expect(failCaro.statusCode).toBe(409);
+
+    // Beto SÍ tiene el AFFOGATO -> acepta el intercambio entregando su cupón
+    const okBeto = await app.inject({
+      method: 'POST',
+      url: `/api/v1/p2p/orders/${orderId}/buy`,
+      headers: H('festival'),
+      payload: { buyerId: beto, buyerCouponId: betoCouponId },
+    });
+    expect(okBeto.statusCode).toBe(200);
+
+    // Ahora Ana tiene el AFFOGATO de Beto y Beto tiene el MATCHA LATTE de Ana
+    const wAna = await app.inject({
+      method: 'GET',
+      url: `/api/v1/coupons/my-wallet?ownerId=${ana}`,
+      headers: H('festival'),
+    });
+    const anaIds = (wAna.json() as { couponId: string }[]).map((c) => c.couponId);
+    expect(anaIds).toContain(betoCouponId);
+
+    const wBeto = await app.inject({
+      method: 'GET',
+      url: `/api/v1/coupons/my-wallet?ownerId=${beto}`,
+      headers: H('festival'),
+    });
+    const betoIds = (wBeto.json() as { couponId: string }[]).map((c) => c.couponId);
+    expect(betoIds).toContain(anaCouponId);
+  });
 });
