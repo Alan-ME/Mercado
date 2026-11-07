@@ -1,4 +1,4 @@
--- Esquema relacional PostgreSQL para SMCTA P2P v2 (ARQ-002 + extensiones RN-03..RN-06).
+-- Esquema relacional PostgreSQL para SMCTA P2P v2.2 (ARQ-002 + CR-003: Trueque P2P de Productos, Item Changer y Gold Area).
 -- OJO: antes esto arrancaba con DROP TABLE CASCADE y te volaba producción entera si se
 -- reiniciaba el contenedor contra un Postgres real. Ahora es 100% idempotente sin borrar nada.
 
@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS tenants (
     max_daily_resales_per_user INT NOT NULL DEFAULT 5,
     closure_hours_before_event INT NOT NULL DEFAULT 2,
     platform_revenue_share_pct DECIMAL(5,2) NOT NULL DEFAULT 30.00,
+    discontinued_incentive_pct DECIMAL(5,2) NOT NULL DEFAULT 15.00,
+    gold_rate_per_unit INT NOT NULL DEFAULT 10,
     qr_secret TEXT NOT NULL,
     theme_primary_color VARCHAR(9) NOT NULL DEFAULT '#1A365D',
     theme_accent_color VARCHAR(9) NOT NULL DEFAULT '#3182CE',
@@ -42,17 +44,26 @@ CREATE TABLE IF NOT EXISTS tenants (
     CONSTRAINT ck_tenants_rates CHECK (seller_take_rate >= 0 AND buyer_take_rate >= 0)
 );
 
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS discontinued_incentive_pct DECIMAL(5,2) NOT NULL DEFAULT 15.00;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS gold_rate_per_unit INT NOT NULL DEFAULT 10;
+
 CREATE TABLE IF NOT EXISTS users (
     user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     display_name VARCHAR(120) NOT NULL,
     email VARCHAR(160) NOT NULL,
     balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    credits_balance INT NOT NULL DEFAULT 520,
+    pending_credits INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_users_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id) ON DELETE RESTRICT,
-    CONSTRAINT uq_users_tenant_email UNIQUE (tenant_id, email)
+    CONSTRAINT uq_users_tenant_email UNIQUE (tenant_id, email),
+    CONSTRAINT ck_users_credits_nonneg CHECK (credits_balance >= 0 AND pending_credits >= 0)
 );
 CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS credits_balance INT NOT NULL DEFAULT 520;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_credits INT NOT NULL DEFAULT 0;
 
 -- No metemos FK de current_owner_id contra users(user_id) porque la suite QA-02
 -- bombardea compras P2P con 50 UUIDs generados al vuelo sin registrarlos antes.
@@ -66,12 +77,22 @@ CREATE TABLE IF NOT EXISTS coupons (
     expiration_date TIMESTAMP WITH TIME ZONE NOT NULL,
     product_name VARCHAR(160) NOT NULL DEFAULT '',
     token_version INT NOT NULL DEFAULT 0,
+    is_discontinued BOOLEAN NOT NULL DEFAULT FALSE,
+    pending_reward_credits INT NOT NULL DEFAULT 0,
+    reward_recipient_id UUID,
+    reward_claimed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_coupons_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id) ON DELETE RESTRICT,
-    CONSTRAINT ck_coupons_nominal_pos CHECK (nominal_price > 0)
+    CONSTRAINT ck_coupons_nominal_pos CHECK (nominal_price > 0),
+    CONSTRAINT ck_coupons_pending_nonneg CHECK (pending_reward_credits >= 0)
 );
 CREATE INDEX IF NOT EXISTS idx_coupons_tenant ON coupons(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_coupons_owner ON coupons(tenant_id, current_owner_id);
+
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS is_discontinued BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS pending_reward_credits INT NOT NULL DEFAULT 0;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS reward_recipient_id UUID;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS reward_claimed BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS p2p_orders (
     order_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -79,6 +100,8 @@ CREATE TABLE IF NOT EXISTS p2p_orders (
     coupon_id UUID NOT NULL,
     seller_id UUID NOT NULL,
     asking_price DECIMAL(10,2) NOT NULL,
+    requested_product_name VARCHAR(160) NOT NULL DEFAULT '',
+    reward_credits_offered INT NOT NULL DEFAULT 0,
     side order_side NOT NULL DEFAULT 'SELL',
     status order_status NOT NULL DEFAULT 'OPEN',
     buyer_id UUID,
@@ -98,6 +121,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_seller_day ON p2p_orders(tenant_id, seller
 -- Última línea de defensa en el motor: aunque fallen los locks en memoria/Redis,
 -- Postgres jamás permite dos órdenes OPEN para el mismo cupón.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_open_coupon ON p2p_orders(coupon_id) WHERE status = 'OPEN';
+
+ALTER TABLE p2p_orders ADD COLUMN IF NOT EXISTS requested_product_name VARCHAR(160) NOT NULL DEFAULT '';
+ALTER TABLE p2p_orders ADD COLUMN IF NOT EXISTS reward_credits_offered INT NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS escrow_ledgers (
     ledger_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -3,17 +3,31 @@ import { moneyStr } from '@smcta/shared';
 import type { CommissionBreakdown } from '@smcta/shared';
 import type { OrderRow, OrderWithNominalRow } from './mappers.js';
 
-const COLS = `order_id, tenant_id, coupon_id, seller_id, asking_price, side, status, buyer_id, created_at`;
+const COLS = `order_id, tenant_id, coupon_id, seller_id, asking_price, requested_product_name, reward_credits_offered, side, status, buyer_id, created_at`;
 
 export async function insertSellOrder(
   db: Queryable,
-  input: { tenantId: string; couponId: string; sellerId: string; askingPrice: number },
+  input: {
+    tenantId: string;
+    couponId: string;
+    sellerId: string;
+    askingPrice: number;
+    requestedProductName?: string;
+    rewardCreditsOffered?: number;
+  },
 ): Promise<OrderRow> {
   const { rows } = await db.query<OrderRow>(
-    `INSERT INTO p2p_orders (tenant_id, coupon_id, seller_id, asking_price, side, status)
-     VALUES ($1, $2, $3, $4, 'SELL', 'OPEN')
+    `INSERT INTO p2p_orders (tenant_id, coupon_id, seller_id, asking_price, requested_product_name, reward_credits_offered, side, status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'SELL', 'OPEN')
      RETURNING ${COLS}`,
-    [input.tenantId, input.couponId, input.sellerId, moneyStr(input.askingPrice)],
+    [
+      input.tenantId,
+      input.couponId,
+      input.sellerId,
+      moneyStr(input.askingPrice),
+      input.requestedProductName ?? '',
+      input.rewardCreditsOffered ?? 0,
+    ],
   );
   return rows[0]!;
 }
@@ -25,6 +39,7 @@ export async function findOpenOrdersByTenant(
 ): Promise<OrderWithNominalRow[]> {
   const { rows } = await db.query<OrderWithNominalRow>(
     `SELECT o.order_id, o.tenant_id, o.coupon_id, o.seller_id, o.asking_price,
+            o.requested_product_name, o.reward_credits_offered,
             o.side, o.status, o.buyer_id, o.created_at, c.nominal_price
      FROM p2p_orders o
      JOIN coupons c ON c.coupon_id = o.coupon_id

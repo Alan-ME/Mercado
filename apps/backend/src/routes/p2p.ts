@@ -11,6 +11,7 @@ const publishSchema = z.object({
   couponId: z.string().uuid(),
   sellerId: z.string().min(1),
   askingPrice: z.number().positive(),
+  requestedProductName: z.string().optional(),
 });
 const buySchema = z.object({ buyerId: z.string().min(1) });
 const cancelSchema = z.object({ sellerId: z.string().min(1) });

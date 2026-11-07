@@ -107,6 +107,7 @@ export interface PublishOrderRequest {
   couponId: string;
   sellerId: string;
   askingPrice: number;
+  requestedProductName?: string;
 }
 
 export interface BuyOrderRequest {

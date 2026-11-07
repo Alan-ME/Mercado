@@ -16,7 +16,12 @@ import {
 import type { Queryable } from '../db/database.js';
 import type { ServiceContext } from './context.js';
 import { type CouponRow, type OrderRow, type TenantRow, toNum, orderToDTO } from '../repositories/mappers.js';
-import { findCouponById, transferAndReissue, updateCouponState } from '../repositories/couponRepo.js';
+import {
+  attachPendingTradeReward,
+  findCouponById,
+  transferAndReissue,
+  updateCouponState,
+} from '../repositories/couponRepo.js';
 import {
   insertSellOrder,
   findOpenOrdersByTenant,
@@ -152,11 +157,14 @@ export async function publishOrder(
         // 10 POST en paralelo leen dailyCount=4 y te meten 14 órdenes igual.
         await assertDailyResaleQuota(tx, tenant.tenant_id, req.sellerId, r.maxResales, ctx.clock.now());
         await updateCouponState(tx, req.couponId, CouponState.PUBLICADO_P2P);
+        const rewardCredits = Math.round(nominal * toNum(tenant.gold_rate_per_unit ?? 10));
         const created = await insertSellOrder(tx, {
           tenantId: tenant.tenant_id,
           couponId: req.couponId,
           sellerId: req.sellerId,
           askingPrice: req.askingPrice,
+          requestedProductName: req.requestedProductName,
+          rewardCreditsOffered: rewardCredits,
         });
         const ev: UserEventInput = {
           tenantId: tenant.tenant_id,
@@ -266,6 +274,8 @@ export async function buyOrder(
           nowMs,
         });
         await transferAndReissue(tx, coupon.coupon_id, buyerId, token);
+        const rewardGold = Math.round(nominal * toNum(tenant.gold_rate_per_unit ?? 10));
+        await attachPendingTradeReward(tx, coupon.coupon_id, order.seller_id, rewardGold);
 
         // Guardamos el neto real del comercio (totalFees - platformShare). Antes guardaban el
         // bruto acá y también platformFee al lado, inventando plata de la nada en el panel de auditoría.

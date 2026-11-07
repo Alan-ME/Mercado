@@ -33,6 +33,8 @@ export interface RawTenantRow {
   max_daily_resales_per_user: string | number;
   closure_hours_before_event: string | number;
   platform_revenue_share_pct: string | number;
+  discontinued_incentive_pct?: string | number;
+  gold_rate_per_unit?: string | number;
   qr_secret: string;
   theme_primary_color: string;
   theme_accent_color: string;
@@ -86,6 +88,10 @@ export interface CouponRow {
   expiration_date: string | Date;
   product_name: string;
   token_version: string | number;
+  is_discontinued?: boolean;
+  pending_reward_credits?: string | number;
+  reward_recipient_id?: string | null;
+  reward_claimed?: boolean;
   created_at: string | Date;
 }
 
@@ -108,6 +114,8 @@ export interface OrderRow {
   coupon_id: string;
   seller_id: string;
   asking_price: string | number;
+  requested_product_name?: string;
+  reward_credits_offered?: string | number;
   side: OrderSide;
   status: OrderStatus;
   buyer_id: string | null;

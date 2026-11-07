@@ -59,5 +59,25 @@ describe('Integridad DDL PostgreSQL / PGlite', () => {
       ),
     ).rejects.toMatchObject({ code: '23505' });
   });
+
+  it('persiste columnas v2.2 (credits_balance, pending_reward_credits, reward_claimed, is_discontinued, requested_product_name) y bloquea saldos negativos', async () => {
+    const seed = await seedDatabase(db);
+    const cafe = seed.tenants.find((t) => t.subdomain === 'cafeteria')!;
+    const trader = cafe.users[1]!;
+
+    const { rows: uRows } = await db.query<{
+      credits_balance: number;
+      pending_credits: number;
+    }>(
+      `SELECT credits_balance, pending_credits FROM users WHERE user_id = $1`,
+      [trader.userId],
+    );
+    expect(Number(uRows[0]?.credits_balance)).toBe(520);
+    expect(Number(uRows[0]?.pending_credits)).toBe(0);
+
+    await expect(
+      db.query(`UPDATE users SET credits_balance = -10 WHERE user_id = $1`, [trader.userId]),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
 });
 

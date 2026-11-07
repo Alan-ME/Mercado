@@ -9,7 +9,11 @@ import {
 } from '@smcta/shared';
 import type { ServiceContext } from './context.js';
 import { type CouponRow, type TenantRow, toNum } from '../repositories/mappers.js';
-import { findCouponById, updateCouponState } from '../repositories/couponRepo.js';
+import {
+  findCouponById,
+  unlockCouponTradeReward,
+  updateCouponState,
+} from '../repositories/couponRepo.js';
 import { insertLedgerEntry } from '../repositories/ledgerRepo.js';
 import { couponLockKey, withLock } from '../infra/lockManager.js';
 import { verifyQrToken } from '../domain/qrToken.js';
@@ -19,6 +23,7 @@ export interface RedeemResult {
   couponId: string;
   state: CouponState;
   releasedToMerchant: number;
+  unlockedGoldCredits?: number;
   webhook: {
     event: 'WEBHOOK_REDEEM_SUCCESS';
     couponId: string;
@@ -73,7 +78,7 @@ export async function validateQrAndRedeem(
   }
 
   const events: UserEventInput[] = [];
-  const nominal = await withLock(
+  const { nominal, unlockedGold } = await withLock(
     ctx.lockManager,
     couponLockKey(payload.couponId),
     ctx.config.lockTtlMs,
@@ -89,6 +94,7 @@ export async function validateQrAndRedeem(
 
         const amount = toNum(fresh.nominal_price);
         await updateCouponState(tx, fresh.coupon_id, CouponState.CANJEADO);
+        const unlocked = await unlockCouponTradeReward(tx, fresh);
         await insertLedgerEntry(tx, {
           tenantId: tenant.tenant_id,
           couponId: fresh.coupon_id,
@@ -105,7 +111,7 @@ export async function validateQrAndRedeem(
         };
         await emitEvent(tx, ev);
         events.push(ev);
-        return amount;
+        return { nominal: amount, unlockedGold: unlocked };
       }),
   );
 
@@ -114,6 +120,7 @@ export async function validateQrAndRedeem(
     couponId: payload.couponId,
     state: CouponState.CANJEADO,
     releasedToMerchant: nominal,
+    unlockedGoldCredits: unlockedGold,
     webhook: {
       event: 'WEBHOOK_REDEEM_SUCCESS',
       couponId: payload.couponId,

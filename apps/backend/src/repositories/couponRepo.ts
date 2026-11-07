@@ -1,10 +1,11 @@
 import type { Queryable } from '../db/database.js';
 import { moneyStr } from '@smcta/shared';
 import type { CouponState } from '@smcta/shared';
-import { type CouponRow } from './mappers.js';
+import { type CouponRow, toNum } from './mappers.js';
 
 const COLS = `coupon_id, tenant_id, current_owner_id, nominal_price, state,
-  qr_encrypted_token, expiration_date, product_name, token_version, created_at`;
+  qr_encrypted_token, expiration_date, product_name, token_version,
+  is_discontinued, pending_reward_credits, reward_recipient_id, reward_claimed, created_at`;
 
 export async function insertCoupon(
   db: Queryable,
@@ -86,4 +87,53 @@ export async function transferAndReissue(
      WHERE coupon_id = $3`,
     [newOwnerId, newToken, couponId],
   );
+}
+
+// Registra en el cupón los Créditos Gold pendientes de desbloqueo tras un trueque P2P (solo si reward_claimed = FALSE)
+export async function attachPendingTradeReward(
+  tx: Queryable,
+  couponId: string,
+  sellerId: string,
+  rewardCredits: number,
+): Promise<void> {
+  if (rewardCredits <= 0) return;
+  const { rows } = await tx.query<{ coupon_id: string }>(
+    `UPDATE coupons
+     SET pending_reward_credits = $1, reward_recipient_id = $2
+     WHERE coupon_id = $3 AND reward_claimed = FALSE AND pending_reward_credits = 0
+     RETURNING coupon_id`,
+    [rewardCredits, sellerId, couponId],
+  );
+  if (rows.length > 0) {
+    await tx.query(
+      `UPDATE users SET pending_credits = pending_credits + $1 WHERE user_id = $2`,
+      [rewardCredits, sellerId],
+    );
+  }
+}
+
+// Se ejecuta en tpvService cuando el receptor escanea el QR en barra (CANJEADO):
+// libera los créditos pendientes hacia credits_balance y sella reward_claimed = TRUE para siempre.
+export async function unlockCouponTradeReward(
+  tx: Queryable,
+  coupon: CouponRow,
+): Promise<number> {
+  const pending = toNum(coupon.pending_reward_credits ?? 0);
+  if (coupon.reward_claimed || pending <= 0 || !coupon.reward_recipient_id) {
+    return 0;
+  }
+  await tx.query(
+    `UPDATE coupons
+     SET reward_claimed = TRUE, pending_reward_credits = 0
+     WHERE coupon_id = $1 AND reward_claimed = FALSE`,
+    [coupon.coupon_id],
+  );
+  await tx.query(
+    `UPDATE users
+     SET credits_balance = credits_balance + $1,
+         pending_credits = GREATEST(0, pending_credits - $1)
+     WHERE user_id = $2`,
+    [pending, coupon.reward_recipient_id],
+  );
+  return pending;
 }
