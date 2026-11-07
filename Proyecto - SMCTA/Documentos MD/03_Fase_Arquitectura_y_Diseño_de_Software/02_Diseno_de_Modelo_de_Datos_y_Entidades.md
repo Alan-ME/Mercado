@@ -78,7 +78,7 @@ Todos los importes monetarios y tasas porcentuales utilizan exclusivamente el ti
 
 | Tabla | Columnas Críticas | Tipos SQL | Garantía Estructural |
 | :--- | :--- | :--- | :--- |
-| `users` | `balance` (*Saldo de Créditos de Barra de Circuito Cerrado*) | `DECIMAL(12,2) NOT NULL DEFAULT 0.00` | Almacena los créditos internos ($1\text{ Crédito} \equiv \$1,00\text{ nominal}$) utilizados para compensar asimetrías en el trueque P2P de productos y acreditar el vuelto e incentivo del *Item Changer* (`CR-003` / `ADR-007`). |
+| `users` | `balance` (*Saldo de Créditos de Barra de Circuito Cerrado*) | `DECIMAL(12,2) NOT NULL DEFAULT 0.00` | Almacena los créditos internos ($1\text{ Crédito} \equiv 1,00\text{ nominal}$) utilizados para compensar asimetrías en el trueque P2P de productos y acreditar el vuelto e incentivo del *Item Changer* (`CR-003` / `ADR-007`). |
 | `p2p_orders` | `asking_price`, `seller_fee_amount`, `buyer_fee_amount`, `net_seller_proceeds`, `total_buyer_price` (+ atributos de permuta `requested_product_name`, `credit_delta`) | `DECIMAL(10,2)`, `VARCHAR(160)` | Persiste la fotografía exacta en el instante de `MATCHED` (`matched_at TIMESTAMPTZ`), soportando tanto liquidación en créditos como intercambio directo Producto-por-Producto + diferencia en créditos. |
 | `escrow_ledgers` | `transaction_type`, `amount_in_escrow`, `tenant_fee_accumulated`, `platform_fee`, `related_order_id` | `VARCHAR(50)`, `DECIMAL(10,2)`, `UUID` | `CHECK` restringido a `('CHECKOUT', 'P2P_SPLIT', 'REDEEM_RELEASE', 'REFUND')` (extensible a `'CHANGER_SWAP'` para rescate de productos descontinuados con incentivo $\beta_{\text{disc}}$). Invariante: suma algebraica de `amount_in_escrow` de cupones cerrados = `0.00`. |
 

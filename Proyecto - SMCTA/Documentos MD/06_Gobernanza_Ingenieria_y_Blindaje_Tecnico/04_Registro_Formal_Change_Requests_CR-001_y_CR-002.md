@@ -79,8 +79,8 @@ En proyectos desarrollados por equipos distribuidos, los cambios de rumbo no doc
 ### 2. Especificación Técnica y Matemática del Nuevo Modelo (v2.2)
 
 1. **Trading P2P de Productos entre Usuarios (Inspirado en Steam Community Market / Trade Offers):**
-   - El titular de un cupón vigente en `EN_WALLET` (ej. un *Combo de Empanadas* o *Sándwich + Latte* de valor nominal $\$4,20$) publica su activo en el catálogo de intercambio especificando qué producto desea recibir a cambio (ej. un *Espresso Origen Colombia* de $\$2,80$) y/o la compensación en **Créditos de Barra** requerida para equilibrar la operación.
-   - Para evitar el bloqueo por falta de coincidencia exacta de precios entre productos de distinta categoría, el sistema incorpora el **Saldo de Créditos de Circuito Cerrado (`users.balance` / `credits_balance`)**, donde $1\text{ Crédito} \equiv \$1,00$ de poder de canje nominal dentro del mismo *Tenant*.
+   - El titular de un cupón vigente en `EN_WALLET` (ej. un *Combo de Empanadas* o *Sándwich + Latte* de valor nominal `$4,20`) publica su activo en el catálogo de intercambio especificando qué producto desea recibir a cambio (ej. un *Espresso Origen Colombia* de `$2,80`) y/o la compensación en **Créditos de Barra** requerida para equilibrar la operación.
+   - Para evitar el bloqueo por falta de coincidencia exacta de precios entre productos de distinta categoría, el sistema incorpora el **Saldo de Créditos de Circuito Cerrado (`users.balance` / `credits_balance`)**, donde $1\text{ Crédito} \equiv 1,00\text{ USD/ARS}$ de poder de canje nominal dentro del mismo *Tenant*.
    - La validación de banda paramétrica (*Price Collar* $[\phi_{\min}, \phi_{\max}]$ en `@smcta/shared/src/pricing.ts`) se preserva íntegramente como **Banda de Equivalencia de Trueque**, garantizando que la valuación total solicitada (valor nominal del producto pedido + delta de créditos) permanezca dentro del rango autorizado por el comercio sobre el producto ofrecido:
      $$P_{\text{nom}}(\text{ofrecido}) \cdot \frac{\phi_{\min}}{100} \le P_{\text{nom}}(\text{solicitado}) + \Delta C \le P_{\text{nom}}(\text{ofrecido}) \cdot \frac{\phi_{\max}}{100}$$
 

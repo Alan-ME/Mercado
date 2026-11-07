@@ -82,7 +82,7 @@ Al llegar la estampa de tiempo $T_{expiracion}$ configurada para el lote de cupo
 
 Para eliminar la intermediación monetaria bancaria entre particulares, toda negociación secundaria opera sobre **permuta de productos respaldada por Créditos de Barra de Circuito Cerrado (`credits_balance`)**:
 
-- Un usuario titular de un cupón vigente en `EN_WALLET` (ej. un *Combo de Empanadas / Sándwich*) puede catalogarlo solicitando a cambio otro producto del comercio (ej. un *Café de Especialidad*) y/o una diferencia compensatoria en Créditos de Barra ($\Delta C$), donde $1\text{ Crédito} \equiv \$1,00\text{ nominal de consumo interno}$.
+- Un usuario titular de un cupón vigente en `EN_WALLET` (ej. un *Combo de Empanadas / Sándwich*) puede catalogarlo solicitando a cambio otro producto del comercio (ej. un *Café de Especialidad*) y/o una diferencia compensatoria en Créditos de Barra ($\Delta C$), donde $1\text{ Crédito} \equiv 1,00\text{ unidad nominal de consumo interno}$.
 - El valor total solicitado ($P_{nom}(\text{producto pedido}) + \Delta C$) debe respetar obligatoriamente la banda `RN-02` (*Price Collar*) calculada sobre el valor nominal del producto ofrecido.
 - Los Créditos de Barra son estrictamente de circuito cerrado dentro del *Tenant*: sirven para emparejar diferencias de precio entre productos o adquirir ítems en el local, quedando prohibido su retiro como efectivo hacia cuentas bancarias externas.
 
@@ -109,7 +109,7 @@ Plantilla para registrar los valores exactos que gobernaran las reglas de negoci
 | RN-03-CONF | Take-Rate Comprador ($TakeRate_{comprador}$): | 2.50% | [COMPLETAR: FEE_COMPRADOR] |
 | RN-05-CONF | Límite Max. Órdenes P2P / Usuario / Día: | 5 publicaciones activas. | [COMPLETAR: LIMITE_ORDENES] |
 | RN-06-CONF | Cierre de Ventana P2P Antes de Evento: | 2 horas antes del evento ($T_{evento} - 2h$). | [COMPLETAR: HORAS_CIERRE_PREVIO] |
-| RN-07-CONF | Unidad de Compensación Interna: | Créditos de Barra ($1\text{ Cr} = \$1,00\text{ nominal}$, sin retiro bancario) | Habilitado por defecto |
+| RN-07-CONF | Unidad de Compensación Interna: | Créditos de Barra ($1\text{ Cr} \equiv 1,00\text{ nominal}$, sin retiro bancario) | Habilitado por defecto |
 | RN-08-CONF | Incentivo por Producto Descontinuado ($\beta_{disc}$): | +15.00% de poder de canje en *Item Changer* | [COMPLETAR: BONUS_DESCONTINUADO] |
 
 ## 4. Lógica del Motor de Emparejamiento de Órdenes (Order Matcher Logic)
