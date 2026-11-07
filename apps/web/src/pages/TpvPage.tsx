@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Camera, CheckCircle2, RefreshCw, ScanLine, XCircle } from 'lucide-react';
 import { useSession } from '../state/session';
+import { unlockGoldOnTpvRedeem } from '../state/goldEconomy';
 import { api, ApiError } from '../api/client';
 import { QrCameraReader } from '../components/QrCameraReader';
 import { Button, Card, FIELD_CLASS, PageHeader, money } from '../ui/kit';
@@ -12,7 +13,7 @@ interface RedeemableCoupon {
 }
 
 type Result =
-  | { kind: 'ok'; amount: number; couponId: string }
+  | { kind: 'ok'; amount: number; couponId: string; unlockedGold: number }
   | { kind: 'err'; message: string }
   | null;
 
@@ -26,6 +27,11 @@ function ResultBanner({ result }: { result: Exclude<Result, null> }) {
           <div className="text-sm text-fg">
             Se liberaron <span className="font-bold tabular-nums">{money(result.amount)}</span> del Escrow al comercio.
           </div>
+          {result.unlockedGold > 0 && (
+            <div className="mt-1 text-xs font-extrabold text-amber-400">
+              ¡Prueba de consumo verificada! Se desbloquearon +{result.unlockedGold} G en Créditos Gold para el trader.
+            </div>
+          )}
         </div>
       </div>
     );
@@ -97,7 +103,8 @@ export function TpvPage() {
     setResult(null);
     try {
       const r = await api.validateQr(tenant, token);
-      setResult({ kind: 'ok', amount: r.releasedToMerchant, couponId: r.couponId });
+      const unlockedGold = unlockGoldOnTpvRedeem(r.couponId);
+      setResult({ kind: 'ok', amount: r.releasedToMerchant, couponId: r.couponId, unlockedGold });
       await load();
     } catch (e) {
       setResult({ kind: 'err', message: e instanceof ApiError ? e.message : 'Error al validar.' });
