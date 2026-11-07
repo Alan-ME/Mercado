@@ -1,9 +1,9 @@
 ---
 doc_code: DOC-SMCTA-GOV-001
-title: Registro Oficial de Decisiones de Arquitectura (ADR-001 a ADR-006)
+title: Registro Oficial de Decisiones de Arquitectura (ADR-001 a ADR-007)
 subtitle: Constancia Normativa bajo Estándar ISO/IEC/IEEE 42010 y Formato M. Nygard para Gobernanza del Equipo
 phase: 06 — Gobernanza de Ingeniería y Blindaje Técnico Oficial
-version: 2.1.0
+version: 2.2.0
 date: Noviembre 2026
 authors: Equipo de Ingeniería y Arquitectura — Proyecto SMCTA
 institution: Comité Técnico de Arquitectura y Control de Decisiones
@@ -12,7 +12,7 @@ toc: true
 
 ## Resumen
 
-Este documento consolida el registro inmutable de las seis decisiones arquitectónicas estructurales (*Architecture Decision Records*) que gobiernan el diseño, la tecnología y los mecanismos de seguridad del sistema **SMCTA v2**, acompañado de su matriz maestra de estado (*Decision Log*). Su propósito institucional es preservar la memoria técnica del equipo, evitar la reapertura cíclica de debates ya resueltos con evidencia empírica y establecer límites vinculantes para futuras extensiones del monorepo.
+Este documento consolida el registro inmutable de las siete decisiones arquitectónicas estructurales (*Architecture Decision Records*) que gobiernan el diseño, la tecnología y los mecanismos de seguridad del sistema **SMCTA v2**, acompañado de su matriz maestra de estado (*Decision Log*). Su propósito institucional es preservar la memoria técnica del equipo, evitar la reapertura cíclica de debates ya resueltos con evidencia empírica y establecer límites vinculantes para futuras extensiones del monorepo.
 
 ---
 
@@ -25,7 +25,8 @@ Este documento consolida el registro inmutable de las seis decisiones arquitect�
 | **ADR-003** | Persistencia Hexagonal Dual (`PGlite` WASM + PostgreSQL 15 `SERIALIZABLE`) | **Aceptado** | 2026-10-18 | `db/database.ts`, `pglite.ts`, `pg.ts` | `40/40` Vitest, `8/8` E2E |
 | **ADR-004** | Defensa de Concurrencia en Triple Capa y Libro Mayor *Append-Only* | **Aceptado** | 2026-10-28 | `lockManager.ts`, `schema.sql` | `QA-02` (50 compradores), `SQLSTATE 28000` |
 | **ADR-005** | Protocolo QR Dinámico `HMAC-SHA256` con `QrSecret` Opaco y `token_version` | **Aceptado** | 2026-10-28 | `qrSecret.ts`, `qrToken.ts`, `tpvService.ts` | `qrToken.test.ts`, `QA-04` |
-| **ADR-006** | Consolidación de Maquetas `BREW/DESK` desde Dart/Flutter (`vers/`) hacia React | **Aceptado** | 2026-11-03 | `@smcta/web`, `seed.ts`, `vers/` | `build:ui`, Tenant `cafeteria` |
+| **ADR-006** | Consolidación de Maquetas `BREW/DESK` desde Dart/Flutter (`vers/`) hacia React | **Aceptado** | 2026-11-03 | `@smcta/web`, `seed.ts` | `build:ui`, Tenant `cafeteria` |
+| **ADR-007** | Permuta P2P de Productos (Estilo Steam), Créditos Cerrados e *Item Changer* con Bonus por Descontinuación (Estilo KeyDrop) | **Aceptado** | 2026-11-06 | `pricing.ts`, `p2pService`, `Marketplace` | `CR-003`, `RN-07`, `RN-08`, `UC-05` |
 
 ---
 
@@ -100,5 +101,23 @@ Este documento consolida el registro inmutable de las seis decisiones arquitect�
 
 - **Estado:** Aceptado y Vigente.
 - **Contexto y Problema:** El equipo contaba con un prototipo visual de alta fidelidad en Dart/Flutter ubicado en `vers/` para el caso de uso de cafetería de especialidad (*BREW/DESK Specialty Coffee*), mientras que la arquitectura funcional multi-tenant conectada al backend operaba en React 19 (`apps/web`). Sostener dos pilas tecnológicas de UI duplicaba el mantenimiento y dejaba el diseño gastronómico desconectado de la contabilidad real.
-- **Decisión:** Congelar y archivar `vers/` como especificación visual de referencia histórica, migrar fielmente la totalidad de sus vistas y componentes (portada oscura de barra, promociones cromáticas, modal de ficha técnica con curva temporal `24h / 7d / 30d`, catálogo filtrable `CartaPage`, carrito lateral conectado a `POST /api/v1/checkout/primary` y panel maestro-detalle `SettingsPage`) hacia `@smcta/web`, e incorporar el *tenant* semilla `cafeteria`.
+- **Decisión:** Congelar y archivar `vers/` como especificación visual de referencia histórica, migrar fielmente la totalidad de sus vistas y componentes (portada oscura de barra, promociones cromáticas, modal de ficha técnica con curva temporal `24h / 7d / 30d`, catálogo filtrable `CartaPage`, carrito lateral conectado a `POST /api/v1/checkout/primary` y panel maestro-detalle `SettingsPage`) hacia `@smcta/web`, incorporar el *tenant* semilla `cafeteria` y depurar definitivamente los activos duplicados del repositorio (`9d621db`).
 - **Consecuencias:** Unificación del 100% del frontend bajo un solo árbol de componentes tipados en React/TypeScript, conservando tanto la capacidad camaleónica *White-Label* para hoteles/festivales como la identidad visual exacta diseñada por el equipo para *BREW/DESK*.
+
+---
+
+## ADR-007: Sustitución de Liquidación Monetaria P2P Abierta por Trading P2P de Productos (Estilo Steam), Créditos de Circuito Cerrado e Item Changer con Incentivo por Descontinuación (Estilo KeyDrop)
+
+- **Estado:** Aceptado y Vigente (Refina `ADR-001` bajo `CR-003`).
+- **Contexto y Problema:** Si bien `ADR-001` eliminó el riesgo de insolvencia del operador mediante órdenes P2P y custodia *Escrow*, liquidar compraventas secundarias en dinero fiduciario transferible entre cuentas bancarias de usuarios particulares imponía dos costos severos: (1) exigencia de integrar pasarelas reguladas con dispersión de fondos entre terceros (*split payments* sujetos a normativa PSP/BCRA, retenciones impositivas y KYC bancario), y (2) obligación de reembolsar efectivo cuando un comercio gastronómico descontinuaba un producto estacional o agotaba una partida específica. Paralelamente, un trueque puro 1 a 1 sin unidad de cuenta intermedia ("cambio mi combo de empanadas solo si otro usuario tiene exactamente un café comprado en su billetera") sufriría parálisis de liquidez por falta de doble coincidencia de necesidades y por asimetría de precios entre ítems del menú ($\$4,90$ vs. $\$2,80$).
+- **Alternativas Evaluadas:**
+  1. *Mantener liquidación P2P con retiro de dinero fiduciario a bancos externos:* Descartado por alta fricción regulatoria de intermediación de pagos y drenaje de efectivo ante bajas de catálogo.
+  2. *Trueque P2P puro 1 a 1 sin unidad de cuenta ni créditos:* Descartado por iliquidez severa e imposibilidad de compensar diferencias de valor entre productos de distinto precio nominal.
+  3. *Arquitectura híbrida de Permuta P2P de Productos (estilo Steam Market / Trade Offers) + Saldo de Créditos de Circuito Cerrado + Intercambiador de Equivalencias con Incentivo por Descontinuación (estilo KeyDrop Skin Changer):* Seleccionado.
+- **Decisión:**
+  1. **Circuito Cerrado de Valor (*Closed-Loop Store Credits*):** El dinero fiduciario ingresa exclusivamente en la compra primaria. Dentro de cada *Tenant*, toda diferencia de valor se liquida en **Créditos de Barra (`users.balance`)** equivalentes a $\$1,00$ nominal de consumo interno y **nunca retirables a cuentas bancarias externas**.
+  2. **Trading P2P de Productos entre Usuarios:** Un usuario puede catalogar su cupón activo (ej. *Sándwich + Latte* de $\$4,20$) para intercambiarlo por otro producto específico de otro usuario (ej. *Espresso* de $\$2,80$) más/menos una compensación en Créditos de Barra, o bien cederlo directamente contra Créditos de Barra dentro de los límites del *Price Collar* $[\phi_{\min}, \phi_{\max}]$. El cruce transfiere atómicamente la titularidad de ambos cupones e incrementa `token_version` en ambos activos.
+  3. **Motor *Item Changer* e Incentivo por Producto Descontinuado:** Cuando un producto es marcado como **Descontinuado (`is_discontinued = true`)** por el comercio, queda inhabilitado para el P2P entre usuarios y habilitado en el **Changer de Equivalencias** (interfaz de doble columna inspirada en KeyDrop). Al depositar el cupón descontinuado a la izquierda, el sistema le asigna un valor de rescate bonificado $V_{\text{canje}} = \text{round}_2\big(P_{\text{nom}} \cdot (1 + \frac{\beta_{\text{disc}}}{100})\big)$ (incentivo parametrizable $\beta_{\text{disc}}$, por defecto $+15\%$), permite elegir a la derecha uno o más productos equivalentes del catálogo activo (ej. un alfajor o un *Mokaccino*) y acredita el remanente positivo en el saldo de Créditos de Barra del usuario.
+- **Consecuencias:**
+  - *Positivas:* Eliminación total de contingencias de intermediación bancaria/PSP entre consumidores; retención del 100% de la caja en el comercio ante productos descontinuados transformando un reembolso frustrante en una experiencia gamificada con premio ($+\beta_{\text{disc}}\%$); preservación íntegra de la infraestructura transaccional (`SERIALIZABLE`, `LockManager`, `decimal.js`, `Price Collar`, `token_version` y `escrow_ledgers`).
+  - *Negativas / Restricciones:* Los términos de servicio y la interfaz deben explicitar que los Créditos de Barra constituyen saldo promocional/prepago de consumo interno exclusivo en el local emisor, sin convertibilidad a moneda de curso legal.

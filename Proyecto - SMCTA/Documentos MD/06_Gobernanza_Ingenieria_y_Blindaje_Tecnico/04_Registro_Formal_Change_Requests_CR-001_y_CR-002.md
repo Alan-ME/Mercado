@@ -1,9 +1,9 @@
 ---
 doc_code: DOC-SMCTA-GOV-004
-title: Registro Formal de Solicitudes de Cambio (CR-001 y CR-002)
+title: Registro Formal de Solicitudes de Cambio (CR-001 a CR-003)
 subtitle: Control de Configuración y Trazabilidad de Pivotes Estructurales bajo Estándar IEEE 828 e ISO/IEC/IEEE 12207
 phase: 06 — Gobernanza de Ingeniería y Blindaje Técnico Oficial
-version: 2.1.0
+version: 2.2.0
 date: Noviembre 2026
 authors: Comité de Control de Cambios e Ingeniería — Proyecto SMCTA
 institution: Gestión de Configuración y Auditoría de Alcance del Proyecto
@@ -11,16 +11,17 @@ institution: Gestión de Configuración y Auditoría de Alcance del Proyecto
 
 ## Resumen
 
-En proyectos desarrollados por equipos distribuidos, los cambios de rumbo no documentados generan desalineación entre el código ejecutado y los artefactos de planificación iniciales, exponiendo a los integrantes a cuestionamientos sobre alcance, tecnología o criterios de aceptación. Este registro formaliza bajo estándar **IEEE 828** las dos solicitudes de cambio mayor (*Change Requests*) aprobadas e implementadas en el ciclo de vida de **SMCTA**: el pivote fundacional del modelo económico-legal (`CR-001`) y la unificación tecnológica de las maquetas visuales en React (`CR-002`).
+En proyectos desarrollados por equipos distribuidos, los cambios de rumbo no documentados generan desalineación entre el código ejecutado y los artefactos de planificación iniciales, exponiendo a los integrantes a cuestionamientos sobre alcance, tecnología o criterios de aceptación. Este registro formaliza bajo estándar **IEEE 828** las tres solicitudes de cambio mayor (*Change Requests*) aprobadas en el ciclo de vida de **SMCTA**: el pivote fundacional del modelo económico-legal (`CR-001`), la unificación tecnológica de las maquetas visuales en React (`CR-002`) y la evolución del mercado secundario hacia **permuta P2P de productos, créditos de circuito cerrado e intercambiador de equivalencias con incentivo por descontinuación (`CR-003`)**.
 
 ---
 
 ## Tabla Resumen de Control de Cambios Aprobados
 
-| Código CR | Denominación Oficial del Cambio | Severidad | Estado | Fecha Cierre | Commits de Verificación |
+| Código CR | Denominación Oficial del Cambio | Severidad | Estado | Fecha Cierre | Referencia / Verificación |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | **CR-001** | Reingeniería de *Market Maker* Directo (v1) a Mercado P2P con *Escrow* Segregado (v2) | Crítica (Estructural) | **Implementado** | 2026-10-28 | `7218327`, `4641e78`, `9d9d8bf` |
 | **CR-002** | Migración de Maquetas `BREW/DESK` desde Dart/Flutter (`vers/`) hacia React (`@smcta/web`) | Alta (Frontend / UX) | **Implementado** | 2026-11-05 | `9acebda`, `f4153fa`, `4766f27` |
+| **CR-003** | Evolución a Trading P2P por Productos (Estilo Steam), Créditos Internos e *Item Changer* con Bonus por Descontinuación (Estilo KeyDrop) | Crítica (Modelo / Producto) | **Aprobado (v2.2)** | 2026-11-06 | `DOC-SMCTA-GOV-001` (`ADR-007`), `RN-07`, `RN-08`, `UC-05` |
 
 ---
 
@@ -64,3 +65,40 @@ En proyectos desarrollados por equipos distribuidos, los cambios de rumbo no doc
 ### 3. Verificación de Calidad Post-Cambio
 - **Complejidad Ciclomática:** `npm run lint:complexity` aprobado con **0 errores** ($CC \le 5$ estricto en los nuevos componentes `SettingsPage.tsx`, `CartDrawer.tsx`, `ProductDetailModal.tsx`, `CartaPage.tsx` y `cart.tsx`).
 - **Suite Automatizada:** `40/40` pruebas Vitest y `8/8` pruebas Playwright E2E aprobadas sin regresiones.
+
+---
+
+## CR-003: Evolución del Mercado P2P Monetario hacia Permuta de Productos (Estilo Steam), Créditos de Circuito Cerrado e Intercambiador por Descontinuación (Estilo KeyDrop)
+
+### 1. Identificación y Motivación Regulatoria, Económica y Operativa
+- **Origen del Cambio:** Revisión estratégica de producto e ingeniería sobre las fricciones operativas, impositivas y de liquidez del comercio secundario en gastronomía y retail (*BREW/DESK Specialty Coffee*).
+- **Problemas Resueltos por este Giro:**
+  1. **Eliminación de Liquidación Monetaria entre Particulares (Riesgo PSP / BCRA):** En un mercado P2P liquidado directamente en moneda fiduciaria entre usuarios, cada operación secundaria requiere mover dinero bancario de la cuenta del comprador a la del vendedor y retener comisiones en tránsito, encuadrando a la plataforma como Proveedor de Servicios de Pago (PSP) o sub-adquirente sujeto a KYC financiero, retenciones impositivas (SIRTAC/IIBB) y contracargos de tarjeta. Al transformar la negociación secundaria en **intercambio de productos respaldado por Créditos de Barra de Circuito Cerrado (`credits_balance`)**, el dinero fiduciario ingresa una única vez en la compra primaria al comercio y **jamás vuelve a retirarse hacia cuentas bancarias externas**.
+  2. **Solución al Problema de Productos Descontinuados o Sin Stock sin Drenaje de Caja:** En el esquema anterior, si el comercio descontinuaba un producto de estación (ej. *Espresso Origen Colombia* o un combo temporal), la única salida limpia era reembolsar efectivo al cliente, provocando pérdida directa de caja y comisiones bancarias hundidas. Mediante la introducción del **Intercambiador de Equivalencias (*Item Changer* inspirado en KeyDrop Skin Changer)**, el usuario deposita su cupón descontinuado a la izquierda, recibe automáticamente un **Incentivo por Descontinuación** ($\beta_{\text{disc}}$, ej. `+15%` de bonificación sobre el valor nominal) y selecciona a la derecha cualquier combinación de productos activos equivalentes (ej. un alfajor o un *Mokaccino*), reteniendo la diferencia sobrante en su saldo de créditos internos.
+
+### 2. Especificación Técnica y Matemática del Nuevo Modelo (v2.2)
+
+1. **Trading P2P de Productos entre Usuarios (Inspirado en Steam Community Market / Trade Offers):**
+   - El titular de un cupón vigente en `EN_WALLET` (ej. un *Combo de Empanadas* o *Sándwich + Latte* de valor nominal $\$4,20$) publica su activo en el catálogo de intercambio especificando qué producto desea recibir a cambio (ej. un *Espresso Origen Colombia* de $\$2,80$) y/o la compensación en **Créditos de Barra** requerida para equilibrar la operación.
+   - Para evitar el bloqueo por falta de coincidencia exacta de precios entre productos de distinta categoría, el sistema incorpora el **Saldo de Créditos de Circuito Cerrado (`users.balance` / `credits_balance`)**, donde $1\text{ Crédito} \equiv \$1,00$ de poder de canje nominal dentro del mismo *Tenant*.
+   - La validación de banda paramétrica (*Price Collar* $[\phi_{\min}, \phi_{\max}]$ en `@smcta/shared/src/pricing.ts`) se preserva íntegramente como **Banda de Equivalencia de Trueque**, garantizando que la valuación total solicitada (valor nominal del producto pedido + delta de créditos) permanezca dentro del rango autorizado por el comercio sobre el producto ofrecido:
+     $$P_{\text{nom}}(\text{ofrecido}) \cdot \frac{\phi_{\min}}{100} \le P_{\text{nom}}(\text{solicitado}) + \Delta C \le P_{\text{nom}}(\text{ofrecido}) \cdot \frac{\phi_{\max}}{100}$$
+
+2. **Intercambiador de Equivalencias (*Item Changer* Estilo KeyDrop) e Incentivo por Descontinuación:**
+   - La interfaz de cambio presenta dos paneles simétricos conectados por una balanza central de equivalencia en créditos/ARS:
+     - **Panel Izquierdo ("Tus artículos a intercambiar"):** Selección de uno o varios cupones de la billetera del usuario, más el uso opcional de sus créditos acumulados.
+     - **Panel Derecho ("Objetos del catálogo a recibir"):** Grilla filtrable por categoría, rango de valor y disponibilidad con todos los productos activos del comercio.
+   - **Regla de Valuación Diferencial (Activo Vigente vs. Producto Descontinuado):**
+     - Si el usuario intercambia contra la barra un cupón de un producto **vigente** por simple cambio de preferencia del día, se aplica la tasa estándar de recambio del comercio ($\tau_{\text{swap}}$).
+     - Si el comercio marcó el producto como **DESCONTINUADO (`is_discontinued = true`)**, el sistema bloquea su publicación en el P2P entre usuarios (protegiendo a terceros compradores) y habilita el rescate bonificado en el *Changer*, reconociendo al tenedor un poder de canje incrementado por el porcentaje de incentivo $\beta_{\text{disc}}$ (ej. $15\%$):
+       $$V_{\text{reconocido}} = \text{round}_2\left(P_{\text{nom}} \cdot \left(1 + \frac{\beta_{\text{disc}}}{100}\right)\right)$$
+   - **Acreditación del Vuelto en Créditos (`Credit Change`):** Si el usuario entrega un café descontinuado valuado con incentivo en $V_{\text{reconocido}} = 3,22\text{ créditos}$ y elige a la derecha un producto activo de $P_{\text{nuevo}} = 2,80\text{ créditos}$, el motor quema atómicamente el cupón descontinuado, emite el nuevo cupón en estado `EN_WALLET` (`token_version = 0`) y acredita la diferencia exacta $\Delta C = +0,42\text{ créditos}$ en el saldo del usuario dentro de la misma transacción `SERIALIZABLE`.
+
+### 3. Análisis de Impacto sobre la Arquitectura Existente
+
+| Componente / Documento | Impacto y Reutilización de Activos Existentes |
+| :--- | :--- |
+| **`@smcta/shared` (Dominio)** | Reutilización del 100% de `money.ts` (`ROUND_HALF_EVEN`), `pricing.ts` (`Price Collar`) y `stateMachine.ts`; adición de cálculo de equivalencia de trueque y bonificación por descontinuación. |
+| **`@smcta/backend` (Core)** | Preservación de `LockManager`, `QrSecret`, `qrToken` (`token_version` rota en cada trueque de producto) y `escrow_ledgers` (`trg_escrow_ledgers_immutable`); extensión para permuta de productos y `Changer` de descontinuados. |
+| **`@smcta/web` (UX / UI)** | Evolución de `Marketplace.tsx` incorporando el catálogo de trueque P2P por productos (estilo Steam) y la vista de doble panel *Item Changer* con filtros laterales (estilo KeyDrop). |
+| **Blindaje Legal y Financiero** | Reducción a **cero** del riesgo de intermediación de pagos entre particulares (BCRA/UIF), al operar exclusivamente con derechos de consumo y créditos comerciales cerrados no retirables en efectivo. |

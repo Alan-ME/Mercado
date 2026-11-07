@@ -4,6 +4,15 @@ Todos los cambios relevantes de arquitectura, lógica de dominio, interfaz *Whit
 
 ---
 
+## [2.2.0] — 2026-11-06
+
+### Added
+- **Especificación Formal del Giro a Trading P2P de Productos, Créditos de Circuito Cerrado e *Item Changer* (`CR-003` y `ADR-007`):** Documentación normativa transversal en `Proyecto - SMCTA/Documentos MD/` y `Documentos PDF/` que formaliza:
+  1. **Permuta P2P de Productos entre Usuarios (Estilo Steam Trade):** Intercambio de cupones de distintos productos (ej. combo salado por café) compensando asimetrías de precio mediante **Créditos de Barra (`users.balance`)** de circuito cerrado sin retiro bancario.
+  2. **Intercambiador de Equivalencias (*Item Changer* Estilo KeyDrop) e Incentivo por Descontinuación (`RN-08`, `UC-05`):** Reemplazo instantáneo de productos dados de baja (`DISCONTINUED`) reconociendo un bonus porcentual parametrizable ($\beta_{\text{disc}} = +15\%$) para elegir productos equivalentes activos y acreditar el sobrante en créditos internos.
+
+---
+
 ## [2.1.0] — 2026-11-05
 
 ### Added

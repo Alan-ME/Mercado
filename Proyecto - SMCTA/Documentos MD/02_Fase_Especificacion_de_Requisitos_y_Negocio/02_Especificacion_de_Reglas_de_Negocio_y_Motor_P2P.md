@@ -78,6 +78,23 @@ Al llegar la estampa de tiempo $T_{expiracion}$ configurada para el lote de cupo
 - Los cupones en EN_WALLET pasan a VENCIDO.
 - El motor de Escrow ejecuta la regla de liberación de fondos según la política parametrizada por el Tenant (ej. liberación del 100% de la venta primaria al comerciante por concepto de reserva no utilizada).
 
+### RN-07: Trading P2P de Productos y Compensación en Créditos de Circuito Cerrado (Estilo Steam Market)
+
+Para eliminar la intermediación monetaria bancaria entre particulares, toda negociación secundaria opera sobre **permuta de productos respaldada por Créditos de Barra de Circuito Cerrado (`credits_balance`)**:
+
+- Un usuario titular de un cupón vigente en `EN_WALLET` (ej. un *Combo de Empanadas / Sándwich*) puede catalogarlo solicitando a cambio otro producto del comercio (ej. un *Café de Especialidad*) y/o una diferencia compensatoria en Créditos de Barra ($\Delta C$), donde $1\text{ Crédito} \equiv \$1,00\text{ nominal de consumo interno}$.
+- El valor total solicitado ($P_{nom}(\text{producto pedido}) + \Delta C$) debe respetar obligatoriamente la banda `RN-02` (*Price Collar*) calculada sobre el valor nominal del producto ofrecido.
+- Los Créditos de Barra son estrictamente de circuito cerrado dentro del *Tenant*: sirven para emparejar diferencias de precio entre productos o adquirir ítems en el local, quedando prohibido su retiro como efectivo hacia cuentas bancarias externas.
+
+### RN-08: Rescate de Productos Descontinuados mediante Intercambiador de Equivalencias con Incentivo (Estilo KeyDrop Changer)
+
+Cuando el comercio da de baja o descontinúa un producto del catálogo (`is_discontinued = true`):
+
+1. **Bloqueo P2P:** Los cupones del producto descontinuado no pueden publicarse en el mercado P2P entre usuarios para evitar que un consumidor adquiera un ítem sin stock.
+2. **Habilitación en el Item Changer con Incentivo ($\beta_{disc}$):** El titular ingresa su cupón descontinuado en el panel izquierdo del **Intercambiador de Equivalencias (*Item Changer*)**, donde el sistema le reconoce automáticamente el $100\%$ de su valor nominal más un porcentaje de **Incentivo por Descontinuación** ($\beta_{disc}$, ej. $+15\%$):
+   $$V_{canje} = P_{nom} \times \left(1 + \frac{\beta_{disc}}{100}\right)$$
+3. **Elección Libre y Vuelto en Créditos:** En el panel derecho, el usuario selecciona cualquier producto equivalente activo (ej. cambiar un café descontinuado por un alfajor). El sistema emite el nuevo cupón al instante y acredita la diferencia remanente ($\Delta C = V_{canje} - P_{nom}(\text{elegido}) \ge 0$) en la billetera de Créditos de Barra del usuario.
+
 ## 3. Registro de Parametrización de Reglas por Tenant
 
 ---
@@ -92,6 +109,8 @@ Plantilla para registrar los valores exactos que gobernaran las reglas de negoci
 | RN-03-CONF | Take-Rate Comprador ($TakeRate_{comprador}$): | 2.50% | [COMPLETAR: FEE_COMPRADOR] |
 | RN-05-CONF | Límite Max. Órdenes P2P / Usuario / Día: | 5 publicaciones activas. | [COMPLETAR: LIMITE_ORDENES] |
 | RN-06-CONF | Cierre de Ventana P2P Antes de Evento: | 2 horas antes del evento ($T_{evento} - 2h$). | [COMPLETAR: HORAS_CIERRE_PREVIO] |
+| RN-07-CONF | Unidad de Compensación Interna: | Créditos de Barra ($1\text{ Cr} = \$1,00\text{ nominal}$, sin retiro bancario) | Habilitado por defecto |
+| RN-08-CONF | Incentivo por Producto Descontinuado ($\beta_{disc}$): | +15.00% de poder de canje en *Item Changer* | [COMPLETAR: BONUS_DESCONTINUADO] |
 
 ## 4. Lógica del Motor de Emparejamiento de Órdenes (Order Matcher Logic)
 

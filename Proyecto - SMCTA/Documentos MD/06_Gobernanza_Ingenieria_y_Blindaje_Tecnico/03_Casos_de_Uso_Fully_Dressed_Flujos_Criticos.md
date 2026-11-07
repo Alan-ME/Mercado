@@ -12,7 +12,7 @@ toc: true
 
 ## Resumen
 
-Mientras las historias de usuario ágiles capturan intenciones generales de producto, los flujos que movilizan dinero en custodia, transfieren titularidad bajo concurrencia o liberan fondos en terminales físicos exigen contratos deterministas sin margen de interpretación entre roles. Este documento especifica en formato **Alistair Cockburn *Fully Dressed*** los cuatro casos de uso nucleares de **SMCTA v2** (`UC-01` a `UC-04`), detallando actores, intereses de los *stakeholders*, precondiciones verificables, garantías mínimas ante fallo (*rollback*), garantías de éxito y todas las ramificaciones exactas de códigos de error HTTP implementadas en producción.
+Mientras las historias de usuario ágiles capturan intenciones generales de producto, los flujos que movilizan valor en custodia, permutan productos entre usuarios bajo concurrencia o liberan fondos en terminales físicos exigen contratos deterministas sin margen de interpretación entre roles. Este documento especifica en formato **Alistair Cockburn *Fully Dressed*** los cinco casos de uso nucleares de **SMCTA v2.2** (`UC-01` a `UC-05`), detallando actores, intereses de los *stakeholders*, precondiciones verificables, garantías mínimas ante fallo (*rollback*), garantías de éxito y todas las ramificaciones exactas de códigos de error HTTP, incluyendo el **Trading P2P de Productos con Créditos de Barra (`UC-03`)** y el **Intercambiador de Productos Descontinuados con Incentivo estilo KeyDrop (`UC-05`)**.
 
 ---
 
@@ -142,3 +142,34 @@ Todos los casos de uso operan gobernados por el autómata determinista implement
 - **2b. Captura de pantalla con antigüedad superior a 30 segundos:** Rechazo `HTTP 401 Unauthorized` (`QR_TOKEN_EXPIRED`).
 - **4a. Captura reciente (< 30 s) pero el cupón fue publicado o revendido tras emitirla (`payload.version !== coupon.tokenVersion`):** Rechazo `HTTP 409 Conflict` (`QR_STALE_TOKEN`).
 - **4b. Intento de doble escaneo sobre cupón ya redimido:** Rechazo `HTTP 409 Conflict` (`COUPON_ALREADY_REDEEMED` + salvaguarda física `uq_ledger_terminal_once`).
+
+---
+
+## UC-05: Permuta de Productos y Rescate de Ítem Descontinuado con Incentivo en el Item Changer (Estilo KeyDrop)
+
+| Atributo Normativo | Especificación Formal |
+| :--- | :--- |
+| **Identificador y Endpoint** | `UC-05` — `POST /api/v1/changer/swap` (`changerService.swapProducts`) |
+| **Actor Primario** | Consumidor titular de uno o más cupones vigentes o de un producto dado de baja (`DISCONTINUED`) |
+| **Stakeholders e Intereses** | **Consumidor:** Reemplazar al instante un producto que ya no desea —o que fue descontinuado por el comercio— por otro producto equivalente del catálogo activo (ej. cambiar un café descontinuado por un alfajor), recibiendo una bonificación justa si la baja fue decisión del local y conservando el vuelto en su Saldo de Créditos de Barra. **Comercio (*Tenant*):** Evitar reembolsos en efectivo que drenan la caja operativa, fidelizar al cliente afectado por faltantes de stock y rotar mercadería activa. |
+| **Precondiciones** | 1. Los cupones entregados en el panel izquierdo pertenecen a `userId`, corresponden al *Tenant* activo y están en estado `EN_WALLET`. 2. Los productos seleccionados en el panel derecho existen y se encuentran activos (`isDiscontinued = false`). 3. El poder de canje total (cupones entregados + bonus por descontinuación + créditos de barra aportados) cubre el valor nominal de los productos solicitados. |
+| **Garantía Mínima (En Fallo)** | Transacción revertida (`ROLLBACK`); los cupones originales permanecen intactos en `EN_WALLET`, no se emiten cupones nuevos y el saldo `users.balance` no sufre alteración. |
+| **Garantía de Éxito (Postcondición)** | Los cupones entregados transicionan a estado terminal de reemplazo (`CANJEADO` por permuta con `token_version + 1`); se emiten los nuevos cupones de los productos elegidos en estado `EN_WALLET`; se actualiza atómicamente `users.balance` con el saldo residual de Créditos de Barra ($\Delta C \ge 0$) y se asienta el movimiento en `escrow_ledgers`. |
+
+### Escenario Principal de Éxito (`UC-05`)
+1. El Consumidor abre la vista de doble columna **Item Changer** (inspirada en KeyDrop Skin Changer): en el panel izquierdo selecciona los cupones de su billetera que desea entregar (ej. un *Espresso Origen Colombia* marcado como `DESCONTINUADO`) y en el panel derecho filtra el catálogo activo y selecciona el producto que desea recibir (ej. un *Alfajor Artesanal* o *Mokaccino*).
+2. El panel central muestra en tiempo real la balanza de equivalencia en Créditos de Barra:
+   - Si el cupón entregado corresponde a un producto **descontinuado**, aplica automáticamente el incentivo parametrizado por el *Tenant* ($\beta_{\text{disc}}$, ej. $+15\%$):
+     $$V_{\text{entrada}} = \text{round}_2\left(P_{\text{nom}} \cdot \left(1 + \frac{\beta_{\text{disc}}}{100}\right)\right)$$
+   - Si el cupón entregado corresponde a un producto **activo** (cambio voluntario de preferencia), aplica la valuación estándar descontando el *spread* de recambio del local ($\tau_{\text{swap}}$).
+3. El Consumidor confirma la operación presionando **"Intercambiar Productos"**.
+4. El servicio adquiere los candados en `LockManager` para todos los `couponId` de entrada en orden lexicográfico estricto (prevención de *deadlocks*) e inicia una transacción `SERIALIZABLE`.
+5. Bloquea las filas de los cupones de entrada y del usuario en `users` (`SELECT ... FOR UPDATE`), verificando titularidad, estado `EN_WALLET` y disponibilidad de saldo de créditos si la operación requiere aporte adicional.
+6. Verifica que el poder de canje total $V_{\text{total}} = \sum V_{\text{entrada}} + C_{\text{aportados}}$ sea mayor o igual al costo nominal de los productos de salida $\sum P_{\text{nom}}(\text{salida})$.
+7. Invalida los cupones entregados incrementando `token_version + 1`, emite los nuevos cupones correspondientes a los productos elegidos en el panel derecho y acredita el vuelto remanente $\Delta C = V_{\text{total}} - \sum P_{\text{nom}}(\text{salida})$ en el saldo de Créditos de Barra del usuario (`users.balance`).
+8. Registra la trazabilidad en `escrow_ledgers` y `user_events`, ejecuta `COMMIT`, publica la notificación en vivo vía SSE y responde `HTTP 200 OK` con los nuevos cupones y el nuevo saldo de créditos.
+
+### Extensiones y Flujos Alternativos (`UC-05`)
+- **5a. Alguno de los cupones de entrada está publicado en una oferta P2P abierta:** Rechazo `HTTP 409 Conflict` (`COUPON_NOT_IN_WALLET`); el usuario debe cancelar primero su publicación P2P o ejecutar el retiro previo.
+- **6a. El valor de los productos elegidos a la derecha supera el poder de canje de los cupones entregados más el saldo de créditos disponible:** Rechazo `HTTP 422 Unprocessable Entity` (`INSUFFICIENT_SWAP_VALUE`) detallando los créditos faltantes exactos.
+- **6b. El usuario intenta elegir en el panel derecho un producto que también se encuentra descontinuado:** Rechazo `HTTP 422 Unprocessable Entity` (`TARGET_PRODUCT_DISCONTINUED`).
